@@ -204,6 +204,8 @@ cython_debug/
 logs/
 data/warehouse/
 *.duckdb
+data/raw/marketing/*.jsonl
+data/processed/
 .cursorignore
 .cursorindexingignore
 
