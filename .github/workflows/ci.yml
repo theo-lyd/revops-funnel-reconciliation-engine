@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install "apache-airflow==2.10.5" --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-2.10.5/constraints-3.10.txt"
+          pip install -r requirements/base.txt -r requirements/dev.txt
+
+      - name: Lint and type-check
+        run: |
+          ruff check .
+          mypy src scripts dags
+
+      - name: Unit tests
+        run: pytest -q
+
+      - name: dbt parse validation
+        run: |
+          mkdir -p data/warehouse
+          cp dbt/profiles/profiles.yml.example dbt/profiles/profiles.yml
+          cd dbt
+          dbt deps
+          dbt parse --profiles-dir profiles

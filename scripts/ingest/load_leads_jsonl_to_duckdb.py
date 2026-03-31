@@ -27,6 +27,17 @@ def hash_email(email: str | None) -> str | None:
     return hashlib.sha256(email.lower().strip().encode("utf-8")).hexdigest()
 
 
+def derive_company_name(record: dict) -> str | None:
+    company_name = record.get("company_name")
+    if company_name:
+        return str(company_name)
+
+    email = record.get("email")
+    if not email:
+        return None
+    return str(email).split("@", 1)[1].split(".", 1)[0]
+
+
 def main() -> None:
     args = parse_args()
     settings = get_settings()
@@ -83,8 +94,7 @@ def main() -> None:
     payload = [
         (
             rec.get("lead_id"),
-            rec.get("company_name")
-            or ((rec.get("email") or "").split("@", 1)[1].split(".", 1)[0] if rec.get("email") else None),
+            derive_company_name(rec),
             hash_email(rec.get("email")),
             rec.get("utm_source"),
             rec.get("utm_campaign"),

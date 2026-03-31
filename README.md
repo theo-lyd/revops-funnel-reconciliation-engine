@@ -42,6 +42,9 @@ make check-freshness
 
 ### 7) Orchestrate with Airflow
 ```bash
+export AIRFLOW_ADMIN_USERNAME=admin
+export AIRFLOW_ADMIN_EMAIL=admin@example.com
+export AIRFLOW_ADMIN_PASSWORD='<set-a-strong-password>'
 make airflow-init
 make airflow-start
 ```

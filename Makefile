@@ -1,15 +1,18 @@
 PYTHON ?= python
 PIP ?= pip
+AIRFLOW_VERSION ?= 2.10.5
+AIRFLOW_CONSTRAINTS ?= https://raw.githubusercontent.com/apache/airflow/constraints-$(AIRFLOW_VERSION)/constraints-3.10.txt
 
 .PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-snapshot preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness
 
 setup:
+	$(PIP) install "apache-airflow==$(AIRFLOW_VERSION)" --constraint "$(AIRFLOW_CONSTRAINTS)"
 	$(PIP) install -r requirements/base.txt -r requirements/dev.txt
 	pre-commit install
 
 lint:
 	ruff check .
-	mypy src
+	mypy src scripts dags
 
 test:
 	pytest -q
@@ -19,8 +22,11 @@ format:
 	ruff format .
 
 airflow-init:
+	@test -n "$$AIRFLOW_ADMIN_PASSWORD" || (echo "AIRFLOW_ADMIN_PASSWORD is required" && exit 1)
+	@test -n "$$AIRFLOW_ADMIN_USERNAME" || (echo "AIRFLOW_ADMIN_USERNAME is required" && exit 1)
+	@test -n "$$AIRFLOW_ADMIN_EMAIL" || (echo "AIRFLOW_ADMIN_EMAIL is required" && exit 1)
 	AIRFLOW_HOME=.airflow airflow db migrate
-	AIRFLOW_HOME=.airflow airflow users create --username admin --firstname RevOps --lastname Admin --role Admin --email admin@example.com --password admin
+	AIRFLOW_HOME=.airflow airflow users create --username "$$AIRFLOW_ADMIN_USERNAME" --firstname RevOps --lastname Admin --role Admin --email "$$AIRFLOW_ADMIN_EMAIL" --password "$$AIRFLOW_ADMIN_PASSWORD"
 
 airflow-start:
 	AIRFLOW_HOME=.airflow airflow standalone
