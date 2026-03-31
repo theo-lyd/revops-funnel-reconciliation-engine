@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 
 def parse_args() -> argparse.Namespace:
@@ -23,8 +25,21 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def fetch_lead(url: str, timeout: float) -> dict:
-    response = requests.get(url, timeout=timeout)
+def build_session() -> requests.Session:
+    retry = Retry(
+        total=3,
+        backoff_factor=0.5,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["GET"],
+    )
+    session = requests.Session()
+    session.mount("http://", HTTPAdapter(max_retries=retry))
+    session.mount("https://", HTTPAdapter(max_retries=retry))
+    return session
+
+
+def fetch_lead(session: requests.Session, url: str, timeout: float) -> dict:
+    response = session.get(url, timeout=timeout)
     response.raise_for_status()
     payload = response.json()
     payload["ingested_at"] = datetime.now(timezone.utc).isoformat()
@@ -35,10 +50,11 @@ def main() -> None:
     args = parse_args()
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    session = build_session()
 
     with out_path.open("a", encoding="utf-8") as handle:
         for _ in range(args.count):
-            record = fetch_lead(args.url, args.timeout)
+            record = fetch_lead(session, args.url, args.timeout)
             handle.write(json.dumps(record, ensure_ascii=True) + "\n")
 
     print(f"Fetched {args.count} lead events into {out_path}")

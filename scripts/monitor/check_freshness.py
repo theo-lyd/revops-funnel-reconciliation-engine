@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import argparse
+import importlib
 import os
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
 import requests
+
+from revops_funnel.config import get_settings
 
 
 def parse_args() -> argparse.Namespace:
@@ -21,9 +23,33 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def age_hours(path: Path) -> float:
-    mtime = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
-    return (datetime.now(timezone.utc) - mtime) / timedelta(hours=1)
+def age_hours(loaded_at: datetime) -> float:
+    return (datetime.now(timezone.utc) - loaded_at) / timedelta(hours=1)
+
+
+def latest_success_timestamp(source_name: str) -> datetime | None:
+    settings = get_settings()
+    duckdb = importlib.import_module("duckdb")
+    conn = duckdb.connect(settings.duckdb_path, read_only=True)
+    try:
+        row = conn.execute(
+            """
+            SELECT max(loaded_at)
+            FROM observability.ingestion_audit
+            WHERE source_name = ?
+              AND status = 'success'
+            """,
+            [source_name],
+        ).fetchone()
+    except Exception:
+        conn.close()
+        return None
+    conn.close()
+    if not row or row[0] is None:
+        return None
+    if row[0].tzinfo is None:
+        return row[0].replace(tzinfo=timezone.utc)
+    return row[0]
 
 
 def post_slack(message: str) -> None:
@@ -41,17 +67,18 @@ def main() -> None:
     max_delay = args.max_delay_hours
 
     checks = {
-        "CRM pipeline file": Path("data/raw/crm/sales_pipeline.csv"),
-        "Marketing leads landing file": Path("data/raw/marketing/leads_raw.jsonl"),
+        "CRM pipeline ingestion": "crm_sales_pipeline",
+        "Marketing leads ingestion": "marketing_leads",
     }
 
     breaches: list[str] = []
-    for label, file_path in checks.items():
-        if not file_path.exists():
-            breaches.append(f"{label} missing: {file_path}")
+    for label, source_name in checks.items():
+        latest_loaded_at = latest_success_timestamp(source_name)
+        if latest_loaded_at is None:
+            breaches.append(f"{label} missing successful audit event for source={source_name}")
             continue
 
-        delay = age_hours(file_path)
+        delay = age_hours(latest_loaded_at)
         print(f"{label}: {delay:.2f}h old")
         if delay > max_delay:
             breaches.append(f"{label} is stale ({delay:.2f}h > {max_delay:.2f}h)")
