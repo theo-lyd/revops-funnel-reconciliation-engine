@@ -1,0 +1,20 @@
+revops_funnel:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "../../data/warehouse/revops.duckdb"
+      threads: 4
+      schema: analytics
+
+    prod:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'TRANSFORMER') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE', 'REVOPS') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'TRANSFORMING') }}"
+      schema: analytics
+      threads: 8
+      client_session_keep_alive: false

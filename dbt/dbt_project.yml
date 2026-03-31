@@ -1,0 +1,29 @@
+name: revops_funnel
+version: 1.0.0
+config-version: 2
+
+profile: revops_funnel
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: target
+clean-targets:
+  - target
+  - dbt_packages
+
+models:
+  revops_funnel:
+    staging:
+      +materialized: view
+      +schema: silver_staging
+    intermediate:
+      +materialized: table
+      +schema: silver_intermediate
+    marts:
+      +materialized: table
+      +schema: gold

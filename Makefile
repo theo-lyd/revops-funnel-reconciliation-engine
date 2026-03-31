@@ -1,7 +1,7 @@
 PYTHON ?= python
 PIP ?= pip
 
-.PHONY: setup lint test format airflow-init airflow-start
+.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build
 
 setup:
 	$(PIP) install -r requirements/base.txt -r requirements/dev.txt
@@ -24,3 +24,12 @@ airflow-init:
 
 airflow-start:
 	AIRFLOW_HOME=.airflow airflow standalone
+
+init-warehouse:
+	$(PYTHON) scripts/init_warehouse.py
+
+dbt-deps:
+	cd dbt && dbt deps
+
+dbt-build:
+	cd dbt && dbt build --profiles-dir profiles

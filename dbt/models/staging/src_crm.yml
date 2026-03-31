@@ -1,0 +1,11 @@
+version: 2
+
+sources:
+  - name: bronze_raw
+    schema: bronze_raw
+    tables:
+      - name: accounts
+      - name: products
+      - name: sales_teams
+      - name: sales_pipeline
+      - name: marketing_leads

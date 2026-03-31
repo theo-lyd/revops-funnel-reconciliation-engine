@@ -17,6 +17,17 @@ make lint
 make test
 ```
 
+### 4) Initialize local warehouse
+```bash
+make init-warehouse
+```
+
+### 5) Configure dbt profile
+```bash
+cp dbt/profiles/profiles.yml.example dbt/profiles/profiles.yml
+make dbt-deps
+```
+
 ## Repository Layout
 
 - `.devcontainer/`: Reproducible Codespaces configuration
