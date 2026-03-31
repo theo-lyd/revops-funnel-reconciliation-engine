@@ -1,0 +1,30 @@
+version: 2
+
+models:
+  - name: int_opportunity_enriched
+    description: Harmonized opportunity records enriched with account, product, and team context.
+    columns:
+      - name: opportunity_id
+        tests: [not_null, unique]
+      - name: deal_stage
+        tests: [not_null]
+      - name: engage_date
+        tests: [not_null]
+
+  - name: int_lead_account_matches
+    description: Deterministic lead-to-account mapping with match metadata.
+    columns:
+      - name: lead_id
+        tests: [not_null]
+      - name: match_type
+        tests:
+          - accepted_values:
+              values: ['exact_name_match', 'unmatched']
+
+  - name: int_lead_to_opportunity_base
+    description: Best candidate lead-to-opportunity mapping for funnel stitching.
+    columns:
+      - name: lead_id
+        tests: [not_null, unique]
+      - name: opportunity_id
+        tests: [not_null]
