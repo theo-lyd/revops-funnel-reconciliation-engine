@@ -1,7 +1,6 @@
 with lead_account as (
     select *
-    from {{ ref('int_lead_account_matches') }}
-    where match_type = 'exact_name_match'
+    from {{ ref('int_lead_account_resolved') }}
 ),
 opportunities as (
     select *
@@ -14,6 +13,10 @@ candidates as (
         la.utm_source,
         la.utm_campaign,
         la.account,
+        la.match_type,
+        la.match_strategy,
+        la.match_confidence,
+        la.match_confidence_band,
         o.opportunity_id,
         o.engage_date,
         o.close_date,
@@ -37,6 +40,10 @@ select
     utm_source,
     utm_campaign,
     account,
+    match_type,
+    match_strategy,
+    match_confidence,
+    match_confidence_band,
     opportunity_id,
     engage_date,
     close_date,

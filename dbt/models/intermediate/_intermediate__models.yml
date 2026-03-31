@@ -21,6 +21,35 @@ models:
           - accepted_values:
               values: ['exact_name_match', 'unmatched']
 
+  - name: int_lead_account_fuzzy_candidates
+    description: Best fuzzy candidate account match for each lead using name similarity heuristics.
+    columns:
+      - name: lead_id
+        tests: [not_null, unique]
+      - name: match_type
+        tests:
+          - accepted_values:
+              values: ['exact_name_match', 'lead_prefix_account_match', 'account_prefix_lead_match', 'lead_contains_account_match', 'account_contains_lead_match']
+      - name: match_confidence
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
+
+  - name: int_lead_account_resolved
+    description: Resolved lead-to-account mapping prioritizing deterministic then fuzzy matches.
+    columns:
+      - name: lead_id
+        tests: [not_null, unique]
+      - name: match_strategy
+        tests:
+          - accepted_values:
+              values: ['deterministic', 'fuzzy']
+      - name: match_confidence_band
+        tests:
+          - accepted_values:
+              values: ['high', 'medium', 'low']
+
   - name: int_lead_to_opportunity_base
     description: Best candidate lead-to-opportunity mapping for funnel stitching.
     columns:
