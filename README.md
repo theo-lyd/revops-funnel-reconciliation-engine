@@ -9,6 +9,7 @@ The repository includes a devcontainer with Python 3.10, dbt tooling, and develo
 ### 2) Bootstrap locally
 ```bash
 ./scripts/bootstrap.sh
+make preflight
 ```
 
 ### 3) Run checks

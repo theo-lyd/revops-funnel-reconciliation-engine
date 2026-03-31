@@ -1,7 +1,7 @@
 PYTHON ?= python
 PIP ?= pip
 
-.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build
+.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build preflight
 
 setup:
 	$(PIP) install -r requirements/base.txt -r requirements/dev.txt
@@ -33,3 +33,6 @@ dbt-deps:
 
 dbt-build:
 	cd dbt && dbt build --profiles-dir profiles
+
+preflight:
+	$(PYTHON) scripts/preflight_check.py
