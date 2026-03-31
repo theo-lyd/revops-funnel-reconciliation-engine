@@ -1,7 +1,7 @@
 PYTHON ?= python
 PIP ?= pip
 
-.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build preflight ingest-crm poll-leads ingest-leads
+.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build preflight ingest-crm poll-leads ingest-leads export-bronze
 
 setup:
 	$(PIP) install -r requirements/base.txt -r requirements/dev.txt
@@ -45,3 +45,6 @@ poll-leads:
 
 ingest-leads:
 	$(PYTHON) scripts/ingest/load_leads_jsonl_to_duckdb.py
+
+export-bronze:
+	$(PYTHON) scripts/transform/export_bronze_parquet.py

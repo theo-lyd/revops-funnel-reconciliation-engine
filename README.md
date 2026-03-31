@@ -35,6 +35,7 @@ make ingest-crm
 # In a separate terminal, run the synthetic API server first, then:
 make poll-leads
 make ingest-leads
+make export-bronze
 ```
 
 ## Repository Layout
