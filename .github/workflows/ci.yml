@@ -39,3 +39,17 @@ jobs:
           cd dbt
           dbt deps
           dbt parse --profiles-dir profiles
+
+      - name: dbt tests
+        run: |
+          mkdir -p data/warehouse
+          cp dbt/profiles/profiles.yml.example dbt/profiles/profiles.yml
+          python scripts/init_warehouse.py
+          python scripts/ingest/load_crm_csv_to_duckdb.py
+          cd dbt
+          dbt deps
+          dbt build --profiles-dir profiles --select path:models/staging path:models/intermediate
+          dbt test --profiles-dir profiles
+
+      - name: Great Expectations validation
+        run: python scripts/quality/run_great_expectations.py

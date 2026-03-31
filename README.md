@@ -16,6 +16,7 @@ make preflight
 ```bash
 make lint
 make test
+make quality-gate
 ```
 
 ### 4) Initialize local warehouse
@@ -38,6 +39,7 @@ make poll-leads
 make ingest-leads
 make export-bronze
 make check-freshness
+make quality-checks
 ```
 
 ### 7) Orchestrate with Airflow

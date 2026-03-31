@@ -71,5 +71,11 @@ models:
     columns:
       - name: lead_id
         tests: [not_null, unique]
+      - name: match_strategy
+        tests:
+          - accepted_values:
+              values: ['deterministic', 'fuzzy', 'unmatched']
       - name: is_mid_funnel_stalled
+        tests: [not_null]
+      - name: was_slow_closed
         tests: [not_null]
