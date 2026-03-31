@@ -29,6 +29,14 @@ cp dbt/profiles/profiles.yml.example dbt/profiles/profiles.yml
 make dbt-deps
 ```
 
+### 6) Load Bronze data
+```bash
+make ingest-crm
+# In a separate terminal, run the synthetic API server first, then:
+make poll-leads
+make ingest-leads
+```
+
 ## Repository Layout
 
 - `.devcontainer/`: Reproducible Codespaces configuration

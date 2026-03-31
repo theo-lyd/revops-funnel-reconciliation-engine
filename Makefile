@@ -1,7 +1,7 @@
 PYTHON ?= python
 PIP ?= pip
 
-.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build preflight
+.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build preflight ingest-crm poll-leads ingest-leads
 
 setup:
 	$(PIP) install -r requirements/base.txt -r requirements/dev.txt
@@ -36,3 +36,12 @@ dbt-build:
 
 preflight:
 	$(PYTHON) scripts/preflight_check.py
+
+ingest-crm:
+	$(PYTHON) scripts/ingest/load_crm_csv_to_duckdb.py
+
+poll-leads:
+	$(PYTHON) scripts/ingest/poll_synthetic_leads_api.py
+
+ingest-leads:
+	$(PYTHON) scripts/ingest/load_leads_jsonl_to_duckdb.py
