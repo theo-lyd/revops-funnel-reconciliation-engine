@@ -22,7 +22,7 @@ with stitched as (
         opp.product_series,
         opp.is_open
     from {{ ref('int_lead_to_opportunity_base') }} lto
-    inner join {{ ref('int_opportunity_enriched') }} opp
+    left join {{ ref('int_opportunity_enriched') }} opp
         on lto.opportunity_id = opp.opportunity_id
 ),
 events as (
@@ -75,6 +75,7 @@ events as (
         'opportunity_engaged' as stage_event,
         engage_date as event_ts
     from stitched
+    where engage_date is not null
 
     union all
 

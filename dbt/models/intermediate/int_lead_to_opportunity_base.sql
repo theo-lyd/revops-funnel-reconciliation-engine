@@ -25,10 +25,13 @@ candidates as (
         datediff('day', la.created_at, o.engage_date) as days_to_engage,
         row_number() over (
             partition by la.lead_id
-            order by abs(datediff('day', la.created_at, o.engage_date)), o.engage_date
+            order by
+                case when o.opportunity_id is null then 1 else 0 end,
+                abs(datediff('day', la.created_at, o.engage_date)),
+                o.engage_date
         ) as candidate_rank
     from lead_account la
-    inner join opportunities o
+    left join opportunities o
         on la.account = o.account
         and o.engage_date >= cast(la.created_at as date)
         and o.engage_date <= cast(la.created_at as date) + interval 120 day

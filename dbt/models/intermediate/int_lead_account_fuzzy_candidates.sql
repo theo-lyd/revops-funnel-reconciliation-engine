@@ -5,7 +5,8 @@ with leads as (
         utm_source,
         utm_campaign,
         created_at,
-        {{ normalize_text('coalesce(company_name, '''')') }} as company_name_normalized
+        {{ normalize_text('coalesce(company_name, '''')') }} as company_name_normalized,
+        {{ normalize_text('coalesce(country, '''')') }} as country_normalized
     from {{ ref('stg_marketing_leads') }}
 ),
 accounts as (
@@ -13,7 +14,8 @@ accounts as (
         account,
         sector,
         office_location,
-        {{ normalize_text('coalesce(account, '''')') }} as account_name_normalized
+        {{ normalize_text('coalesce(account, '''')') }} as account_name_normalized,
+        {{ normalize_text('coalesce(office_location, '''')') }} as office_location_normalized
     from {{ ref('stg_crm_accounts') }}
 ),
 candidates as (
@@ -47,7 +49,15 @@ candidates as (
             else 'unmatched'
         end as match_type
     from leads l
-    cross join accounts a
+    inner join accounts a
+        on left(l.company_name_normalized, 1) = left(a.account_name_normalized, 1)
+        and (
+            l.country_normalized = ''
+            or a.office_location_normalized = ''
+            or l.country_normalized = a.office_location_normalized
+            or strpos(l.company_name_normalized, a.account_name_normalized) > 0
+            or strpos(a.account_name_normalized, l.company_name_normalized) > 0
+        )
     where l.company_name_normalized <> ''
 ),
 ranked as (
