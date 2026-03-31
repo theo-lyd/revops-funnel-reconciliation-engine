@@ -1,8 +1,8 @@
 select
     cast(opportunity_id as varchar) as opportunity_id,
     cast(sales_agent as varchar) as sales_agent,
-    cast(product as varchar) as product,
-    cast(account as varchar) as account,
+    replace(cast(product as varchar), 'GTXPro', 'GTX Pro') as product,
+    nullif(trim(cast(account as varchar)), '') as account,
     cast(deal_stage as varchar) as deal_stage,
     cast(engage_date as date) as engage_date,
     cast(close_date as date) as close_date,

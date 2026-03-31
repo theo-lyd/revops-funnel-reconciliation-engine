@@ -1,0 +1,53 @@
+version: 2
+
+sources:
+  - name: bronze_raw
+    schema: bronze_raw
+    tables:
+      - name: accounts
+        description: Raw CRM account dimension feed.
+        columns:
+          - name: account
+            tests: [not_null]
+      - name: products
+        description: Raw CRM products feed.
+        columns:
+          - name: product
+            tests: [not_null]
+      - name: sales_teams
+        description: Raw CRM sales team feed.
+        columns:
+          - name: sales_agent
+            tests: [not_null]
+      - name: sales_pipeline
+        description: Raw CRM opportunity pipeline feed.
+        columns:
+          - name: opportunity_id
+            tests: [not_null, unique]
+      - name: marketing_leads
+        description: Synthetic marketing lead events.
+        loaded_at_field: created_at
+
+models:
+  - name: stg_crm_accounts
+    columns:
+      - name: account
+        tests: [not_null, unique]
+  - name: stg_crm_products
+    columns:
+      - name: product
+        tests: [not_null, unique]
+  - name: stg_crm_sales_teams
+    columns:
+      - name: sales_agent
+        tests: [not_null, unique]
+  - name: stg_crm_sales_pipeline
+    columns:
+      - name: opportunity_id
+        tests: [not_null, unique]
+      - name: engage_date
+        tests: [not_null]
+  - name: stg_marketing_leads
+    columns:
+      - name: lead_id
+        tests: [not_null, unique]
