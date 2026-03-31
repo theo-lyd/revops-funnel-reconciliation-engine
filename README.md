@@ -27,6 +27,7 @@ make init-warehouse
 ```bash
 cp dbt/profiles/profiles.yml.example dbt/profiles/profiles.yml
 make dbt-deps
+make dbt-snapshot
 ```
 
 ### 6) Load Bronze data

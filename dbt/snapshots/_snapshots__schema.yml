@@ -1,0 +1,22 @@
+version: 2
+
+snapshots:
+  - name: snp_opportunity_lifecycle
+    description: SCD Type 2 snapshot of opportunity lifecycle and stage transitions.
+    columns:
+      - name: opportunity_id
+        tests: [not_null]
+      - name: dbt_valid_from
+        tests: [not_null]
+      - name: dbt_valid_to
+        description: Null indicates current active record.
+
+  - name: snp_lead_account_resolution
+    description: SCD Type 2 snapshot of lead-to-account reconciliation outputs.
+    columns:
+      - name: lead_id
+        tests: [not_null]
+      - name: dbt_valid_from
+        tests: [not_null]
+      - name: dbt_valid_to
+        description: Null indicates current active record.

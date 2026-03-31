@@ -1,7 +1,7 @@
 PYTHON ?= python
 PIP ?= pip
 
-.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness
+.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-snapshot preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness
 
 setup:
 	$(PIP) install -r requirements/base.txt -r requirements/dev.txt
@@ -33,6 +33,9 @@ dbt-deps:
 
 dbt-build:
 	cd dbt && dbt build --profiles-dir profiles
+
+dbt-snapshot:
+	cd dbt && dbt snapshot --profiles-dir profiles
 
 preflight:
 	$(PYTHON) scripts/preflight_check.py
