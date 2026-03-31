@@ -1,7 +1,7 @@
 PYTHON ?= python
 PIP ?= pip
 
-.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build preflight ingest-crm poll-leads ingest-leads export-bronze
+.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness
 
 setup:
 	$(PIP) install -r requirements/base.txt -r requirements/dev.txt
@@ -48,3 +48,6 @@ ingest-leads:
 
 export-bronze:
 	$(PYTHON) scripts/transform/export_bronze_parquet.py
+
+check-freshness:
+	$(PYTHON) scripts/monitor/check_freshness.py --max-delay-hours 2

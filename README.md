@@ -36,6 +36,13 @@ make ingest-crm
 make poll-leads
 make ingest-leads
 make export-bronze
+make check-freshness
+```
+
+### 7) Orchestrate with Airflow
+```bash
+make airflow-init
+make airflow-start
 ```
 
 ## Repository Layout
