@@ -209,6 +209,7 @@ data/processed/
 artifacts/parity/
 artifacts/release-evidence/
 artifacts/dashboards/
+artifacts/ai/
 .streamlit/
 .cursorignore
 .cursorindexingignore

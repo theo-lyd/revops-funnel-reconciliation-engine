@@ -523,3 +523,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful local commit and remote connectivity
   - Expected output: remote master updated and CI workflow triggered
   - Recovery: resolve remote conflicts and retry push
+
+## Phase 5: LLM integration and AI-driven query generation entries
+
+### GIT-045
+- What: git add scripts/analytics/streamlit_app.py .env.example .gitignore requirements/base.txt docs/reports/phase-5/batch-5.3-llm-integration-and-ai-driven-query-generation.md docs/project-governance/commands/make-commands.md docs/project-governance/commands/python-dbt-duckdb-commands.md docs/project-governance/commands/git-commands.md docs/project-governance/issues-log.md README.md
+- Why: stage Batch 5.3 LLM integration, audit logging, dependency updates, and governance documentation as a single auditable scope
+- Who: data engineer or analytics lead
+- When: 2026-04-02, Batch 5.3 completion
+- Where: repository root
+- How:
+  - Preconditions: lint and test checks pass on the Streamlit AI app
+  - Expected output: intended Batch 5.3 files staged without generated artifacts
+  - Recovery: unstage unrelated files and restage explicit Batch 5.3 scope
+
+### GIT-046
+- What: git commit -m "feat(phase-5): implement batch 5.3 llm query generation"
+- Why: persist AI-assisted analytics routing, rate limiting, and audit logging for Phase 5
+- Who: data engineer or analytics lead
+- When: 2026-04-02, after staging review
+- Where: repository root
+- How:
+  - Preconditions: pre-commit hooks pass on staged files
+  - Expected output: commit hash with Batch 5.3 summary
+  - Recovery: resolve formatting or hook feedback and recommit
+
+### GIT-047
+- What: git push origin master
+- Why: publish Batch 5.3 deliverables so the AI-driven analytics layer is available for review and downstream batches
+- Who: data engineer or analytics lead
+- When: 2026-04-02, immediately after Batch 5.3 commit
+- Where: repository root
+- How:
+  - Preconditions: successful local commit and remote connectivity
+  - Expected output: remote master updated and CI workflow triggered
+  - Recovery: resolve remote conflicts and retry push

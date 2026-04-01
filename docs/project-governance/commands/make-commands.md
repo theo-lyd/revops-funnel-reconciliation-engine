@@ -419,3 +419,14 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: `scripts/analytics/streamlit_app.py` exists and dependencies are installed
   - Expected output: Streamlit app launches and exposes template-based analytics UI on configured port
   - Recovery: install/update dependencies with `make setup`; check app logs for connector/env issues
+
+### MK-036
+- What: make streamlit-dev
+- Why: run Batch 5.3 Streamlit app with AI query assistance, template routing, and audit logging
+- Who: data engineer or analytics developer
+- When: 2026-04-02, Batch 5.3 implementation
+- Where: repository root in dev container
+- How:
+  - Preconditions: `OPENAI_API_KEY` is optional; `scripts/analytics/streamlit_app.py` and dependencies are installed
+  - Expected output: Streamlit app launches with the AI Query Assistant sidebar, governed template routing, and audit logging to JSONL
+  - Recovery: verify `.env` values for `OPENAI_MODEL`, `LLM_MAX_TOKENS`, and `LLM_AUDIT_LOG_PATH`; if OpenAI is unavailable, app falls back to deterministic routing

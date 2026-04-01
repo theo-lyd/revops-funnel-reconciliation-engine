@@ -278,3 +278,14 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: Streamlit and Plotly installed; DuckDB warehouse initialized
   - Expected output: local web UI available with template controls, charts, and CSV download
   - Recovery: run `make setup`; verify `DUCKDB_PATH` and Phase 4 Gold models exist
+
+### PDD-024
+- What: streamlit run scripts/analytics/streamlit_app.py --server.port <port>
+- Why: launch Batch 5.3 AI-assisted analytics app with governed intent routing and audit logging
+- Who: data engineer or analytics developer
+- When: 2026-04-02, Batch 5.3 implementation
+- Where: repository root
+- How:
+  - Preconditions: Batch 5.2 dependencies installed; `OPENAI_API_KEY` optional for LLM mode
+  - Expected output: Streamlit app starts with AI Query Assistant, deterministic fallback routing, and JSONL audit logging
+  - Recovery: if OpenAI SDK or credentials are unavailable, app should continue in heuristic mode; verify `LLM_AUDIT_LOG_PATH` permissions

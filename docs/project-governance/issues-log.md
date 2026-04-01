@@ -246,3 +246,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: unit-check SQL string assembly order and run static lint checks immediately after adding query builder code
 - Alternative resolution options: move to parameterized query builders per connector (DuckDB/Snowflake) in future hardening
 - Verification evidence: `make lint` and `make test` pass with Streamlit app included
+
+### Issue ID: ISS-022
+- Phase and batch: Phase 5 Batch 5.3 - LLM integration and AI-driven query generation
+- Date observed: 2026-04-02
+- Where it occurred: initial LLM routing implementation in `scripts/analytics/streamlit_app.py`
+- Symptom: no blocking defects; deterministic fallback and OpenAI path both remained template-governed
+- Root cause: not applicable
+- Resolution: extended existing Streamlit app with a guarded AI Query Assistant, session rate limiting, and JSONL audit logging
+- How to avoid: keep AI output restricted to the approved template catalog and known office filters; continue to store secrets in environment variables only
+- Alternative resolution options: disable OpenAI path entirely and use heuristic-only routing in constrained environments
+- Verification evidence: `make lint` and `make test` passed after Batch 5.3 updates; audit path is ignored by git

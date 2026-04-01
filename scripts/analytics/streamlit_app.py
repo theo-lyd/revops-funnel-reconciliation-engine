@@ -8,10 +8,12 @@ connector dependencies and credentials are available.
 
 from __future__ import annotations
 
+import json
 import os
 from dataclasses import dataclass
-from datetime import date, timedelta
-from typing import Any
+from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
+from typing import Any, cast
 
 import duckdb
 import pandas as pd
@@ -25,6 +27,10 @@ BI_SCHEMA = os.getenv("BI_CONSUMPTION_SCHEMA", "analytics_gold")
 DUCKDB_PATH = os.getenv("DUCKDB_PATH", "./data/warehouse/revops.duckdb")
 DASHBOARD_CACHE_SECONDS = int(os.getenv("DASHBOARD_CACHE_SECONDS", "300"))
 MAX_QUERY_ROWS = int(os.getenv("STREAMLIT_MAX_QUERY_ROWS", "5000"))
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "600"))
+LLM_RATE_LIMIT_PER_MINUTE = int(os.getenv("LLM_RATE_LIMIT_PER_MINUTE", "10"))
+LLM_AUDIT_LOG_PATH = os.getenv("LLM_AUDIT_LOG_PATH", "artifacts/ai/llm_query_audit.jsonl")
 
 SNOWFLAKE_ACCOUNT = os.getenv("SNOWFLAKE_ACCOUNT", "")
 SNOWFLAKE_USER = os.getenv("SNOWFLAKE_USER", "")
@@ -33,6 +39,14 @@ SNOWFLAKE_DATABASE = os.getenv("SNOWFLAKE_DATABASE", "REVOPS")
 SNOWFLAKE_SCHEMA = os.getenv("SNOWFLAKE_GOLD_SCHEMA", "analytics_gold")
 SNOWFLAKE_WAREHOUSE = os.getenv("SNOWFLAKE_WAREHOUSE", "TRANSFORMING")
 SNOWFLAKE_ROLE = os.getenv("SNOWFLAKE_ROLE", "TRANSFORMER")
+
+
+@dataclass(frozen=True)
+class LlmResolution:
+    template_key: str
+    offices: list[str]
+    explanation: str
+    mode: str
 
 
 @dataclass(frozen=True)
@@ -140,6 +154,129 @@ def _template_catalog() -> dict[str, QueryTemplate]:
             chart_type="bar",
         ),
     }
+
+
+def _check_rate_limit() -> bool:
+    now = datetime.now(timezone.utc)
+    window_start = now - timedelta(minutes=1)
+    existing = cast(list[str], st.session_state.get("llm_request_times", []))
+    in_window = [t for t in existing if datetime.fromisoformat(t) >= window_start]
+
+    if len(in_window) >= LLM_RATE_LIMIT_PER_MINUTE:
+        st.warning(
+            "LLM rate limit reached for this session. "
+            "Wait one minute before submitting another prompt."
+        )
+        st.session_state["llm_request_times"] = in_window
+        return False
+
+    in_window.append(now.isoformat())
+    st.session_state["llm_request_times"] = in_window
+    return True
+
+
+def _append_audit_log(
+    prompt: str,
+    resolution: LlmResolution,
+    source: str,
+    start: date,
+    end: date,
+) -> None:
+    path = Path(LLM_AUDIT_LOG_PATH)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    event = {
+        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "source": source,
+        "prompt": prompt,
+        "template_key": resolution.template_key,
+        "offices": resolution.offices,
+        "mode": resolution.mode,
+        "date_start": str(start),
+        "date_end": str(end),
+        "explanation": resolution.explanation,
+    }
+
+    with path.open("a", encoding="utf-8") as file_obj:
+        file_obj.write(json.dumps(event) + "\n")
+
+
+def _heuristic_resolution(prompt: str, offices: list[str]) -> LlmResolution:
+    lowered = prompt.lower()
+    if "velocity" in lowered or "stage" in lowered:
+        template_key = "Pipeline Velocity"
+    elif "team" in lowered or "agent" in lowered or "manager" in lowered:
+        template_key = "Sales Team Performance"
+    elif "leak" in lowered or "loss" in lowered or "stalled" in lowered:
+        template_key = "Leakage Reason Analysis"
+    else:
+        template_key = "Executive Monthly Overview"
+
+    selected_offices = [o for o in offices if o.lower() in lowered]
+    return LlmResolution(
+        template_key=template_key,
+        offices=selected_offices,
+        explanation="Resolved using deterministic fallback keyword routing.",
+        mode="heuristic",
+    )
+
+
+def _llm_resolution(prompt: str, templates: list[str], offices: list[str]) -> LlmResolution:
+    api_key = os.getenv("OPENAI_API_KEY", "")
+    if not api_key:
+        return _heuristic_resolution(prompt, offices)
+
+    try:
+        from openai import OpenAI
+    except Exception:
+        return _heuristic_resolution(prompt, offices)
+
+    client = OpenAI(api_key=api_key)
+    system_msg = (
+        "You map analytics requests to a governed template list. "
+        "Return JSON only with keys: template_key, offices, explanation. "
+        "template_key must be one of the provided templates. "
+        "offices must only contain items from provided offices."
+    )
+    user_msg = {
+        "request": prompt,
+        "templates": templates,
+        "offices": offices,
+    }
+
+    try:
+        response = client.chat.completions.create(
+            model=OPENAI_MODEL,
+            temperature=0,
+            max_tokens=LLM_MAX_TOKENS,
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": system_msg},
+                {"role": "user", "content": json.dumps(user_msg)},
+            ],
+        )
+        content = response.choices[0].message.content or "{}"
+        parsed = json.loads(content)
+    except Exception:
+        return _heuristic_resolution(prompt, offices)
+
+    raw_template = str(parsed.get("template_key", "")).strip()
+    template_key = raw_template if raw_template in templates else "Executive Monthly Overview"
+    raw_offices = parsed.get("offices", [])
+    selected_offices = []
+    if isinstance(raw_offices, list):
+        selected_offices = [str(o) for o in raw_offices if str(o) in offices]
+
+    explanation = str(parsed.get("explanation", "LLM intent routing completed.")).strip()
+    if not explanation:
+        explanation = "LLM intent routing completed."
+
+    return LlmResolution(
+        template_key=template_key,
+        offices=selected_offices,
+        explanation=explanation,
+        mode="llm",
+    )
 
 
 def _snowflake_available() -> bool:
@@ -313,7 +450,36 @@ def main() -> None:
         selected_offices = st.multiselect("Regional Office", options=offices, default=[])
 
         selected_template_key = st.selectbox("Template", list(templates.keys()))
+        st.markdown("---")
+        st.subheader("AI Query Assistant")
+        prompt = st.text_area(
+            "Describe the question in natural language",
+            placeholder="Example: Show leakage issues for London and New York in the last 90 days.",
+            height=110,
+        )
+        use_ai = st.button("Generate with AI", use_container_width=True)
         run_query = st.button("Run Template", type="primary", use_container_width=True)
+
+    if use_ai:
+        if not prompt.strip():
+            st.warning("Enter a natural-language request before using AI generation.")
+        elif _check_rate_limit():
+            resolution = _llm_resolution(prompt.strip(), list(templates.keys()), offices)
+            selected_template_key = resolution.template_key
+            selected_offices = resolution.offices
+            st.info(
+                f"AI mode: {resolution.mode}. "
+                f"Template: {resolution.template_key}. "
+                f"{resolution.explanation}"
+            )
+            _append_audit_log(
+                prompt=prompt.strip(),
+                resolution=resolution,
+                source=source,
+                start=start_date,
+                end=end_date,
+            )
+            run_query = True
 
     selected_template = templates[selected_template_key]
     st.subheader(selected_template.name)
