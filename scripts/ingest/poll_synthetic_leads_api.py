@@ -38,10 +38,12 @@ def build_session() -> requests.Session:
     return session
 
 
-def fetch_lead(session: requests.Session, url: str, timeout: float) -> dict:
+def fetch_lead(session: requests.Session, url: str, timeout: float) -> dict[str, object]:
     response = session.get(url, timeout=timeout)
     response.raise_for_status()
     payload = response.json()
+    if not isinstance(payload, dict):
+        raise ValueError("Expected JSON object payload from leads API")
     payload["ingested_at"] = datetime.now(timezone.utc).isoformat()
     return payload
 

@@ -6,6 +6,7 @@ import argparse
 import importlib
 import os
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 import requests
 
@@ -47,9 +48,12 @@ def latest_success_timestamp(source_name: str) -> datetime | None:
     conn.close()
     if not row or row[0] is None:
         return None
-    if row[0].tzinfo is None:
-        return row[0].replace(tzinfo=timezone.utc)
-    return row[0]
+    value: Any = row[0]
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value
+    return None
 
 
 def post_slack(message: str) -> None:

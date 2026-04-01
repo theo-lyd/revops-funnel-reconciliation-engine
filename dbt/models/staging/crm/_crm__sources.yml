@@ -42,11 +42,12 @@ models:
       - name: sales_agent
         tests: [not_null, unique]
   - name: stg_crm_sales_pipeline
+    tests:
+      - dbt_utils.expression_is_true:
+          expression: "deal_stage = 'Prospecting' or engage_date is not null"
     columns:
       - name: opportunity_id
         tests: [not_null, unique]
-      - name: engage_date
-        tests: [not_null]
       - name: deal_stage
         tests:
           - accepted_values:

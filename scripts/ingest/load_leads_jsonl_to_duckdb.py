@@ -74,7 +74,7 @@ def main() -> None:
 
     rows = conn.execute("SELECT * FROM bronze_raw._marketing_leads_stage").fetchall()
     columns = [desc[0] for desc in conn.description]
-    records = [dict(zip(columns, row)) for row in rows]
+    records = [dict(zip(columns, row, strict=False)) for row in rows]
 
     conn.execute(
         """

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import importlib
-import sys
 
 import pandas as pd
 from great_expectations.dataset import PandasDataset
@@ -25,7 +24,7 @@ def validate_sales_pipeline() -> list[str]:
     df = load_dataframe(
         """
         select opportunity_id, engage_date, close_date, close_value
-        from silver_intermediate.int_opportunity_enriched
+        from analytics_silver_intermediate.int_opportunity_enriched
         """
     )
     validator = PandasDataset(df)

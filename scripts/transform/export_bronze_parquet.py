@@ -38,7 +38,7 @@ def main() -> None:
 
     sales_teams = conn.execute("SELECT * FROM bronze_raw.sales_teams").fetchall()
     sales_team_cols = [desc[0] for desc in conn.description]
-    sales_team_records = [dict(zip(sales_team_cols, row)) for row in sales_teams]
+    sales_team_records = [dict(zip(sales_team_cols, row, strict=False)) for row in sales_teams]
 
     conn.execute("DROP TABLE IF EXISTS bronze_raw._sales_teams_sanitized")
     conn.execute(

@@ -209,6 +209,14 @@ data/processed/
 .cursorignore
 .cursorindexingignore
 
+# dbt local/generated artifacts
+dbt/dbt_packages/
+dbt/target/
+dbt/logs/
+dbt/package-lock.yml
+dbt/profiles/profiles.yml
+dbt/profiles/.user.yml
+
 # Marimo
 marimo/_static/
 marimo/_lsp/

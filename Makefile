@@ -44,7 +44,7 @@ dbt-snapshot:
 	cd dbt && dbt snapshot --profiles-dir profiles
 
 dbt-test:
-	cd dbt && dbt test --profiles-dir profiles
+	cd dbt && dbt test --profiles-dir profiles --threads 1
 
 ge-validate:
 	$(PYTHON) scripts/quality/run_great_expectations.py

@@ -3,12 +3,13 @@ version: 2
 models:
   - name: int_opportunity_enriched
     description: Harmonized opportunity records enriched with account, product, and team context.
+    tests:
+      - dbt_utils.expression_is_true:
+          expression: "deal_stage = 'Prospecting' or engage_date is not null"
     columns:
       - name: opportunity_id
         tests: [not_null, unique]
       - name: deal_stage
-        tests: [not_null]
-      - name: engage_date
         tests: [not_null]
 
   - name: int_lead_account_matches

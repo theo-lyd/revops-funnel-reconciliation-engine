@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from typing import Any
 
 from revops_funnel.config import get_settings
 
@@ -15,7 +16,7 @@ class QualityCheck:
     sql: str
 
 
-def ensure_audit_table(conn: object) -> None:
+def ensure_audit_table(conn: Any) -> None:
     conn.execute("CREATE SCHEMA IF NOT EXISTS observability")
     conn.execute(
         """
@@ -30,7 +31,7 @@ def ensure_audit_table(conn: object) -> None:
     )
 
 
-def run_checks(conn: object, checks: list[QualityCheck]) -> int:
+def run_checks(conn: Any, checks: list[QualityCheck]) -> int:
     failure_count = 0
     for check in checks:
         failed_rows = conn.execute(check.sql).fetchone()[0]
@@ -68,7 +69,7 @@ def main() -> None:
             name="int_opportunity_enriched_opportunity_id_not_null",
             sql="""
             SELECT COUNT(*)
-            FROM silver_intermediate.int_opportunity_enriched
+                        FROM analytics_silver_intermediate.int_opportunity_enriched
             WHERE opportunity_id IS NULL
             """,
         ),
@@ -76,7 +77,7 @@ def main() -> None:
             name="int_opportunity_enriched_close_value_between_0_and_1m",
             sql="""
             SELECT COUNT(*)
-            FROM silver_intermediate.int_opportunity_enriched
+                        FROM analytics_silver_intermediate.int_opportunity_enriched
             WHERE close_value IS NOT NULL
               AND (close_value < 0 OR close_value > 1000000)
             """,
@@ -85,7 +86,7 @@ def main() -> None:
             name="int_opportunity_enriched_close_after_engage",
             sql="""
             SELECT COUNT(*)
-            FROM silver_intermediate.int_opportunity_enriched
+                        FROM analytics_silver_intermediate.int_opportunity_enriched
             WHERE close_date IS NOT NULL
               AND engage_date IS NOT NULL
               AND close_date < engage_date

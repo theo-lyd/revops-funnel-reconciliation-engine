@@ -7,7 +7,9 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 
-PROJECT_ROOT = "{{ var.value.project_root | default('/workspaces/revops-funnel-reconciliation-engine') }}"
+PROJECT_ROOT = (
+    "{{ var.value.project_root | default('/workspaces/revops-funnel-reconciliation-engine') }}"
+)
 
 DEFAULT_ARGS = {
     "owner": "revops-data-platform",

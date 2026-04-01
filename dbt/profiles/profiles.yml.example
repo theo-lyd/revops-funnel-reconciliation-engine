@@ -3,7 +3,7 @@ revops_funnel:
   outputs:
     dev:
       type: duckdb
-      path: "../../data/warehouse/revops.duckdb"
+      path: "../data/warehouse/revops.duckdb"
       threads: 4
       schema: analytics
 
