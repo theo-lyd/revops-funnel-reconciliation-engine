@@ -208,6 +208,8 @@ data/raw/marketing/*.jsonl
 data/processed/
 artifacts/parity/
 artifacts/release-evidence/
+artifacts/dashboards/
+.streamlit/
 .cursorignore
 .cursorindexingignore
 

@@ -384,3 +384,27 @@ This file records Make targets used in the project lifecycle.
   - Trigger condition: `if: github.event_name == 'push' && github.ref == 'refs/heads/master' && secrets.SNOWFLAKE_ACCOUNT != ''`
   - Expected output: job skipped on PR or local branch pushes; on master push with secrets, job runs full parity check with PARITY_TOLERANCE_STRICT=0.0 and passes/fails workflow accordingly
   - Recovery: investigate parity delta; resolve discrepancies between DuckDB and Snowflake Gold layers; retry push when parity passes
+
+## Phase 5: Analytics and Visualization targets
+
+### MK-033
+- What: make metabase-setup
+- Why: initialize Metabase with DuckDB and Snowflake data sources for Phase 5 dashboard foundation
+- Who: data engineer or analytics lead
+- When: 2026-04-02, Batch 5.1 implementation
+- Where: repository root in dev container or Metabase deployment environment
+- How:
+  - Preconditions: Metabase deployed and running at METABASE_HOST:METABASE_PORT; admin credentials configured in .env
+  - Expected output: DuckDB and Snowflake data sources registered; database schema synced; confirmation message
+  - Recovery: verify Metabase is running; check credentials; review error output and retry
+
+### MK-034
+- What: make streamlit-dev
+- Why: start Streamlit development server for Phase 5 analytics interface
+- Who: data engineer or analytics developer
+- When: 2026-04-02, prepared for Batch 5.2
+- Where: repository root in dev container
+- How:
+  - Preconditions: Streamlit installed; `scripts/analytics/streamlit_app.py` exists
+  - Expected output: Streamlit server starts on port STREAMLIT_SERVER_PORT (default: 8501)
+  - Recovery: verify Streamlit installation; check port availability; run `make setup` to reinstall dependencies

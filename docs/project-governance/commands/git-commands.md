@@ -453,3 +453,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful commit and remote connectivity
   - Expected output: remote master branch updated with CI/CD hardening commit
   - Recovery: resolve remote conflicts; verify CI workflow is active in GitHub Actions
+
+## Phase 5: Dashboard foundation and BI layer integration entries
+
+### GIT-039
+- What: git add requirements/base.txt .env.example .gitignore Makefile scripts/analytics/setup_metabase.py docs/reports/phase-5/PHASE-5-PLAN.md docs/reports/phase-5/batch-5.1-dashboard-foundation.md docs/project-governance/commands/make-commands.md docs/project-governance/commands/python-dbt-duckdb-commands.md docs/project-governance/issues-log.md
+- Why: stage Phase 5 Batch 5.1 implementation including Metabase setup automation, dashboard dependencies, and governance updates
+- Who: data engineer or analytics lead
+- When: 2026-04-02, Batch 5.1 completion
+- Where: repository root
+- How:
+  - Preconditions: Batch 5.1 implementation validated; quality checks passing
+  - Expected output: files staged without build artifacts or cache directories
+  - Recovery: unstage unrelated files; verify staging includes all required changes; use `git status` to confirm
+
+### GIT-040
+- What: git commit -m "chore(phase-5): implement batch 5.1 dashboard foundation and metabase setup"
+- Why: persist Phase 5 Batch 5.1 changes including BI infrastructure, dependencies, and governance documentation
+- Who: data engineer or analytics lead
+- When: 2026-04-02, after staging review
+- Where: repository root
+- How:
+  - Preconditions: staged files reviewed; pre-commit hooks pass
+  - Expected output: commit hash with Batch 5.1 summary
+  - Recovery: resolve pre-commit failures (e.g., trailing whitespace) and recommit
+
+### GIT-041
+- What: git push origin master
+- Why: publish Phase 5 Batch 5.1 to remote; make dashboard foundation available for team and CI/CD pipelines
+- Who: data engineer or analytics lead
+- When: 2026-04-02, immediately after Batch 5.1 commit
+- Where: repository root
+- How:
+  - Preconditions: successful commit and remote connectivity
+  - Expected output: remote master branch updated with Batch 5.1 commit; GitHub Actions workflows triggered
+  - Recovery: resolve remote conflicts; verify CI quality job passes on pushed commit

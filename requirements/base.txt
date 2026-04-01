@@ -10,3 +10,8 @@ pydantic==2.11.3
 python-dotenv==1.1.0
 requests==2.32.3
 uvicorn==0.34.0
+# Phase 5: Analytics and Visualization
+sqlalchemy==2.0.25
+plotly==5.18.0
+streamlit==1.42.0
+streamlit-caching==0.2.1

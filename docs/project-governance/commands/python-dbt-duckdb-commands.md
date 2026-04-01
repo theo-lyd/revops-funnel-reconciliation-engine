@@ -243,3 +243,27 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: repository is a valid git working tree
   - Expected output: markdown evidence bundle written under `artifacts/release-evidence/`
   - Recovery: verify output path permissions and rerun with valid release id
+
+## Phase 5: Analytics and Visualization entries
+
+### PDD-021
+- What: python scripts/analytics/setup_metabase.py
+- Why: initialize Metabase data sources (DuckDB and Snowflake) for Phase 5 dashboard foundation
+- Who: data engineer or analytics lead
+- When: 2026-04-02, Batch 5.1 implementation
+- Where: repository root (or any directory with network access to Metabase)
+- How:
+  - Preconditions: Metabase instance deployed and running; METABASE_HOST, METABASE_PORT, METABASE_ADMIN_EMAIL, METABASE_ADMIN_PASSWORD configured in environment
+  - Expected output: database sources registered, schema synced, confirmation output with next steps
+  - Recovery: 1) verify Metabase is running (`curl $METABASE_HOST:$METABASE_PORT`), 2) check admin credentials, 3) review error output and retry
+
+### PDD-022
+- What: python scripts/analytics/setup_metabase.py --host <host> --port <port> --email <email> --password <password>
+- Why: run Metabase setup with custom host/port/credentials (useful for cloud deployments)
+- Who: data engineer or analytics lead
+- When: as needed for non-standard Metabase deployments
+- Where: repository root
+- How:
+  - Preconditions: Metabase instance deployed at specified host:port with admin credentials
+  - Expected output: same as standard setup; custom host/port used
+  - Recovery: verify network connectivity to custom host; check credential format

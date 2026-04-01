@@ -224,3 +224,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: validate conditional YAML syntax and test trigger conditions on sample pushes to master
 - Alternative resolution options: Use GitHub Actions environments feature for conditional workflows
 - Verification evidence: CI workflow file validated; production parity check job triggers only on master pushes with secrets; local and PR workflows remain unaffected
+
+### Issue ID: ISS-020
+- Phase and batch: Phase 5 Batch 5.1 - Dashboard foundation and BI layer integration
+- Date observed: 2026-04-02
+- Where it occurred: Phase 5 initial batch implementation
+- Symptom: No blocking defects; successful implementation of Metabase setup automation
+- Root cause: Not applicable
+- Resolution: Implemented Metabase setup script with DuckDB and Snowflake data sources; added dashboard dependencies to requirements; updated environment configuration
+- How to avoid: follow BI/dashboard development best practices; validate Metabase connectivity before running setup script; use local-safe patterns (skip on missing credentials)
+- Alternative resolution options: Manual Metabase UI configuration (not recommended for reproducibility)
+- Verification evidence: setup script successfully registers data sources; schema metadata synced; governance logs and make targets updated
