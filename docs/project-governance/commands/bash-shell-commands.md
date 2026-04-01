@@ -66,3 +66,14 @@ This file records shell commands used outside of Make shortcuts.
   - Preconditions: pre-commit installed, config file valid
   - Expected output: pass/fail per hook with possible auto-fix output
   - Recovery: rerun after applying suggested fixes
+
+### SH-006
+- What: pytest -q tests/test_notifications.py tests/test_analytics_monitoring.py
+- Why: run focused validation for the new monitoring email path before full repo checks
+- Who: project maintainer
+- When: 2026-04-02, Phase 6 Batch 6.1 validation
+- Where: repository root
+- How:
+  - Preconditions: project package importable and test dependencies available
+  - Expected output: focused pytest summary for notification and monitoring helpers
+  - Recovery: inspect failing assertions, fix code, and rerun the targeted tests

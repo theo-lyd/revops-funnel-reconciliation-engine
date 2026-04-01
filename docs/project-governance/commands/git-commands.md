@@ -663,3 +663,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful hardening commit and remote connectivity
   - Expected output: remote master updated with shared-module hardening changes
   - Recovery: resolve remote conflicts and retry push
+
+## Phase 6: Monitoring delivery and alert transport entries
+
+### GIT-057
+- What: git add src/revops_funnel/notifications.py scripts/analytics/anomaly_monitor.py tests/test_notifications.py docs/reports/phase-6/PHASE-6-PLAN.md docs/reports/phase-6/batch-6.1-monitoring-email-delivery.md docs/reports/phase-6/phase-6-end-report.md README.md docs/project-governance/commands/make-commands.md docs/project-governance/commands/git-commands.md docs/project-governance/issues-log.md
+- Why: stage the Phase 6 alert delivery batch, documentation, and governance updates as a single auditable scope
+- Who: data engineer or analytics lead
+- When: 2026-04-02, Phase 6 Batch 6.1 completion
+- Where: repository root
+- How:
+  - Preconditions: lint and test checks pass on the email notification changes
+  - Expected output: only intended Phase 6 files staged
+  - Recovery: unstage unrelated files and restage explicit Phase 6 scope
+
+### GIT-058
+- What: git commit -m "feat(phase-6): add monitoring email delivery"
+- Why: persist the monitoring email transport and documentation updates for Phase 6
+- Who: data engineer or analytics lead
+- When: 2026-04-02, after staging review
+- Where: repository root
+- How:
+  - Preconditions: staged Phase 6 files reviewed; pre-commit hooks pass
+  - Expected output: commit hash with the monitoring email delivery batch
+  - Recovery: resolve formatting or hook feedback and recommit
+
+### GIT-059
+- What: git push origin master
+- Why: publish the Phase 6 monitoring delivery batch so the repository reflects the operational alert transport update
+- Who: data engineer or analytics lead
+- When: 2026-04-02, immediately after Phase 6 commit
+- Where: repository root
+- How:
+  - Preconditions: successful local commit and remote connectivity
+  - Expected output: remote master updated with Phase 6 changes
+  - Recovery: resolve remote conflicts and retry push

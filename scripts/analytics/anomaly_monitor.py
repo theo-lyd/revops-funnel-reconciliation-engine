@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Batch 5.4 anomaly monitoring CLI.
+"""Batch 6.1 anomaly monitoring CLI.
 
-Runs anomaly detection against the executive funnel overview and writes a JSON
-report suitable for scheduling or alerting workflows.
+Runs anomaly detection against the executive funnel overview and writes JSON,
+Markdown, and optional email alerts suitable for scheduling workflows.
 """
 
 from __future__ import annotations
@@ -20,6 +20,7 @@ from revops_funnel.analytics_monitoring import (
     write_monitoring_report,
 )
 from revops_funnel.artifacts import write_text_artifact
+from revops_funnel.notifications import EmailNotificationConfig, send_monitoring_email
 
 BI_SCHEMA = os.getenv("BI_CONSUMPTION_SCHEMA", "analytics_gold")
 DUCKDB_PATH = os.getenv("DUCKDB_PATH", "./data/warehouse/revops.duckdb")
@@ -133,6 +134,12 @@ def main() -> int:
     print(summarize_findings(findings))
     print(f"Report written to {args.output_json}")
     print(f"Markdown summary written to {args.output_markdown}")
+
+    if findings:
+        if send_monitoring_email(report, EmailNotificationConfig.from_env()):
+            print("Email alert sent.")
+        else:
+            print("Email alert skipped; SMTP settings or recipients are not configured.")
 
     if report.severe_count > 0:
         return 2

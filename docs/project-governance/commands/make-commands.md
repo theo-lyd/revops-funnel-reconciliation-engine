@@ -218,6 +218,30 @@ This file records Make targets used in the project lifecycle.
   - Expected output: dbt-test pass (`PASS=74`), quality checks pass, GE pass
   - Recovery: fix failed sub-stage and rerun full gate
 
+## Phase 6 Batch 6.1 execution entries
+
+### MK-041
+- What: make lint
+- Why: validate the Phase 6 email delivery batch after adding the new notification module and CLI wiring
+- Who: project maintainer
+- When: 2026-04-02, Phase 6 Batch 6.1 validation
+- Where: repository root in dev container
+- How:
+  - Preconditions: dev dependencies installed and new files added
+  - Expected output: Ruff and mypy success summaries
+  - Recovery: fix import ordering or type issues and rerun
+
+### MK-042
+- What: make test
+- Why: confirm the full project test suite still passes after the email notification changes
+- Who: project maintainer
+- When: 2026-04-02, Phase 6 Batch 6.1 validation
+- Where: repository root in dev container
+- How:
+  - Preconditions: project tests available
+  - Expected output: pytest pass summary with all tests green
+  - Recovery: isolate failing tests, fix root cause, and rerun
+
 ### MK-019
 - What: make dbt-build-prod, make dbt-test-prod, make dbt-deploy-prod
 - Why: provide explicit production deployment entrypoints for Snowflake target

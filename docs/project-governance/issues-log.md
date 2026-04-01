@@ -279,3 +279,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: run Ruff immediately after module extraction; keep helper functions in shared modules with explicit unit coverage
 - Alternative resolution options: freeze the app structure and only add wrappers, but that would retain duplicate logic
 - Verification evidence: `make lint` and `make test` passed with 15 tests total after refactor
+
+### Issue ID: ISS-025
+- Phase and batch: Phase 6 Batch 6.1 - Monitoring email delivery
+- Date observed: 2026-04-02
+- Where it occurred: `src/revops_funnel/notifications.py` during SMTP message composition
+- Symptom: email send path raised a duplicate `From` header error during test execution
+- Root cause: the message builder set a default `From` header and the SMTP sender override added a second header instead of replacing the original
+- Resolution: used `replace_header("From", ...)` before dispatching the message
+- How to avoid: keep message header ownership in one place; validate email composition with focused unit tests before wiring transport
+- Alternative resolution options: pass the sender into the message builder directly and remove the override step
+- Verification evidence: focused notification tests and full `make lint` / `pytest -q` passed after the fix
