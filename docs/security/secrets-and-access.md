@@ -22,3 +22,7 @@
 - SNOWFLAKE_ROLE
 - SNOWFLAKE_DATABASE
 - SNOWFLAKE_WAREHOUSE
+
+## Operational runbooks
+- Secrets rotation and emergency access procedure:
+	- `docs/security/secrets-rotation-and-emergency-access-runbook.md`

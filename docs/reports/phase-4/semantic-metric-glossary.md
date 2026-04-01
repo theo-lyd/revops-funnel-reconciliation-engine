@@ -62,3 +62,5 @@ Provide a governed, non-ambiguous metric dictionary for technical and non-techni
 ## Change control
 - Record updates in phase changelog and governance logs.
 - Re-run `make quality-gate` after semantic contract changes.
+- Follow governed SOP in:
+	- `docs/reports/phase-4/semantic-metric-change-control.md`

@@ -147,3 +147,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: provide credentials only in secured CI/CD or production runtime
 - Alternative resolution options: inject temporary scoped credentials in dedicated parity-validation sandbox
 - Verification evidence: local parity command returned success with explicit skip message
+
+### Issue ID: ISS-013
+- Phase and batch: Governance/security hardening Block 1
+- Date observed: 2026-04-01
+- Where it occurred: Block 1 implementation and validation
+- Symptom: No blocking defects encountered
+- Root cause: Not applicable
+- Resolution: Not applicable
+- How to avoid: continue policy-first document hardening with mandatory validation after each block
+- Alternative resolution options: Not applicable
+- Verification evidence: lint, tests, dbt build/test, and quality checks all passed

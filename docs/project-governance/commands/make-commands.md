@@ -252,3 +252,16 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: `SNOWFLAKE_*` env vars and Snowflake connector installed
   - Expected output: parity check pass or non-zero exit on drift
   - Recovery: investigate source-model parity, data lag, and environment configuration mismatches
+
+## Governance and security hardening block 1 entries
+
+### MK-022
+- What: make lint && make test && make quality-gate
+- Why: validate Block 1 governance/security documentation and policy-linking changes without runtime regressions
+- Who: project maintainer
+- When: 2026-04-01, Block 1 implementation
+- Where: repository root in dev container
+- How:
+  - Preconditions: standard local development dependencies installed
+  - Expected output: lint/test pass, dbt build/test pass, quality scripts pass
+  - Recovery: fix any failing stage and rerun full sequence

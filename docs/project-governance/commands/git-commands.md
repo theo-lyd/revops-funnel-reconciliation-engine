@@ -278,3 +278,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful commit and remote access
   - Expected output: remote branch updated with hardening commit
   - Recovery: resolve remote rejection and retry push
+
+## Governance and security hardening block 1 entries
+
+### GIT-024
+- What: git add docs/security docs/reports/phase-4 docs/project-governance
+- Why: stage Block 1 governance/security deliverables and required ledger updates
+- Who: project maintainer
+- When: 2026-04-01, Block 1 closeout
+- Where: repository root
+- How:
+  - Preconditions: validation sequence passed
+  - Expected output: only intended Block 1 files staged
+  - Recovery: unstage unintended files and restage scope
+
+### GIT-025
+- What: git commit -m "docs(hardening): implement governance and security block 1"
+- Why: capture RBAC, secret rotation runbook, and semantic change-control SOP enhancements
+- Who: project maintainer
+- When: 2026-04-01, after staging review
+- Where: repository root
+- How:
+  - Preconditions: staged scope and docs reviewed
+  - Expected output: commit hash and summary
+  - Recovery: resolve hook feedback and recommit
+
+### GIT-026
+- What: git push origin master
+- Why: publish Block 1 completion artifacts for stop-gate review
+- Who: project maintainer
+- When: 2026-04-01, immediately after commit
+- Where: repository root
+- How:
+  - Preconditions: successful commit and remote connectivity
+  - Expected output: remote branch updated with Block 1 commit
+  - Recovery: resolve remote conflicts and retry

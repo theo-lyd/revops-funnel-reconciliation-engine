@@ -33,6 +33,8 @@ Define how this project transitions from local DuckDB development to governed Sn
 - Transformation role (`TRANSFORMER`): read bronze, write silver/gold/snapshots.
 - BI read-only role: read-only access to gold and approved semantic models.
 - Principle: least privilege, segregated duties, auditable grants.
+- Detailed role-to-object mapping:
+  - `docs/reports/phase-4/snowflake-role-access-matrix.md`
 
 ## Execution workflow (production)
 1. Set environment secrets in CI/CD and runtime.
@@ -52,3 +54,5 @@ Define how this project transitions from local DuckDB development to governed Sn
 - Validate contract tests before and after deployment.
 - Record deployment evidence in phase reports and governance logs.
 - Use `scripts/quality/run_metric_parity_check.py` for automated parity checks.
+- Apply semantic metric governance workflow:
+  - `docs/reports/phase-4/semantic-metric-change-control.md`
