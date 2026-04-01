@@ -13,7 +13,7 @@ sales_teams,sales_agent,Sales agent
 sales_teams,manager,Respective sales manager
 sales_teams,regional_office,Regional office
 sales_pipeline,opportunity_id,Unique identifier
-sales_pipeline,sales_agent,Sales agent 
+sales_pipeline,sales_agent,Sales agent
 sales_pipeline,product,Product name
 sales_pipeline,account,Company name
 sales_pipeline,deal_stage,Sales pipeline stage (Prospecting > Engaging > Won / Lost)
