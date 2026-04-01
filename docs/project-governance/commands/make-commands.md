@@ -147,3 +147,38 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: all dependencies installed and profile configured
   - Expected output: complete successful sequence across all sub-targets
   - Recovery: remediate failed sub-target first, then rerun full gate
+
+## Phase 4 Batch 4.3 execution entries
+
+### MK-013
+- What: make dbt-build
+- Why: validate BI aggregate model and expanded test graph for dashboard readiness
+- Who: project maintainer
+- When: 2026-04-01, Phase 4 Batch 4.3 validation
+- Where: repository root in dev container
+- How:
+  - Preconditions: marts and tests defined, dbt profile configured
+  - Expected output: `PASS=92 WARN=0 ERROR=0 SKIP=0 TOTAL=92`
+  - Recovery: inspect failing model/test nodes and rerun
+
+### MK-014
+- What: make dbt-test
+- Why: execute full dbt data-test suite including BI readiness stability tests
+- Who: project maintainer
+- When: 2026-04-01, Phase 4 Batch 4.3 validation
+- Where: repository root in dev container
+- How:
+  - Preconditions: successful dbt build
+  - Expected output: `PASS=74 WARN=0 ERROR=0 SKIP=0 TOTAL=74`
+  - Recovery: fix singular/model contract tests and rerun
+
+### MK-015
+- What: make quality-gate
+- Why: verify complete project stability after BI readiness additions
+- Who: project maintainer
+- When: 2026-04-01, Phase 4 Batch 4.3 validation
+- Where: repository root in dev container
+- How:
+  - Preconditions: lint/test/dbt tooling available
+  - Expected output: lint and mypy success, pytest pass, dbt-test pass, quality and GE validations pass
+  - Recovery: isolate failed sub-target, remediate, rerun full gate

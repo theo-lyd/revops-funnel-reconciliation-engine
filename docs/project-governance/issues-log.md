@@ -92,3 +92,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: Use conservative thread settings for local validation and CI where runtime stability is a priority
 - Alternative resolution options: Upgrade runtime stack and dbt adapter, then re-benchmark higher thread counts
 - Verification evidence: `make dbt-build` passed with `PASS=84` and `make quality-gate` passed
+
+### Issue ID: ISS-008
+- Phase and batch: Phase 4 Batch 4.3
+- Date observed: 2026-04-01
+- Where it occurred: Batch validation and quality-gate run
+- Symptom: No blocking defects encountered
+- Root cause: Not applicable
+- Resolution: Not applicable
+- How to avoid: Continue using incremental BI model rollout plus metric stability tests before full quality-gate runs
+- Alternative resolution options: Not applicable
+- Verification evidence: `PASS=92` in dbt build, `PASS=74` in dbt test, and quality gate success

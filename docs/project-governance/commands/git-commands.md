@@ -138,3 +138,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful commit and remote access
   - Expected output: branch update on origin/master
   - Recovery: resolve remote conflicts and retry push
+
+## Phase 4 Batch 4.3 execution entries
+
+### GIT-012
+- What: git add dbt/models/marts dbt/tests docs/reports/phase-4 docs/project-governance
+- Why: stage BI readiness implementation artifacts and required governance updates
+- Who: project maintainer
+- When: 2026-04-01, end of Phase 4 Batch 4.3
+- Where: repository root
+- How:
+  - Preconditions: full validation suite passed
+  - Expected output: only intended Batch 4.3 files staged
+  - Recovery: unstage unintended files and restage explicitly
+
+### GIT-013
+- What: git commit -m "feat(phase-4): deliver batch-4.3 BI readiness layer"
+- Why: persist dashboard-readiness models, query packs, and stability tests as a traceable batch
+- Who: project maintainer
+- When: 2026-04-01, after staging review
+- Where: repository root
+- How:
+  - Preconditions: staged set reviewed and clean
+  - Expected output: new commit hash and changed file summary
+  - Recovery: resolve hook issues and recommit
+
+### GIT-014
+- What: git push origin master
+- Why: publish validated Batch 4.3 outputs and keep phase stop-gate discipline
+- Who: project maintainer
+- When: 2026-04-01, immediately after commit
+- Where: repository root
+- How:
+  - Preconditions: successful commit and remote connectivity
+  - Expected output: remote branch updated to include Batch 4.3
+  - Recovery: resolve remote rejections and rerun push

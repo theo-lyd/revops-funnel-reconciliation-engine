@@ -147,3 +147,27 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: successful dbt build
   - Expected output: 67 tests passed with no warnings or errors
   - Recovery: resolve failing tests and rerun
+
+## Phase 4 Batch 4.3 execution entries
+
+### PDD-013
+- What: cd dbt && dbt build --profiles-dir profiles --threads 1
+- Why: validate BI-readiness model `bi_executive_funnel_overview` and new singular stability tests in graph build
+- Who: project maintainer
+- When: 2026-04-01, Phase 4 Batch 4.3 validation
+- Where: dbt project directory
+- How:
+  - Preconditions: marts and tests are added
+  - Expected output: 92 tasks completed with no errors
+  - Recovery: inspect dbt logs and compiled SQL under `dbt/target`
+
+### PDD-014
+- What: cd dbt && dbt test --profiles-dir profiles --threads 1
+- Why: run all data tests including win-rate and leakage-ratio stability checks
+- Who: project maintainer
+- When: 2026-04-01, Phase 4 Batch 4.3 validation
+- Where: dbt project directory
+- How:
+  - Preconditions: successful dbt build
+  - Expected output: 74 tests passed with no warnings or errors
+  - Recovery: address failing tests and rerun

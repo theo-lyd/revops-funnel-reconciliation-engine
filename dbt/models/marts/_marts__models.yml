@@ -49,3 +49,25 @@ models:
         tests: [not_null]
       - name: owner_role
         tests: [not_null]
+
+  - name: bi_executive_funnel_overview
+    description: BI-safe aggregate view for executive funnel dashboard consumption.
+    columns:
+      - name: regional_office
+        tests: [not_null]
+      - name: metric_month
+        tests: [not_null]
+      - name: total_opportunities
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+      - name: win_rate
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
+      - name: leakage_ratio
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
