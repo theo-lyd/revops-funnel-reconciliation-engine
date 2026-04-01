@@ -213,3 +213,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: maintain automation-first governance controls and full validation before release
 - Alternative resolution options: Not applicable
 - Verification evidence: lint/test/quality-gate, production-stop-gate, and evidence-bundle generation passed
+
+### Issue ID: ISS-019
+- Phase and batch: CI/CD hardening - conditional production parity job
+- Date observed: 2026-04-02
+- Where it occurred: GitHub Actions workflow integration
+- Symptom: No blocking defects; successful implementation of conditional job triggering
+- Root cause: Not applicable
+- Resolution: Added conditional production-parity-check job to .github/workflows/ci.yml with trigger logic `if: github.event_name == 'push' && github.ref == 'refs/heads/master' && secrets.SNOWFLAKE_ACCOUNT != ''`
+- How to avoid: validate conditional YAML syntax and test trigger conditions on sample pushes to master
+- Alternative resolution options: Use GitHub Actions environments feature for conditional workflows
+- Verification evidence: CI workflow file validated; production parity check job triggers only on master pushes with secrets; local and PR workflows remain unaffected

@@ -418,3 +418,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful commit and remote connectivity
   - Expected output: remote branch updated to Block 4 commit
   - Recovery: resolve remote conflicts and retry push
+
+## CI/CD hardening and runbook entries
+
+### GIT-036
+- What: git add .github/workflows/ci.yml docs/project-governance/ci-cd-runbook.md docs/project-governance/README.md docs/project-governance/commands/make-commands.md docs/project-governance/issues-log.md
+- Why: stage CI/CD hardening changes including conditional production parity job, new runbook, and governance log updates
+- Who: project engineering
+- When: 2026-04-02, CI/CD hardening phase
+- Where: repository root
+- How:
+  - Preconditions: CI workflow conditional logic tested; runbook drafted; logs updated
+  - Expected output: files staged without build artifacts or test outputs
+  - Recovery: unstage unrelated files; verify staging list before commit
+
+### GIT-037
+- What: git commit -m "chore(ci-cd): add conditional production parity job and CI runbook"
+- Why: persist CI/CD hardening changes including conditional Snowflake parity check, comprehensive runbook, and governance references
+- Who: project engineering
+- When: 2026-04-02, after staging review
+- Where: repository root
+- How:
+  - Preconditions: staged files reviewed; pre-commit hooks pass
+  - Expected output: commit hash with CI/CD and governance update summary
+  - Recovery: resolve pre-commit failures and recommit
+
+### GIT-038
+- What: git push origin master
+- Why: publish CI/CD hardening to remote and activate conditional parity job for production deployments
+- Who: project engineering
+- When: 2026-04-02, immediately after CI/CD commit
+- Where: repository root
+- How:
+  - Preconditions: successful commit and remote connectivity
+  - Expected output: remote master branch updated with CI/CD hardening commit
+  - Recovery: resolve remote conflicts; verify CI workflow is active in GitHub Actions

@@ -370,3 +370,17 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: complete Snowflake credentials and `RELEASE_ID`
   - Expected output: strict parity and readiness checks pass, evidence bundle generated
   - Recovery: resolve credentials/parity/build failures and rerun
+
+## CI/CD hardening and conditional parity job entries
+
+### MK-032
+- What: GitHub Actions conditional production-parity-check job in .github/workflows/ci.yml
+- Why: enforce strict production parity only on master pushes with Snowflake secrets present; preserve local and PR workflows
+- Who: project engineering
+- When: 2026-04-02, final CI/CD hardening step
+- Where: .github/workflows/ci.yml (new job added to existing quality job)
+- How:
+  - Preconditions: Snowflake secrets configured in repository settings (SNOWFLAKE_ACCOUNT, SNOWFLAKE_USER, SNOWFLAKE_PASSWORD, SNOWFLAKE_DATABASE, SNOWFLAKE_SCHEMA, SNOWFLAKE_WAREHOUSE, SNOWFLAKE_ROLE)
+  - Trigger condition: `if: github.event_name == 'push' && github.ref == 'refs/heads/master' && secrets.SNOWFLAKE_ACCOUNT != ''`
+  - Expected output: job skipped on PR or local branch pushes; on master push with secrets, job runs full parity check with PARITY_TOLERANCE_STRICT=0.0 and passes/fails workflow accordingly
+  - Recovery: investigate parity delta; resolve discrepancies between DuckDB and Snowflake Gold layers; retry push when parity passes

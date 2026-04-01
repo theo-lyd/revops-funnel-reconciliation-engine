@@ -53,3 +53,53 @@ jobs:
 
       - name: Great Expectations validation
         run: python scripts/quality/run_great_expectations.py
+
+  production-parity-check:
+    # Run only on pushes to master with Snowflake credentials available (deployment contexts)
+    # Local contributors and PRs without secrets will not be blocked by this job
+    if: |
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/master' &&
+      secrets.SNOWFLAKE_ACCOUNT != ''
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install "apache-airflow==2.10.5" --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-2.10.5/constraints-3.10.txt"
+          pip install -r requirements/base.txt -r requirements/dev.txt
+
+      - name: Setup DuckDB warehouse
+        run: |
+          mkdir -p data/warehouse
+          cp dbt/profiles/profiles.yml.example dbt/profiles/profiles.yml
+          python scripts/init_warehouse.py
+          python scripts/ingest/load_crm_csv_to_duckdb.py
+
+      - name: Build local Gold layer
+        run: |
+          cd dbt
+          dbt deps
+          dbt build --profiles-dir profiles --select path:models/staging path:models/intermediate path:models/marts
+
+      - name: Run strict metric parity check (DuckDB vs Snowflake)
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
+          DBT_QUERY_TAG: ci-pipeline-parity-check
+          PARITY_TOLERANCE_STRICT: '0.0'
+        run: make metric-parity-check-strict
