@@ -98,3 +98,28 @@ RELEASE_ID=phase4-hardening-block4 make release-evidence-bundle
 - `scripts/`: Utility scripts (bootstrap, loaders, checks)
 - `src/revops_funnel/`: Core Python package
 - `tests/`: Automated tests
+
+## Documentation
+
+### Phase 4: Semantic Layer and Gold Layer
+Phase 4 delivery includes four batches plus optional post-phase hardening:
+
+1. **Batch 4.1**: [Gold marts foundation](docs/reports/phase-4/batch-4.1-gold-marts-foundation.md)
+2. **Batch 4.2**: [Semantic metric contract and governed glossary](docs/reports/phase-4/batch-4.2-semantic-metric-contract-and-governed-glossary.md)
+3. **Batch 4.3**: [BI readiness layer](docs/reports/phase-4/batch-4.3-bi-readiness-layer.md)
+4. **Batch 4.4**: [Snowflake production alignment and deployment governance](docs/reports/phase-4/batch-4.4-snowflake-production-alignment-and-deployment-governance.md)
+
+### Post-Phase 4 Hardening (Optional, Completed)
+Four optional hardening blocks strengthen production deployment and governance:
+
+- **Block 1**: [Governance and security hardening](docs/reports/phase-4/post-phase-4-block-1-governance-and-security-hardening.md)
+- **Block 2**: [Observability and reliability hardening](docs/reports/phase-4/post-phase-4-block-2-observability-and-reliability.md)
+- **Block 3**: [Production readiness and parity enforcement](docs/reports/phase-4/post-phase-4-block-3-production-readiness-and-parity-enforcement.md)
+- **Block 4**: [Governance automation and stop-gate orchestration](docs/reports/phase-4/post-phase-4-block-4-governance-automation-and-stop-gate-orchestration.md)
+- **Summary**: [Post-phase-4-hardening complete summary](docs/reports/phase-4/post-phase-4-hardening-complete-summary.md)
+
+### Project Governance
+- [Standing instructions and process documentation](docs/project-governance/standing-instructions.md)
+- [Phase completion checklist and stop-gate workflow](docs/project-governance/phase-completion-checklist.md)
+- [Issues and resolution log](docs/project-governance/issues-log.md)
+- [Command ledgers (git, make, python, dbt, etc.)](docs/project-governance/commands/)

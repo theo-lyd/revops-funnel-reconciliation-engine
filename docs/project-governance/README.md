@@ -6,6 +6,15 @@ This directory contains mandatory project-process documents for this capstone.
 - Standing instructions: see [standing-instructions.md](standing-instructions.md).
 - Phase completion checklist and stop-gate workflow: see [phase-completion-checklist.md](phase-completion-checklist.md).
 
+## Phase 4 post-completion hardening blocks
+After Phase 4 batches 4.1-4.4 are complete, the following optional hardening blocks strengthen production safety and governance:
+- **Block 1**: Governance and security hardening - RBAC, secret rotation, change-control SOP.
+- **Block 2**: Observability and reliability hardening - source freshness, query-pack validation, release evidence.
+- **Block 3**: Production readiness and parity enforcement - release gate, parity artifact, local-safe workflow.
+- **Block 4**: Governance automation and stop-gate orchestration - evidence bundle generation, orchestrated gates.
+
+See [../reports/phase-4/](../reports/phase-4/) for post-phase-4-block-X-*.md documents detailing each block.
+
 ## Required project-wide logs
 - Issue and resolution register: see [issues-log.md](issues-log.md).
 - Git command log: see [commands/git-commands.md](commands/git-commands.md).
