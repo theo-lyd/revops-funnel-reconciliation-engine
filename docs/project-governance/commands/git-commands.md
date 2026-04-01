@@ -593,3 +593,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful local commit and remote connectivity
   - Expected output: remote master updated and CI workflow triggered
   - Recovery: resolve remote conflicts and retry push
+
+## Phase 5: Closeout and end report entries
+
+### GIT-051
+- What: git add docs/reports/phase-5/phase-5-end-report.md README.md docs/project-governance/commands/git-commands.md
+- Why: stage the required Phase 5 end report and documentation links as part of formal phase closeout
+- Who: data engineer or analytics lead
+- When: 2026-04-02, Phase 5 closeout
+- Where: repository root
+- How:
+  - Preconditions: Batch 5.4 implementation complete and validated
+  - Expected output: end report and README link staged for commit
+  - Recovery: unstage unrelated files and restage explicit closeout scope
+
+### GIT-052
+- What: git commit -m "docs(phase-5): add end report and close phase 5"
+- Why: persist the mandatory Phase 5 end report and closeout documentation
+- Who: data engineer or analytics lead
+- When: 2026-04-02, after closeout staging review
+- Where: repository root
+- How:
+  - Preconditions: staged closeout files reviewed; pre-commit hooks pass
+  - Expected output: commit hash for Phase 5 closeout
+  - Recovery: resolve formatting or hook feedback and recommit
+
+### GIT-053
+- What: git push origin master
+- Why: publish Phase 5 closeout documentation so the repository reflects the completed phase
+- Who: data engineer or analytics lead
+- When: 2026-04-02, immediately after closeout commit
+- Where: repository root
+- How:
+  - Preconditions: successful closeout commit and remote connectivity
+  - Expected output: remote master updated with the phase end report
+  - Recovery: resolve remote conflicts and retry push

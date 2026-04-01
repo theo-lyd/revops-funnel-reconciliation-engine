@@ -126,6 +126,7 @@ Phase 5 delivery currently includes planning and first two batches:
 3. **Batch 5.2**: [Streamlit application and query templates](docs/reports/phase-5/batch-5.2-streamlit-application-and-query-templates.md)
 4. **Batch 5.3**: [LLM integration and AI-driven query generation](docs/reports/phase-5/batch-5.3-llm-integration-and-ai-driven-query-generation.md)
 5. **Batch 5.4**: [Analytics insights and anomaly detection](docs/reports/phase-5/batch-5.4-analytics-insights-and-anomaly-detection.md)
+6. **End Report**: [Phase 5 end report](docs/reports/phase-5/phase-5-end-report.md)
 
 ### Project Governance
 - [Standing instructions and process documentation](docs/project-governance/standing-instructions.md)
