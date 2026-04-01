@@ -202,3 +202,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: continue strict phased validation discipline and stop-gate enforcement
 - Alternative resolution options: Not applicable
 - Verification evidence: lint/test/quality-gate plus parity-report and readiness-gate checks passed
+
+### Issue ID: ISS-018
+- Phase and batch: Governance automation/stop-gate hardening Block 4
+- Date observed: 2026-04-01
+- Where it occurred: Block 4 implementation and validation
+- Symptom: No blocking defects encountered
+- Root cause: Not applicable
+- Resolution: Not applicable
+- How to avoid: maintain automation-first governance controls and full validation before release
+- Alternative resolution options: Not applicable
+- Verification evidence: lint/test/quality-gate, production-stop-gate, and evidence-bundle generation passed

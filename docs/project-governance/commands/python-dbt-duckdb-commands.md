@@ -230,3 +230,16 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: complete Snowflake credentials and connector availability
   - Expected output: non-zero failure on missing credentials or failing prod checks
   - Recovery: remediate credentials/configuration or failing dbt/parity stages before release
+
+## Governance automation and stop-gate orchestration block 4 entries
+
+### PDD-020
+- What: python scripts/governance/generate_release_evidence_bundle.py --release-id <id>
+- Why: auto-generate release evidence bundle artifact for audit and stop-gate documentation
+- Who: project maintainer
+- When: 2026-04-01, Block 4 implementation
+- Where: repository root
+- How:
+  - Preconditions: repository is a valid git working tree
+  - Expected output: markdown evidence bundle written under `artifacts/release-evidence/`
+  - Recovery: verify output path permissions and rerun with valid release id

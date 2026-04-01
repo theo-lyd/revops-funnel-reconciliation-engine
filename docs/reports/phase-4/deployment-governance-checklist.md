@@ -32,3 +32,4 @@ Use this checklist before every production deployment.
 - Any deviations and approvals.
 - Post-deploy metric parity validation summary.
 - Parity JSON artifact (`artifacts/parity/metric_parity_report.json`) from release run.
+- Release evidence bundle artifact (`artifacts/release-evidence/release-evidence-bundle.md`).

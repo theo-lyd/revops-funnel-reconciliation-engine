@@ -76,6 +76,15 @@ make release-readiness-gate
 
 # Strict production gate for CI/CD with full Snowflake credentials
 make release-readiness-gate-strict
+
+# Full production stop-gate sequence (local-safe)
+make production-stop-gate
+
+# Strict production stop-gate sequence (requires Snowflake env + RELEASE_ID)
+RELEASE_ID=phase4-hardening-block4 make production-stop-gate-strict
+
+# Generate release evidence bundle artifact
+RELEASE_ID=phase4-hardening-block4 make release-evidence-bundle
 ```
 
 ## Repository Layout

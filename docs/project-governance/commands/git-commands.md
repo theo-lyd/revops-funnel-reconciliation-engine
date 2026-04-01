@@ -383,3 +383,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful Block 3 commit
   - Expected output: remote branch updated to latest commit
   - Recovery: resolve remote conflicts and retry push
+
+## Governance automation and stop-gate orchestration block 4 entries
+
+### GIT-033
+- What: git add Makefile .env.example .gitignore README.md scripts/governance docs/reports/phase-4 docs/project-governance
+- Why: stage Block 4 governance automation changes and ledger updates as a single audited scope
+- Who: project maintainer
+- When: 2026-04-01, Block 4 closeout
+- Where: repository root
+- How:
+  - Preconditions: Block 4 validation checks passed
+  - Expected output: intended files staged without unrelated artifacts
+  - Recovery: unstage out-of-scope files and restage explicitly
+
+### GIT-034
+- What: git commit -m "chore(hardening): implement governance automation block 4"
+- Why: persist final post-phase-4 hardening automation as one traceable change
+- Who: project maintainer
+- When: 2026-04-01, after staging review
+- Where: repository root
+- How:
+  - Preconditions: staged set reviewed and clean
+  - Expected output: commit hash and summary
+  - Recovery: resolve hook failures and recommit
+
+### GIT-035
+- What: git push origin master
+- Why: publish Block 4 completion and close hardening sequence
+- Who: project maintainer
+- When: 2026-04-01, immediately after Block 4 commit
+- Where: repository root
+- How:
+  - Preconditions: successful commit and remote connectivity
+  - Expected output: remote branch updated to Block 4 commit
+  - Recovery: resolve remote conflicts and retry push

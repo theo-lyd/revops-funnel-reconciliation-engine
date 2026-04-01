@@ -207,6 +207,7 @@ data/warehouse/
 data/raw/marketing/*.jsonl
 data/processed/
 artifacts/parity/
+artifacts/release-evidence/
 .cursorignore
 .cursorindexingignore
 

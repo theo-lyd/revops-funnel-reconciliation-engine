@@ -5,7 +5,7 @@ AIRFLOW_CONSTRAINTS ?= https://raw.githubusercontent.com/apache/airflow/constrai
 DBT_THREADS_LOCAL ?= 1
 DBT_THREADS_PROD ?= 4
 
-.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness
+.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle production-stop-gate production-stop-gate-strict query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness
 
 setup:
 	$(PIP) install "apache-airflow==$(AIRFLOW_VERSION)" --constraint "$(AIRFLOW_CONSTRAINTS)"
@@ -78,6 +78,21 @@ release-readiness-gate:
 
 release-readiness-gate-strict:
 	$(PYTHON) scripts/quality/run_release_readiness_gate.py --strict
+
+release-evidence-bundle:
+	@test -n "$$RELEASE_ID" || (echo "RELEASE_ID is required" && exit 1)
+	$(PYTHON) scripts/governance/generate_release_evidence_bundle.py --release-id "$$RELEASE_ID"
+
+production-stop-gate:
+	$(MAKE) quality-gate
+	$(MAKE) metric-parity-check-report
+	$(MAKE) release-readiness-gate
+
+production-stop-gate-strict:
+	$(MAKE) quality-gate
+	$(MAKE) metric-parity-check-strict
+	$(MAKE) release-readiness-gate-strict
+	$(MAKE) release-evidence-bundle
 
 query-pack-validate:
 	$(PYTHON) scripts/quality/run_query_pack_validation.py

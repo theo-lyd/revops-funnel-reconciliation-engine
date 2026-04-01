@@ -335,3 +335,38 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: script dependencies available
   - Expected output: local-safe skip message when Snowflake env vars are absent
   - Recovery: set required `SNOWFLAKE_*` env vars and run strict target for production pipelines
+
+## Governance automation and stop-gate orchestration block 4 entries
+
+### MK-029
+- What: make production-stop-gate
+- Why: run final local-safe stop-gate sequence as one command
+- Who: project maintainer
+- When: 2026-04-01, Block 4 implementation
+- Where: repository root in dev container
+- How:
+  - Preconditions: local dbt profile and source data available
+  - Expected output: quality-gate success, parity-report artifact generation, release-readiness gate local-safe completion
+  - Recovery: remediate failing subcommand and rerun full stop-gate
+
+### MK-030
+- What: RELEASE_ID=<id> make release-evidence-bundle
+- Why: generate auditable release evidence markdown artifact from template-backed automation
+- Who: project maintainer
+- When: 2026-04-01, Block 4 implementation
+- Where: repository root in dev container
+- How:
+  - Preconditions: `RELEASE_ID` provided
+  - Expected output: artifact written to `artifacts/release-evidence/release-evidence-bundle.md`
+  - Recovery: set required environment variable and rerun
+
+### MK-031
+- What: RELEASE_ID=<id> make production-stop-gate-strict
+- Why: enforce strict pre-release checks in secured production contexts
+- Who: project maintainer
+- When: introduced in Block 4 implementation
+- Where: CI/CD or production shell
+- How:
+  - Preconditions: complete Snowflake credentials and `RELEASE_ID`
+  - Expected output: strict parity and readiness checks pass, evidence bundle generated
+  - Recovery: resolve credentials/parity/build failures and rerun
