@@ -182,3 +182,49 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: lint/test/dbt tooling available
   - Expected output: lint and mypy success, pytest pass, dbt-test pass, quality and GE validations pass
   - Recovery: isolate failed sub-target, remediate, rerun full gate
+
+## Phase 4 Batch 4.4 execution entries
+
+### MK-016
+- What: make lint
+- Why: validate code-quality baseline after adding production alignment artifacts
+- Who: project maintainer
+- When: 2026-04-01, Phase 4 Batch 4.4 validation
+- Where: repository root in dev container
+- How:
+  - Preconditions: dev dependencies installed
+  - Expected output: Ruff and mypy pass
+  - Recovery: remediate lint/type issues and rerun
+
+### MK-017
+- What: make test
+- Why: ensure no Python test regressions from Batch 4.4 changes
+- Who: project maintainer
+- When: 2026-04-01, Phase 4 Batch 4.4 validation
+- Where: repository root in dev container
+- How:
+  - Preconditions: test dependencies available
+  - Expected output: pytest pass summary
+  - Recovery: fix failing tests and rerun
+
+### MK-018
+- What: make quality-gate
+- Why: confirm full project quality pipeline after Snowflake alignment and governance additions
+- Who: project maintainer
+- When: 2026-04-01, Phase 4 Batch 4.4 validation
+- Where: repository root in dev container
+- How:
+  - Preconditions: dbt profile available for local target
+  - Expected output: dbt-test pass (`PASS=74`), quality checks pass, GE pass
+  - Recovery: fix failed sub-stage and rerun full gate
+
+### MK-019
+- What: make dbt-build-prod, make dbt-test-prod, make dbt-deploy-prod
+- Why: provide explicit production deployment entrypoints for Snowflake target
+- Who: project maintainer
+- When: 2026-04-01, Batch 4.4 implementation
+- Where: repository root
+- How:
+  - Preconditions: `SNOWFLAKE_*` credentials, warehouse access, and role grants
+  - Expected output: prod-target dbt build/test success in Snowflake environment
+  - Recovery: verify secrets, permissions, and profile target settings

@@ -103,3 +103,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: Continue using incremental BI model rollout plus metric stability tests before full quality-gate runs
 - Alternative resolution options: Not applicable
 - Verification evidence: `PASS=92` in dbt build, `PASS=74` in dbt test, and quality gate success
+
+### Issue ID: ISS-009
+- Phase and batch: Phase 4 Batch 4.4
+- Date observed: 2026-04-01
+- Where it occurred: Batch validation and quality-gate run
+- Symptom: No blocking defects encountered
+- Root cause: Not applicable
+- Resolution: Not applicable
+- How to avoid: Maintain template-driven Snowflake alignment updates plus mandatory regression checks
+- Alternative resolution options: Not applicable
+- Verification evidence: lint, pytest, dbt-test (`PASS=74`), quality checks, and GE validation all passed

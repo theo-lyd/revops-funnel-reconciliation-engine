@@ -51,6 +51,21 @@ make airflow-init
 make airflow-start
 ```
 
+### 8) Align with Snowflake production target
+```bash
+cp dbt/profiles/profiles.yml.example dbt/profiles/profiles.yml
+export SNOWFLAKE_ACCOUNT='<your-account>'
+export SNOWFLAKE_USER='<your-user>'
+export SNOWFLAKE_PASSWORD='<your-password>'
+export SNOWFLAKE_ROLE='TRANSFORMER'
+export SNOWFLAKE_DATABASE='REVOPS'
+export SNOWFLAKE_WAREHOUSE='TRANSFORMING'
+
+# Build/test against Snowflake target
+make dbt-build-prod
+make dbt-test-prod
+```
+
 ## Repository Layout
 
 - `.devcontainer/`: Reproducible Codespaces configuration

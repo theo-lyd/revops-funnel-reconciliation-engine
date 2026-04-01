@@ -3,7 +3,7 @@ PIP ?= pip
 AIRFLOW_VERSION ?= 2.10.5
 AIRFLOW_CONSTRAINTS ?= https://raw.githubusercontent.com/apache/airflow/constraints-$(AIRFLOW_VERSION)/constraints-3.10.txt
 
-.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-snapshot dbt-test ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness
+.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-deploy-prod ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness
 
 setup:
 	$(PIP) install "apache-airflow==$(AIRFLOW_VERSION)" --constraint "$(AIRFLOW_CONSTRAINTS)"
@@ -40,11 +40,24 @@ dbt-deps:
 dbt-build:
 	cd dbt && dbt build --profiles-dir profiles --threads 1
 
+dbt-build-prod:
+	cd dbt && dbt build --profiles-dir profiles --target prod --threads 4
+
 dbt-snapshot:
 	cd dbt && dbt snapshot --profiles-dir profiles
 
+dbt-snapshot-prod:
+	cd dbt && dbt snapshot --profiles-dir profiles --target prod
+
 dbt-test:
 	cd dbt && dbt test --profiles-dir profiles --threads 1
+
+dbt-test-prod:
+	cd dbt && dbt test --profiles-dir profiles --target prod --threads 4
+
+dbt-deploy-prod:
+	$(MAKE) dbt-build-prod
+	$(MAKE) dbt-test-prod
 
 ge-validate:
 	$(PYTHON) scripts/quality/run_great_expectations.py

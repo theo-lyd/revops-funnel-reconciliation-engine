@@ -173,3 +173,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful commit and remote connectivity
   - Expected output: remote branch updated to include Batch 4.3
   - Recovery: resolve remote rejections and rerun push
+
+## Phase 4 Batch 4.4 execution entries
+
+### GIT-015
+- What: git add Makefile README.md .env.example dbt/profiles/profiles.yml.example docs/reports/phase-4 docs/project-governance
+- Why: stage Snowflake production alignment changes, phase report artifacts, and governance updates
+- Who: project maintainer
+- When: 2026-04-01, end of Phase 4 Batch 4.4
+- Where: repository root
+- How:
+  - Preconditions: validation complete and scope reviewed
+  - Expected output: intended files staged with no unrelated artifacts
+  - Recovery: unstage unintended files and restage explicitly
+
+### GIT-016
+- What: git commit -m "feat(phase-4): deliver batch-4.4 snowflake production alignment"
+- Why: capture deployment-governance and Snowflake alignment as a traceable completion unit
+- Who: project maintainer
+- When: 2026-04-01, after staging review
+- Where: repository root
+- How:
+  - Preconditions: staged change set approved
+  - Expected output: commit hash with summary
+  - Recovery: resolve hook feedback and recommit
+
+### GIT-017
+- What: git push origin master
+- Why: publish Batch 4.4 outputs and preserve phase stop-gate workflow
+- Who: project maintainer
+- When: 2026-04-01, immediately after commit
+- Where: repository root
+- How:
+  - Preconditions: successful commit and remote access
+  - Expected output: remote updated with Batch 4.4 commit
+  - Recovery: resolve branch or authentication issues and retry

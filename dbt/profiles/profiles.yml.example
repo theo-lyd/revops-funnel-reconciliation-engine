@@ -15,6 +15,7 @@ revops_funnel:
       role: "{{ env_var('SNOWFLAKE_ROLE', 'TRANSFORMER') }}"
       database: "{{ env_var('SNOWFLAKE_DATABASE', 'REVOPS') }}"
       warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'TRANSFORMING') }}"
-      schema: analytics
+      schema: "{{ env_var('SNOWFLAKE_SCHEMA', 'analytics') }}"
       threads: 8
       client_session_keep_alive: false
+      query_tag: "{{ env_var('DBT_QUERY_TAG', 'revops_funnel_prod') }}"
