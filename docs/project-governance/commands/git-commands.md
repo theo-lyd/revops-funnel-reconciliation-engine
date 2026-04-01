@@ -628,3 +628,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful closeout commit and remote connectivity
   - Expected output: remote master updated with the phase end report
   - Recovery: resolve remote conflicts and retry push
+
+## Post-Phase 5 hardening batch entries
+
+### GIT-054
+- What: git add src/revops_funnel/analytics_queries.py src/revops_funnel/artifacts.py src/revops_funnel/analytics_monitoring.py scripts/analytics/streamlit_app.py scripts/analytics/anomaly_monitor.py tests/test_analytics_queries.py tests/test_analytics_monitoring.py docs/reports/phase-5/post-phase-5-hardening-shared-modules-and-validation.md README.md docs/project-governance/commands/make-commands.md docs/project-governance/commands/git-commands.md docs/project-governance/issues-log.md
+- Why: stage the shared-module refactor, validation tests, and post-phase hardening documentation as a single audited batch
+- Who: data engineer or analytics lead
+- When: 2026-04-02, post-Phase 5 hardening batch
+- Where: repository root
+- How:
+  - Preconditions: lint and tests passed on the refactor batch
+  - Expected output: intended shared-module files staged without generated artifacts
+  - Recovery: unstage unrelated files and restage explicit hardening scope
+
+### GIT-055
+- What: git commit -m "refactor(phase-5): harden shared analytics modules and validation"
+- Why: persist the modularized analytics helpers, validation coverage, and documentation updates
+- Who: data engineer or analytics lead
+- When: 2026-04-02, after staging review
+- Where: repository root
+- How:
+  - Preconditions: staged hardening files reviewed; pre-commit hooks pass
+  - Expected output: commit hash for the shared-module hardening batch
+  - Recovery: resolve formatting or hook feedback and recommit
+
+### GIT-056
+- What: git push origin master
+- Why: publish the post-phase 5 hardening improvements so the repository reflects the optimized implementation
+- Who: data engineer or analytics lead
+- When: 2026-04-02, immediately after hardening commit
+- Where: repository root
+- How:
+  - Preconditions: successful hardening commit and remote connectivity
+  - Expected output: remote master updated with shared-module hardening changes
+  - Recovery: resolve remote conflicts and retry push

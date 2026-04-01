@@ -268,3 +268,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: keep monitoring thresholds configurable and continue to validate report outputs against the Gold-layer schema
 - Alternative resolution options: add email transport or scheduled orchestration in a later hardening step
 - Verification evidence: `make lint` and `make test` passed after Batch 5.4 implementation; generated artifacts are ignored by git
+
+### Issue ID: ISS-024
+- Phase and batch: Post-Phase 5 hardening - shared modules and validation
+- Date observed: 2026-04-02
+- Where it occurred: shared analytics helper refactor and fixture-based tests
+- Symptom: no blocking defects; a few Ruff style issues were surfaced and corrected during refactor validation
+- Root cause: import ordering and line wrapping drift after extracting shared modules
+- Resolution: normalized imports, wrapped long lines, and revalidated lint/tests
+- How to avoid: run Ruff immediately after module extraction; keep helper functions in shared modules with explicit unit coverage
+- Alternative resolution options: freeze the app structure and only add wrappers, but that would retain duplicate logic
+- Verification evidence: `make lint` and `make test` passed with 15 tests total after refactor

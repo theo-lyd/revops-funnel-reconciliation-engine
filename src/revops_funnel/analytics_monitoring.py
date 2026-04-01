@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-import json
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
-from pathlib import Path
 
 import pandas as pd
+
+from revops_funnel.analytics_queries import REQUIRED_MONITORING_COLUMNS, validate_columns
+from revops_funnel.artifacts import write_json_artifact
 
 MONITORED_METRICS = {
     "win_rate": "win_rate",
@@ -61,8 +62,9 @@ class MonitoringReport:
 
 
 def detect_anomalies(frame: pd.DataFrame, sensitivity: float) -> list[AnomalyFinding]:
-    required_columns = {"metric_month", "regional_office", *MONITORED_METRICS.values()}
-    if frame.empty or not required_columns.issubset(frame.columns):
+    required_columns = REQUIRED_MONITORING_COLUMNS
+    missing_columns = validate_columns(frame, required_columns)
+    if frame.empty or missing_columns:
         return []
 
     normalized = frame.copy()
@@ -179,7 +181,5 @@ def write_monitoring_report(
         recipients=recipients,
         findings=findings,
     )
-    path = Path(output_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(report.to_dict(), indent=2), encoding="utf-8")
+    write_json_artifact(output_path, report.to_dict())
     return report

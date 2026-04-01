@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import os
-from pathlib import Path
 
 import duckdb
 import pandas as pd
@@ -20,6 +19,7 @@ from revops_funnel.analytics_monitoring import (
     summarize_findings,
     write_monitoring_report,
 )
+from revops_funnel.artifacts import write_text_artifact
 
 BI_SCHEMA = os.getenv("BI_CONSUMPTION_SCHEMA", "analytics_gold")
 DUCKDB_PATH = os.getenv("DUCKDB_PATH", "./data/warehouse/revops.duckdb")
@@ -118,9 +118,8 @@ def main() -> int:
         recipients=ALERT_EMAIL_RECIPIENTS,
     )
 
-    markdown_path = Path(args.output_markdown)
-    markdown_path.parent.mkdir(parents=True, exist_ok=True)
-    markdown_path.write_text(
+    write_text_artifact(
+        args.output_markdown,
         "# Phase 5.4 Monitoring Summary\n\n"
         f"- Generated: {report.generated_at_utc}\n"
         f"- Source: {args.source}\n"
@@ -129,7 +128,6 @@ def main() -> int:
         f"- Severe count: {report.severe_count}\n\n"
         f"{summarize_findings(findings)}\n\n"
         f"```text\n{build_alert_message(findings)}\n```\n",
-        encoding="utf-8",
     )
 
     print(summarize_findings(findings))

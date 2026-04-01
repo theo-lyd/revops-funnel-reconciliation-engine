@@ -452,3 +452,25 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: same as `make anomaly-check`; markdown output path is writable
   - Expected output: monitoring JSON and Markdown artifacts refreshed with latest anomaly summary
   - Recovery: review anomaly severity thresholds and output permissions; rerun after fixing environment issues
+
+### MK-039
+- What: make lint
+- Why: validate the shared-module hardening refactor and its associated test updates
+- Who: project maintainer
+- When: 2026-04-02, post-Phase 5 hardening batch
+- Where: repository root
+- How:
+  - Preconditions: code changes staged or present in working tree
+  - Expected output: Ruff and mypy success summaries
+  - Recovery: fix reported style or typing errors and rerun
+
+### MK-040
+- What: make test
+- Why: execute fixture-based analytics query and monitoring tests for the shared-module hardening batch
+- Who: project maintainer
+- When: 2026-04-02, post-Phase 5 hardening batch
+- Where: repository root
+- How:
+  - Preconditions: test dependencies installed
+  - Expected output: pytest success summary with analytics tests passing
+  - Recovery: inspect failing assertions or fixture data and rerun
