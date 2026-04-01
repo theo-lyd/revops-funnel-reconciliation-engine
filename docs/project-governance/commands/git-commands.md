@@ -488,3 +488,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful commit and remote connectivity
   - Expected output: remote master branch updated with Batch 5.1 commit; GitHub Actions workflows triggered
   - Recovery: resolve remote conflicts; verify CI quality job passes on pushed commit
+
+## Phase 5: Streamlit application and query templates entries
+
+### GIT-042
+- What: git add scripts/analytics/streamlit_app.py .env.example README.md docs/reports/phase-5/batch-5.2-streamlit-application-and-query-templates.md docs/project-governance/commands/make-commands.md docs/project-governance/commands/python-dbt-duckdb-commands.md docs/project-governance/commands/git-commands.md docs/project-governance/issues-log.md
+- Why: stage Batch 5.2 Streamlit implementation, report, and governance updates as one audited scope
+- Who: data engineer or analytics lead
+- When: 2026-04-02, Batch 5.2 completion
+- Where: repository root
+- How:
+  - Preconditions: lint and test checks pass for new app code
+  - Expected output: only intended Batch 5.2 files staged
+  - Recovery: unstage unrelated changes and restage explicit file list
+
+### GIT-043
+- What: git commit -m "feat(phase-5): implement batch 5.2 streamlit query templates"
+- Why: persist interactive analytics app and governed template layer for Phase 5 progression
+- Who: data engineer or analytics lead
+- When: 2026-04-02, after staging review
+- Where: repository root
+- How:
+  - Preconditions: pre-commit hooks pass on staged files
+  - Expected output: commit hash with Batch 5.2 summary
+  - Recovery: apply hook-requested formatting fixes and recommit
+
+### GIT-044
+- What: git push origin master
+- Why: publish Batch 5.2 deliverables and enable stop-gate review for Batch 5.3
+- Who: data engineer or analytics lead
+- When: 2026-04-02, immediately after Batch 5.2 commit
+- Where: repository root
+- How:
+  - Preconditions: successful local commit and remote connectivity
+  - Expected output: remote master updated and CI workflow triggered
+  - Recovery: resolve remote conflicts and retry push

@@ -408,3 +408,14 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: Streamlit installed; `scripts/analytics/streamlit_app.py` exists
   - Expected output: Streamlit server starts on port STREAMLIT_SERVER_PORT (default: 8501)
   - Recovery: verify Streamlit installation; check port availability; run `make setup` to reinstall dependencies
+
+### MK-035
+- What: make streamlit-dev
+- Why: run Batch 5.2 interactive analytics app with governed query templates over Gold-layer models
+- Who: data engineer or analytics developer
+- When: 2026-04-02, Batch 5.2 implementation
+- Where: repository root in dev container
+- How:
+  - Preconditions: `scripts/analytics/streamlit_app.py` exists and dependencies are installed
+  - Expected output: Streamlit app launches and exposes template-based analytics UI on configured port
+  - Recovery: install/update dependencies with `make setup`; check app logs for connector/env issues

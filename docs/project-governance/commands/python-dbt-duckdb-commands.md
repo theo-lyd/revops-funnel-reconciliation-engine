@@ -267,3 +267,14 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: Metabase instance deployed at specified host:port with admin credentials
   - Expected output: same as standard setup; custom host/port used
   - Recovery: verify network connectivity to custom host; check credential format
+
+### PDD-023
+- What: streamlit run scripts/analytics/streamlit_app.py --server.port <port>
+- Why: launch Batch 5.2 self-service analytics app with governed query templates and visualization widgets
+- Who: data engineer or analytics developer
+- When: 2026-04-02, Batch 5.2 implementation
+- Where: repository root
+- How:
+  - Preconditions: Streamlit and Plotly installed; DuckDB warehouse initialized
+  - Expected output: local web UI available with template controls, charts, and CSV download
+  - Recovery: run `make setup`; verify `DUCKDB_PATH` and Phase 4 Gold models exist

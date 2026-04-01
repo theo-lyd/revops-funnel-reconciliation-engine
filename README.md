@@ -118,6 +118,13 @@ Four optional hardening blocks strengthen production deployment and governance:
 - **Block 4**: [Governance automation and stop-gate orchestration](docs/reports/phase-4/post-phase-4-block-4-governance-automation-and-stop-gate-orchestration.md)
 - **Summary**: [Post-phase-4-hardening complete summary](docs/reports/phase-4/post-phase-4-hardening-complete-summary.md)
 
+### Phase 5: AI-Driven Analytics and Visualization
+Phase 5 delivery currently includes planning and first two batches:
+
+1. **Plan**: [Phase 5 implementation plan](docs/reports/phase-5/PHASE-5-PLAN.md)
+2. **Batch 5.1**: [Dashboard foundation and BI layer integration](docs/reports/phase-5/batch-5.1-dashboard-foundation.md)
+3. **Batch 5.2**: [Streamlit application and query templates](docs/reports/phase-5/batch-5.2-streamlit-application-and-query-templates.md)
+
 ### Project Governance
 - [Standing instructions and process documentation](docs/project-governance/standing-instructions.md)
 - [Phase completion checklist and stop-gate workflow](docs/project-governance/phase-completion-checklist.md)

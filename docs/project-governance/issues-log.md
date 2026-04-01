@@ -235,3 +235,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: follow BI/dashboard development best practices; validate Metabase connectivity before running setup script; use local-safe patterns (skip on missing credentials)
 - Alternative resolution options: Manual Metabase UI configuration (not recommended for reproducibility)
 - Verification evidence: setup script successfully registers data sources; schema metadata synced; governance logs and make targets updated
+
+### Issue ID: ISS-021
+- Phase and batch: Phase 5 Batch 5.2 - Streamlit application and query templates
+- Date observed: 2026-04-02
+- Where it occurred: Initial Streamlit app implementation (`scripts/analytics/streamlit_app.py`)
+- Symptom: SQL builder ordering and quoting defects created invalid query structures in early draft
+- Root cause: Query finalization (`limit`) was applied before all predicates and one string interpolation had conflicting quote escaping
+- Resolution: refactored query builder into staged functions (`_apply_filters`, `_apply_date_filters`, `_finalize_query`) and corrected office-value escaping
+- How to avoid: unit-check SQL string assembly order and run static lint checks immediately after adding query builder code
+- Alternative resolution options: move to parameterized query builders per connector (DuckDB/Snowflake) in future hardening
+- Verification evidence: `make lint` and `make test` pass with Streamlit app included
