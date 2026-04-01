@@ -20,5 +20,6 @@ After checklist completion:
 - Phase 0: Completed and documented.
 - Phase 1: Completed and documented.
 - Phase 2: Completed and documented (including hardening addendum).
-- Phase 3: In progress, batch 3.1 documented and changelog present.
-- Phase 4+: Planned, not yet documented in repo reports.
+- Phase 3: Completed initial quality foundation and documented.
+- Phase 4: Completed and documented across batches 4.1 to 4.4 with phase end report.
+- Phase 5+: Planned.

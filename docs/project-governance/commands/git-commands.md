@@ -208,3 +208,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful commit and remote access
   - Expected output: remote updated with Batch 4.4 commit
   - Recovery: resolve branch or authentication issues and retry
+
+## Phase 4 closeout entries
+
+### GIT-018
+- What: git add docs/reports/phase-4/phase-4-end-report.md docs/project-governance/phase-completion-checklist.md docs/project-governance/commands
+- Why: stage phase closure report and governance status updates
+- Who: project maintainer
+- When: 2026-04-01, Phase 4 closeout
+- Where: repository root
+- How:
+  - Preconditions: all Phase 4 batches already committed and pushed
+  - Expected output: phase-closeout files staged
+  - Recovery: unstage unintended files before commit
+
+### GIT-019
+- What: git commit -m "docs(phase-4): publish end report and closeout status"
+- Why: formally close Phase 4 with auditable summary and stop-gate evidence
+- Who: project maintainer
+- When: 2026-04-01, after staging closeout files
+- Where: repository root
+- How:
+  - Preconditions: report and governance updates complete
+  - Expected output: closeout commit hash and file summary
+  - Recovery: resolve hook feedback and recommit
+
+### GIT-020
+- What: git push origin master
+- Why: publish Phase 4 end report and governance closeout updates
+- Who: project maintainer
+- When: 2026-04-01, immediately after closeout commit
+- Where: repository root
+- How:
+  - Preconditions: successful closeout commit
+  - Expected output: remote branch updated with phase closeout
+  - Recovery: resolve remote conflicts and retry push
