@@ -1,0 +1,37 @@
+version: 2
+
+models:
+  - name: fct_revenue_funnel
+    description: Gold-layer funnel fact table with leakage indicators and stage-age buckets.
+    columns:
+      - name: lead_id
+        tests: [not_null, unique]
+      - name: deal_stage
+        tests:
+          - accepted_values:
+              values: ['Prospecting', 'Engaging', 'Won', 'Lost']
+      - name: leakage_reason
+        tests:
+          - accepted_values:
+              values: ['stalled_mid_funnel', 'closed_lost_no_value', 'closed_lost_with_value', 'healthy_or_won']
+      - name: stage_age_bucket
+        tests:
+          - accepted_values:
+              values: ['not_applicable', '0_to_4_days', '5_to_9_days', '10_to_19_days', '20_plus_days']
+      - name: is_leakage_point
+        tests: [not_null]
+
+  - name: dim_sales_teams
+    description: Gold-layer sales team dimension with operational funnel performance rollups.
+    columns:
+      - name: sales_agent
+        tests: [not_null, unique]
+      - name: opportunities_total
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+      - name: win_rate
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1

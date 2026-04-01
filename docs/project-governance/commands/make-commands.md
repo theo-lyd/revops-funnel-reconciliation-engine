@@ -77,3 +77,38 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: source files/API availability and warehouse path readiness
   - Expected output: loaded bronze tables, parquet outputs, freshness report
   - Recovery: fix missing files, schema mismatches, or ingestion script errors
+
+## Phase 4 Batch 4.1 execution entries
+
+### MK-007
+- What: make dbt-build
+- Why: validate new Gold models (`fct_revenue_funnel`, `dim_sales_teams`) compile and materialize correctly
+- Who: project maintainer
+- When: 2026-04-01, Phase 4 Batch 4.1 validation
+- Where: repository root in dev container
+- How:
+  - Preconditions: dbt profile configured and source data available
+  - Expected output: `PASS=77 WARN=0 ERROR=0 SKIP=0 TOTAL=77`
+  - Recovery: inspect failing model/test logs and compiled SQL in dbt `target/`
+
+### MK-008
+- What: make dbt-test
+- Why: execute all dbt data tests including newly added marts contracts
+- Who: project maintainer
+- When: 2026-04-01, Phase 4 Batch 4.1 validation
+- Where: repository root in dev container
+- How:
+  - Preconditions: models built successfully
+  - Expected output: `PASS=61 WARN=0 ERROR=0 SKIP=0 TOTAL=61`
+  - Recovery: address test contract failures and rerun
+
+### MK-009
+- What: make quality-gate
+- Why: ensure full project regression safety after Phase 4 additions
+- Who: project maintainer
+- When: 2026-04-01, Phase 4 Batch 4.1 validation
+- Where: repository root in dev container
+- How:
+  - Preconditions: lint/test/dbt profile readiness
+  - Expected output: lint, pytest, dbt-test, quality-checks, and GE validation all succeed
+  - Recovery: execute failing sub-target independently, remediate, rerun full gate

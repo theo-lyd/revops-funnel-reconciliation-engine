@@ -68,3 +68,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: at least one commit exists
   - Expected output: short hash, date, and subject line
   - Recovery: none required
+
+## Phase 4 Batch 4.1 execution entries
+
+### GIT-006
+- What: git add dbt/models/marts docs/reports/phase-4 docs/project-governance
+- Why: stage Gold marts, phase reports, and governance log updates as one coherent batch
+- Who: project maintainer
+- When: 2026-04-01, end of Phase 4 Batch 4.1
+- Where: repository root
+- How:
+  - Preconditions: validation commands completed successfully
+  - Expected output: files staged with no unintended artifacts
+  - Recovery: unstage incorrect files with `git restore --staged <file>`
+
+### GIT-007
+- What: git commit -m "feat(phase-4): deliver batch-4.1 gold marts foundation"
+- Why: record successful completion of Batch 4.1 with traceable phase context
+- Who: project maintainer
+- When: 2026-04-01, end of Phase 4 Batch 4.1
+- Where: repository root
+- How:
+  - Preconditions: staged scope reviewed and clean
+  - Expected output: new commit hash and file change summary
+  - Recovery: if hook fails, remediate hook cause and recommit
+
+### GIT-008
+- What: git push origin master
+- Why: publish validated Batch 4.1 artifacts and reports
+- Who: project maintainer
+- When: 2026-04-01, after commit creation
+- Where: repository root with remote access
+- How:
+  - Preconditions: successful commit and authenticated remote
+  - Expected output: remote branch updated
+  - Recovery: resolve rejected push via pull/rebase and rerun push

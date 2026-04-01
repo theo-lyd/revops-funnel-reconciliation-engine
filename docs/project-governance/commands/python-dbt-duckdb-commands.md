@@ -99,3 +99,27 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: pandas and great-expectations installed, model tables available
   - Expected output: validation passed summary or listed failures
   - Recovery: fix data contract violations and rerun
+
+## Phase 4 Batch 4.1 execution entries
+
+### PDD-009
+- What: cd dbt && dbt build --profiles-dir profiles
+- Why: validate newly added Gold marts and tests in full graph execution
+- Who: project maintainer
+- When: 2026-04-01, Phase 4 Batch 4.1 validation
+- Where: dbt project directory
+- How:
+  - Preconditions: profile configured and Bronze/Silver sources present
+  - Expected output: successful completion with 77 total tasks and no errors
+  - Recovery: check failing nodes in dbt logs and `target/compiled`
+
+### PDD-010
+- What: cd dbt && dbt test --profiles-dir profiles --threads 1
+- Why: run full data-test suite including marts contracts with stable threading settings
+- Who: project maintainer
+- When: 2026-04-01, Phase 4 Batch 4.1 validation
+- Where: dbt project directory
+- How:
+  - Preconditions: successful dbt build
+  - Expected output: 61 tests passed with no errors
+  - Recovery: fix failing contracts and rerun test command

@@ -70,3 +70,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: Install git-lfs when repository policy requires it, or avoid local hook drift
 - Alternative resolution options: Install git-lfs package and keep hooks active
 - Verification evidence: Push to origin completed successfully
+
+### Issue ID: ISS-006
+- Phase and batch: Phase 4 Batch 4.1
+- Date observed: 2026-04-01
+- Where it occurred: Batch validation and quality-gate execution
+- Symptom: No blocking defects encountered
+- Root cause: Not applicable
+- Resolution: Not applicable
+- How to avoid: Continue incremental validation strategy (`dbt build`, `dbt test`, `quality-gate`) per batch
+- Alternative resolution options: Not applicable
+- Verification evidence: Full validation passed (`PASS=77` in dbt build, `PASS=61` in dbt test, quality gate successful)
