@@ -5,7 +5,7 @@ AIRFLOW_CONSTRAINTS ?= https://raw.githubusercontent.com/apache/airflow/constrai
 DBT_THREADS_LOCAL ?= 1
 DBT_THREADS_PROD ?= 4
 
-.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle production-stop-gate production-stop-gate-strict query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness metabase-setup streamlit-dev
+.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle production-stop-gate production-stop-gate-strict query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness metabase-setup streamlit-dev anomaly-check insights-generate
 
 setup:
 	$(PIP) install "apache-airflow==$(AIRFLOW_VERSION)" --constraint "$(AIRFLOW_CONSTRAINTS)"
@@ -139,3 +139,11 @@ metabase-setup:
 streamlit-dev:
 	@echo "Starting Streamlit app on port $${STREAMLIT_SERVER_PORT:-8501}..."
 	streamlit run scripts/analytics/streamlit_app.py --server.port $${STREAMLIT_SERVER_PORT:-8501}
+
+anomaly-check:
+	@echo "Running Batch 5.4 anomaly monitoring check..."
+	$(PYTHON) scripts/analytics/anomaly_monitor.py --source duckdb --output-json $(ANOMALY_REPORT_PATH) --output-markdown $(ANOMALY_MARKDOWN_PATH)
+
+insights-generate:
+	@echo "Generating Batch 5.4 monitoring insights..."
+	$(PYTHON) scripts/analytics/anomaly_monitor.py --source duckdb --output-json $(ANOMALY_REPORT_PATH) --output-markdown $(ANOMALY_MARKDOWN_PATH)

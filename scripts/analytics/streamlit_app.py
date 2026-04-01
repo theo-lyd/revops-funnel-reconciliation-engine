@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Streamlit app for Phase 5.2 self-service analytics.
+"""Streamlit app for Phase 5 AI-driven analytics.
 
 This app exposes a governed set of query templates over Gold-layer models.
 It defaults to DuckDB for local use and supports Snowflake when optional
@@ -21,6 +21,13 @@ import plotly.express as px
 import streamlit as st
 from dotenv import load_dotenv
 
+from revops_funnel.analytics_monitoring import (
+    build_alert_message,
+    detect_anomalies,
+    summarize_findings,
+    write_monitoring_report,
+)
+
 load_dotenv()
 
 BI_SCHEMA = os.getenv("BI_CONSUMPTION_SCHEMA", "analytics_gold")
@@ -31,6 +38,17 @@ OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "600"))
 LLM_RATE_LIMIT_PER_MINUTE = int(os.getenv("LLM_RATE_LIMIT_PER_MINUTE", "10"))
 LLM_AUDIT_LOG_PATH = os.getenv("LLM_AUDIT_LOG_PATH", "artifacts/ai/llm_query_audit.jsonl")
+ANOMALY_DETECTION_SENSITIVITY = float(os.getenv("ANOMALY_DETECTION_SENSITIVITY", "2.0"))
+ANOMALY_CHECK_CADENCE_HOURS = int(os.getenv("ANOMALY_CHECK_CADENCE_HOURS", "24"))
+ALERT_EMAIL_RECIPIENTS = [
+    recipient.strip()
+    for recipient in os.getenv("ALERT_EMAIL_RECIPIENTS", "").split(",")
+    if recipient.strip()
+]
+MONITORING_DASHBOARD_REFRESH_INTERVAL = int(
+    os.getenv("MONITORING_DASHBOARD_REFRESH_INTERVAL", "300")
+)
+ANOMALY_REPORT_PATH = os.getenv("ANOMALY_REPORT_PATH", "artifacts/monitoring/anomaly_report.json")
 
 SNOWFLAKE_ACCOUNT = os.getenv("SNOWFLAKE_ACCOUNT", "")
 SNOWFLAKE_USER = os.getenv("SNOWFLAKE_USER", "")
@@ -388,6 +406,26 @@ def _distinct_offices(source: str) -> list[str]:
     return [str(v) for v in df["regional_office"].dropna().tolist()]
 
 
+@st.cache_data(ttl=MONITORING_DASHBOARD_REFRESH_INTERVAL)
+def _load_monitoring_frame(source: str) -> pd.DataFrame:
+    sql = f"""
+        select
+            metric_month,
+            regional_office,
+            total_opportunities,
+            won_opportunities,
+            lost_opportunities,
+            leakage_points,
+            avg_cycle_days,
+            avg_stage_age_days,
+            win_rate,
+            leakage_ratio
+        from {BI_SCHEMA}.bi_executive_funnel_overview
+        order by 1, 2
+        """
+    return _run_duckdb_query(sql) if source == "DuckDB" else _run_snowflake_query(sql)
+
+
 def _render_chart(df: pd.DataFrame, template: QueryTemplate) -> None:
     if df.empty or template.chart_x not in df.columns or template.chart_y not in df.columns:
         st.info("No chart rendered for this selection.")
@@ -417,6 +455,73 @@ def _render_kpis(df: pd.DataFrame, template_key: str) -> None:
         c2.metric("Avg Win Rate", f"{avg_win:.2%}")
         c3.metric("Avg Leakage Ratio", f"{avg_leak:.2%}")
         c4.metric("Avg Cycle Days", f"{avg_cycle:.1f}")
+
+
+def _render_monitoring_dashboard(source: str) -> None:
+    st.subheader("Monitoring Dashboard")
+    st.caption(
+        "Phase 5.4: anomaly detection over the executive funnel overview with "
+        "alert-ready summaries."
+    )
+
+    try:
+        frame = _load_monitoring_frame(source)
+    except Exception as exc:
+        st.error(f"Unable to load monitoring data: {exc}")
+        return
+
+    findings = detect_anomalies(frame, ANOMALY_DETECTION_SENSITIVITY)
+    alert_message = build_alert_message(findings)
+    summary = summarize_findings(findings)
+
+    write_monitoring_report(
+        findings=findings,
+        output_path=ANOMALY_REPORT_PATH,
+        sensitivity=ANOMALY_DETECTION_SENSITIVITY,
+        cadence_hours=ANOMALY_CHECK_CADENCE_HOURS,
+        source=source,
+        recipients=ALERT_EMAIL_RECIPIENTS,
+    )
+
+    metric_columns = st.columns(4)
+    metric_columns[0].metric("Monitoring rows", f"{len(frame):,}")
+    metric_columns[1].metric("Anomalies", f"{len(findings):,}")
+    metric_columns[2].metric(
+        "High priority",
+        f"{sum(1 for finding in findings if finding.severity in {'high', 'critical'}):,}",
+    )
+    metric_columns[3].metric("Recipients", f"{len(ALERT_EMAIL_RECIPIENTS):,}")
+
+    st.info(summary)
+    st.code(alert_message, language="text")
+
+    if frame.empty:
+        st.warning("No monitoring data available.")
+        return
+
+    if not findings:
+        st.success("No anomalies detected in the current monitoring window.")
+    else:
+        finding_frame = pd.DataFrame([finding.__dict__ for finding in findings])
+        st.dataframe(finding_frame, use_container_width=True, hide_index=True)
+        chart_frame = (
+            finding_frame.groupby(["regional_office", "metric_name"])
+            .size()
+            .reset_index(name="anomaly_count")
+        )
+        chart = px.bar(
+            chart_frame,
+            x="regional_office",
+            y="anomaly_count",
+            color="metric_name",
+            barmode="group",
+            title="Anomalies by Office and Metric",
+        )
+        chart.update_layout(height=420, margin=dict(l=20, r=20, t=40, b=20))
+        st.plotly_chart(chart, use_container_width=True)
+
+    with st.expander("Monitoring Data Preview", expanded=False):
+        st.dataframe(frame.tail(12), use_container_width=True, hide_index=True)
 
 
 def main() -> None:
@@ -481,42 +586,45 @@ def main() -> None:
             )
             run_query = True
 
-    selected_template = templates[selected_template_key]
-    st.subheader(selected_template.name)
-    st.write(selected_template.description)
+    analytics_tab, monitoring_tab = st.tabs(["Analytics Explorer", "Monitoring Dashboard"])
 
-    if not run_query:
-        st.info("Select controls and click Run Template to query the Gold layer.")
-        return
+    with analytics_tab:
+        selected_template = templates[selected_template_key]
+        st.subheader(selected_template.name)
+        st.write(selected_template.description)
 
-    sql = _apply_filters(selected_template, selected_offices)
-    sql = _apply_date_filters(sql, selected_template, start_date, end_date, source)
-    sql = _finalize_query(sql)
+        if not run_query:
+            st.info("Select controls and click Run Template to query the Gold layer.")
+        else:
+            sql = _apply_filters(selected_template, selected_offices)
+            sql = _apply_date_filters(sql, selected_template, start_date, end_date, source)
+            sql = _finalize_query(sql)
 
-    with st.expander("SQL Preview", expanded=False):
-        st.code(sql, language="sql")
+            with st.expander("SQL Preview", expanded=False):
+                st.code(sql, language="sql")
 
-    try:
-        df = _run_duckdb_query(sql) if source == "DuckDB" else _run_snowflake_query(sql)
-    except Exception as exc:
-        st.error(f"Query failed: {exc}")
-        return
+            try:
+                df = _run_duckdb_query(sql) if source == "DuckDB" else _run_snowflake_query(sql)
+            except Exception as exc:
+                st.error(f"Query failed: {exc}")
+            else:
+                if df.empty:
+                    st.warning("Query succeeded but returned no rows for the selected filters.")
+                else:
+                    _render_kpis(df, selected_template_key)
+                    _render_chart(df, selected_template)
 
-    if df.empty:
-        st.warning("Query succeeded but returned no rows for the selected filters.")
-        return
+                    st.dataframe(df, use_container_width=True, hide_index=True)
+                    csv_data = df.to_csv(index=False).encode("utf-8")
+                    st.download_button(
+                        "Download Results (CSV)",
+                        data=csv_data,
+                        file_name="revops_query_result.csv",
+                        mime="text/csv",
+                    )
 
-    _render_kpis(df, selected_template_key)
-    _render_chart(df, selected_template)
-
-    st.dataframe(df, use_container_width=True, hide_index=True)
-    csv_data = df.to_csv(index=False).encode("utf-8")
-    st.download_button(
-        "Download Results (CSV)",
-        data=csv_data,
-        file_name="revops_query_result.csv",
-        mime="text/csv",
-    )
+    with monitoring_tab:
+        _render_monitoring_dashboard(source)
 
 
 if __name__ == "__main__":

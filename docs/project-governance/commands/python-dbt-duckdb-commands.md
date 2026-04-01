@@ -289,3 +289,14 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: Batch 5.2 dependencies installed; `OPENAI_API_KEY` optional for LLM mode
   - Expected output: Streamlit app starts with AI Query Assistant, deterministic fallback routing, and JSONL audit logging
   - Recovery: if OpenAI SDK or credentials are unavailable, app should continue in heuristic mode; verify `LLM_AUDIT_LOG_PATH` permissions
+
+### PDD-025
+- What: python scripts/analytics/anomaly_monitor.py --source duckdb --output-json <path> --output-markdown <path>
+- Why: generate Batch 5.4 anomaly report and stakeholder-ready monitoring summary
+- Who: data engineer or analytics developer
+- When: 2026-04-02, Batch 5.4 implementation
+- Where: repository root
+- How:
+  - Preconditions: DuckDB warehouse initialized; monitoring environment variables configured; output directories writable
+  - Expected output: JSON anomaly report and Markdown summary written to artifact paths; exit code 2 if severe anomalies are detected
+  - Recovery: check monitoring thresholds and source data cadence; rerun after restoring access or adjusting configuration

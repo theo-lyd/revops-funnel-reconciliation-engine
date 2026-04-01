@@ -257,3 +257,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: keep AI output restricted to the approved template catalog and known office filters; continue to store secrets in environment variables only
 - Alternative resolution options: disable OpenAI path entirely and use heuristic-only routing in constrained environments
 - Verification evidence: `make lint` and `make test` passed after Batch 5.3 updates; audit path is ignored by git
+
+### Issue ID: ISS-023
+- Phase and batch: Phase 5 Batch 5.4 - Analytics insights and anomaly detection
+- Date observed: 2026-04-02
+- Where it occurred: Batch 5.4 monitoring integration and report generation
+- Symptom: no blocking defects; monitoring report and dashboard pipeline were implemented successfully
+- Root cause: not applicable
+- Resolution: added shared anomaly detection helpers, Streamlit monitoring dashboard, and CLI report generator with governed outputs
+- How to avoid: keep monitoring thresholds configurable and continue to validate report outputs against the Gold-layer schema
+- Alternative resolution options: add email transport or scheduled orchestration in a later hardening step
+- Verification evidence: `make lint` and `make test` passed after Batch 5.4 implementation; generated artifacts are ignored by git

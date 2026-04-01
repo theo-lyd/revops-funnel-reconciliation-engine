@@ -558,3 +558,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful local commit and remote connectivity
   - Expected output: remote master updated and CI workflow triggered
   - Recovery: resolve remote conflicts and retry push
+
+## Phase 5: Analytics insights and anomaly detection entries
+
+### GIT-048
+- What: git add src/revops_funnel/analytics_monitoring.py scripts/analytics/anomaly_monitor.py scripts/analytics/streamlit_app.py .env.example .gitignore Makefile README.md docs/reports/phase-5/batch-5.4-analytics-insights-and-anomaly-detection.md docs/project-governance/commands/make-commands.md docs/project-governance/commands/python-dbt-duckdb-commands.md docs/project-governance/commands/git-commands.md docs/project-governance/issues-log.md
+- Why: stage Batch 5.4 anomaly detection, monitoring dashboard, CLI monitor, and governance updates as one auditable scope
+- Who: data engineer or analytics lead
+- When: 2026-04-02, Batch 5.4 completion
+- Where: repository root
+- How:
+  - Preconditions: lint and test checks pass on monitoring code
+  - Expected output: intended Batch 5.4 files staged without generated artifacts
+  - Recovery: unstage unrelated files and restage explicit Batch 5.4 scope
+
+### GIT-049
+- What: git commit -m "feat(phase-5): implement batch 5.4 anomaly monitoring"
+- Why: persist anomaly detection, monitoring dashboard, and alert report generation for Phase 5
+- Who: data engineer or analytics lead
+- When: 2026-04-02, after staging review
+- Where: repository root
+- How:
+  - Preconditions: pre-commit hooks pass on staged files
+  - Expected output: commit hash with Batch 5.4 summary
+  - Recovery: resolve formatting or hook feedback and recommit
+
+### GIT-050
+- What: git push origin master
+- Why: publish Batch 5.4 deliverables so monitoring and anomaly reporting are available for review and downstream automation
+- Who: data engineer or analytics lead
+- When: 2026-04-02, immediately after Batch 5.4 commit
+- Where: repository root
+- How:
+  - Preconditions: successful local commit and remote connectivity
+  - Expected output: remote master updated and CI workflow triggered
+  - Recovery: resolve remote conflicts and retry push

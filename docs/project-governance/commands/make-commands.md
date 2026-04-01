@@ -430,3 +430,25 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: `OPENAI_API_KEY` is optional; `scripts/analytics/streamlit_app.py` and dependencies are installed
   - Expected output: Streamlit app launches with the AI Query Assistant sidebar, governed template routing, and audit logging to JSONL
   - Recovery: verify `.env` values for `OPENAI_MODEL`, `LLM_MAX_TOKENS`, and `LLM_AUDIT_LOG_PATH`; if OpenAI is unavailable, app falls back to deterministic routing
+
+### MK-037
+- What: make anomaly-check
+- Why: run Batch 5.4 anomaly detection over the executive funnel overview and generate a JSON monitoring report
+- Who: data engineer or analytics developer
+- When: 2026-04-02, Batch 5.4 implementation
+- Where: repository root in dev container
+- How:
+  - Preconditions: DuckDB warehouse is initialized and monitoring config variables are set
+  - Expected output: JSON report written to `ANOMALY_REPORT_PATH` and Markdown summary written to `ANOMALY_MARKDOWN_PATH`
+  - Recovery: verify `DUCKDB_PATH`, monitoring env vars, and artifact write permissions; rerun if data source is unavailable
+
+### MK-038
+- What: make insights-generate
+- Why: generate Batch 5.4 monitoring insights and alert-ready summaries for stakeholders
+- Who: data engineer or analytics developer
+- When: 2026-04-02, Batch 5.4 implementation
+- Where: repository root in dev container
+- How:
+  - Preconditions: same as `make anomaly-check`; markdown output path is writable
+  - Expected output: monitoring JSON and Markdown artifacts refreshed with latest anomaly summary
+  - Recovery: review anomaly severity thresholds and output permissions; rerun after fixing environment issues
