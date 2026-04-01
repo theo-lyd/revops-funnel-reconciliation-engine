@@ -123,3 +123,27 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: successful dbt build
   - Expected output: 61 tests passed with no errors
   - Recovery: fix failing contracts and rerun test command
+
+## Phase 4 Batch 4.2 execution entries
+
+### PDD-011
+- What: cd dbt && dbt build --profiles-dir profiles --threads 1
+- Why: validate semantic contract model (`dim_metric_contract`) and expanded marts test graph
+- Who: project maintainer
+- When: 2026-04-01, Phase 4 Batch 4.2 validation
+- Where: dbt project directory
+- How:
+  - Preconditions: dbt dependencies installed and profile configured
+  - Expected output: 84 total tasks completed successfully
+  - Recovery: inspect dbt logs and compiled SQL under `dbt/target`
+
+### PDD-012
+- What: cd dbt && dbt test --profiles-dir profiles --threads 1
+- Why: execute semantic contract and funnel data tests with stable single-thread runtime
+- Who: project maintainer
+- When: 2026-04-01, Phase 4 Batch 4.2 validation
+- Where: dbt project directory
+- How:
+  - Preconditions: successful dbt build
+  - Expected output: 67 tests passed with no warnings or errors
+  - Recovery: resolve failing tests and rerun

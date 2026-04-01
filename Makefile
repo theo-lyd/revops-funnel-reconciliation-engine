@@ -38,7 +38,7 @@ dbt-deps:
 	cd dbt && dbt deps
 
 dbt-build:
-	cd dbt && dbt build --profiles-dir profiles
+	cd dbt && dbt build --profiles-dir profiles --threads 1
 
 dbt-snapshot:
 	cd dbt && dbt snapshot --profiles-dir profiles

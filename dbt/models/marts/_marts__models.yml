@@ -35,3 +35,17 @@ models:
           - dbt_utils.accepted_range:
               min_value: 0
               max_value: 1
+
+  - name: dim_metric_contract
+    description: Governed semantic metric contract used to align BI and AI analytics outputs.
+    columns:
+      - name: metric_name
+        tests: [not_null, unique]
+      - name: business_definition
+        tests: [not_null]
+      - name: grain
+        tests: [not_null]
+      - name: source_model
+        tests: [not_null]
+      - name: owner_role
+        tests: [not_null]

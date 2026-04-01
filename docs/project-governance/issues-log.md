@@ -81,3 +81,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: Continue incremental validation strategy (`dbt build`, `dbt test`, `quality-gate`) per batch
 - Alternative resolution options: Not applicable
 - Verification evidence: Full validation passed (`PASS=77` in dbt build, `PASS=61` in dbt test, quality gate successful)
+
+### Issue ID: ISS-007
+- Phase and batch: Phase 4 Batch 4.2
+- Date observed: 2026-04-01
+- Where it occurred: `make dbt-build` execution in local dev container
+- Symptom: Intermittent Python runtime crash under multithreaded dbt build execution
+- Root cause: Runtime instability in current local container stack when dbt uses parallel threads
+- Resolution: Set `dbt-build` to `--threads 1` in `Makefile`
+- How to avoid: Use conservative thread settings for local validation and CI where runtime stability is a priority
+- Alternative resolution options: Upgrade runtime stack and dbt adapter, then re-benchmark higher thread counts
+- Verification evidence: `make dbt-build` passed with `PASS=84` and `make quality-gate` passed

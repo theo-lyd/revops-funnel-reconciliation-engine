@@ -103,3 +103,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful commit and authenticated remote
   - Expected output: remote branch updated
   - Recovery: resolve rejected push via pull/rebase and rerun push
+
+## Phase 4 Batch 4.2 execution entries
+
+### GIT-009
+- What: git add dbt/models/marts docs/reports/phase-4 docs/project-governance Makefile
+- Why: stage semantic contract implementation, phase docs, governance updates, and build-stability tweak
+- Who: project maintainer
+- When: 2026-04-01, end of Phase 4 Batch 4.2
+- Where: repository root
+- How:
+  - Preconditions: all validation commands passed
+  - Expected output: intended files staged and ready for commit
+  - Recovery: unstage accidental files before commit
+
+### GIT-010
+- What: git commit -m "feat(phase-4): deliver batch-4.2 semantic metric contract"
+- Why: capture Batch 4.2 semantic layer/governance completion as traceable unit
+- Who: project maintainer
+- When: 2026-04-01, after staging review
+- Where: repository root
+- How:
+  - Preconditions: staged scope is correct
+  - Expected output: commit hash with file-change summary
+  - Recovery: if blocked by hooks, remediate issues and recommit
+
+### GIT-011
+- What: git push origin master
+- Why: publish Phase 4 Batch 4.2 artifacts and maintain stop-gate discipline
+- Who: project maintainer
+- When: 2026-04-01, immediately after commit
+- Where: repository root
+- How:
+  - Preconditions: successful commit and remote access
+  - Expected output: branch update on origin/master
+  - Recovery: resolve remote conflicts and retry push

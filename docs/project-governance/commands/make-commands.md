@@ -112,3 +112,38 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: lint/test/dbt profile readiness
   - Expected output: lint, pytest, dbt-test, quality-checks, and GE validation all succeed
   - Recovery: execute failing sub-target independently, remediate, rerun full gate
+
+## Phase 4 Batch 4.2 execution entries
+
+### MK-010
+- What: make dbt-build
+- Why: validate semantic contract model materialization and marts contract tests in full graph build
+- Who: project maintainer
+- When: 2026-04-01, Phase 4 Batch 4.2 validation
+- Where: repository root in dev container
+- How:
+  - Preconditions: dbt profile configured and bronze/silver source tables available
+  - Expected output: `PASS=84 WARN=0 ERROR=0 SKIP=0 TOTAL=84`
+  - Recovery: inspect failing dbt nodes and rerun after model/test corrections
+
+### MK-011
+- What: make dbt-test
+- Why: verify all dbt data contracts including new `dim_metric_contract` tests
+- Who: project maintainer
+- When: 2026-04-01, Phase 4 Batch 4.2 validation
+- Where: repository root in dev container
+- How:
+  - Preconditions: successful `make dbt-build`
+  - Expected output: `PASS=67 WARN=0 ERROR=0 SKIP=0 TOTAL=67`
+  - Recovery: resolve failing test SQL and rerun
+
+### MK-012
+- What: make quality-gate
+- Why: confirm no regression in linting, unit tests, dbt tests, and quality scripts
+- Who: project maintainer
+- When: 2026-04-01, Phase 4 Batch 4.2 validation
+- Where: repository root in dev container
+- How:
+  - Preconditions: all dependencies installed and profile configured
+  - Expected output: complete successful sequence across all sub-targets
+  - Recovery: remediate failed sub-target first, then rerun full gate
