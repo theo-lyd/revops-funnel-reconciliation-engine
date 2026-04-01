@@ -228,3 +228,27 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: `SNOWFLAKE_*` credentials, warehouse access, and role grants
   - Expected output: prod-target dbt build/test success in Snowflake environment
   - Recovery: verify secrets, permissions, and profile target settings
+
+## Post-Phase 4 hardening entries
+
+### MK-020
+- What: make lint && make test && make quality-gate && make metric-parity-check
+- Why: validate top-3 hardening improvements (thread controls, semantic contract versioning, parity scaffold)
+- Who: project maintainer
+- When: 2026-04-01, post-Phase 4 hardening batch
+- Where: repository root in dev container
+- How:
+  - Preconditions: dbt artifacts and local warehouse initialized
+  - Expected output: lint/test/quality-gate pass, parity command completes in local-only mode when Snowflake vars are absent
+  - Recovery: address failing lint/tests, rerun dbt build before dbt test, then rerun full command chain
+
+### MK-021
+- What: make metric-parity-check-strict
+- Why: enforce DuckDB↔Snowflake parity in deployment pipelines where Snowflake credentials are present
+- Who: project maintainer
+- When: introduced in 2026-04-01 hardening batch
+- Where: CI/CD or production-ready shell with Snowflake credentials
+- How:
+  - Preconditions: `SNOWFLAKE_*` env vars and Snowflake connector installed
+  - Expected output: parity check pass or non-zero exit on drift
+  - Recovery: investigate source-model parity, data lag, and environment configuration mismatches

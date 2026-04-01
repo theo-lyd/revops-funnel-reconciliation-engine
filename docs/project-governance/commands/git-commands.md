@@ -243,3 +243,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful closeout commit
   - Expected output: remote branch updated with phase closeout
   - Recovery: resolve remote conflicts and retry push
+
+## Post-Phase 4 hardening entries
+
+### GIT-021
+- What: git add Makefile .env.example README.md dbt/models/marts docs/reports/phase-4 scripts/quality docs/project-governance
+- Why: stage top-3 hardening changes and required governance updates as one auditable batch
+- Who: project maintainer
+- When: 2026-04-01, post-Phase 4 hardening
+- Where: repository root
+- How:
+  - Preconditions: lint/test/quality-gate/parity-check pass
+  - Expected output: intended hardening files staged cleanly
+  - Recovery: unstage non-scope files and restage explicitly
+
+### GIT-022
+- What: git commit -m "chore(hardening): implement top-3 safety improvements"
+- Why: persist environment-safe optimizations and parity scaffold as a grouped change
+- Who: project maintainer
+- When: 2026-04-01, after staging review
+- Where: repository root
+- How:
+  - Preconditions: staged files verified and governance docs updated
+  - Expected output: commit hash and summary
+  - Recovery: resolve hook feedback and recommit
+
+### GIT-023
+- What: git push origin master
+- Why: publish hardening improvements to remote branch
+- Who: project maintainer
+- When: 2026-04-01, immediately after hardening commit
+- Where: repository root
+- How:
+  - Preconditions: successful commit and remote access
+  - Expected output: remote branch updated with hardening commit
+  - Recovery: resolve remote rejection and retry push

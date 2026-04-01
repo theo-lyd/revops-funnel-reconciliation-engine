@@ -41,6 +41,16 @@ models:
     columns:
       - name: metric_name
         tests: [not_null, unique]
+      - name: contract_version
+        tests: [not_null]
+      - name: effective_from
+        tests: [not_null]
+      - name: approval_status
+        tests:
+          - accepted_values:
+              values: ['approved']
+      - name: approved_by
+        tests: [not_null]
       - name: business_definition
         tests: [not_null]
       - name: grain

@@ -64,6 +64,9 @@ export SNOWFLAKE_WAREHOUSE='TRANSFORMING'
 # Build/test against Snowflake target
 make dbt-build-prod
 make dbt-test-prod
+
+# Optional parity check between local DuckDB and Snowflake metrics
+make metric-parity-check
 ```
 
 ## Repository Layout

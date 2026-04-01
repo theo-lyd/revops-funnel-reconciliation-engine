@@ -125,3 +125,25 @@ This log tracks implementation issues across all phases.
 - How to avoid: Continue batch-level validation plus formal phase closeout reporting workflow
 - Alternative resolution options: Not applicable
 - Verification evidence: Phase 4 end report created and closeout changes pushed
+
+### Issue ID: ISS-011
+- Phase and batch: Post-Phase 4 hardening (top 3 improvements)
+- Date observed: 2026-04-01
+- Where it occurred: `make quality-gate` after semantic contract schema expansion
+- Symptom: dbt tests failed due to missing new columns in already-materialized relation
+- Root cause: quality gate ran `dbt-test` before rebuilding changed models
+- Resolution: updated `quality-gate` target to run `dbt-build` before `dbt-test`
+- How to avoid: always build models prior to contract tests when schema changes are possible
+- Alternative resolution options: run selective `dbt build --select` on changed models before tests
+- Verification evidence: quality gate passed with `PASS=96` build and `PASS=78` tests
+
+### Issue ID: ISS-012
+- Phase and batch: Post-Phase 4 hardening (top 3 improvements)
+- Date observed: 2026-04-01
+- Where it occurred: parity-check command in local environment
+- Symptom: Snowflake parity not executed due to absent Snowflake environment variables
+- Root cause: local development environment intentionally does not include production credentials
+- Resolution: parity script completes in local-only mode; strict mode added for deployment environments
+- How to avoid: provide credentials only in secured CI/CD or production runtime
+- Alternative resolution options: inject temporary scoped credentials in dedicated parity-validation sandbox
+- Verification evidence: local parity command returned success with explicit skip message

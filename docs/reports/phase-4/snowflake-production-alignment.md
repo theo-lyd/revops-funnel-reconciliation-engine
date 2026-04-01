@@ -38,7 +38,8 @@ Define how this project transitions from local DuckDB development to governed Sn
 1. Set environment secrets in CI/CD and runtime.
 2. Run `make dbt-build-prod`.
 3. Run `make dbt-test-prod`.
-4. Promote release only when tests and quality checks pass.
+4. Run `make metric-parity-check-strict` to compare key metrics with local baseline.
+5. Promote release only when tests and quality checks pass.
 
 ## Cost and observability controls
 - Use `DBT_QUERY_TAG` for workload traceability.
@@ -50,3 +51,4 @@ Define how this project transitions from local DuckDB development to governed Sn
 - Compare key metrics (leakage ratio, win rate, cycle days) between dev and prod slices.
 - Validate contract tests before and after deployment.
 - Record deployment evidence in phase reports and governance logs.
+- Use `scripts/quality/run_metric_parity_check.py` for automated parity checks.

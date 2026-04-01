@@ -171,3 +171,27 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: successful dbt build
   - Expected output: 74 tests passed with no warnings or errors
   - Recovery: address failing tests and rerun
+
+## Post-Phase 4 hardening entries
+
+### PDD-015
+- What: python scripts/quality/run_metric_parity_check.py
+- Why: compare key metrics between DuckDB and Snowflake when available, while staying non-breaking locally
+- Who: project maintainer
+- When: 2026-04-01, top-3 hardening implementation
+- Where: repository root
+- How:
+  - Preconditions: local DuckDB gold model exists
+  - Expected output: local-only completion when Snowflake creds are absent, or parity delta report when present
+  - Recovery: set missing Snowflake variables or run strict mode in deployment environment
+
+### PDD-016
+- What: python scripts/quality/run_metric_parity_check.py --strict-snowflake
+- Why: fail fast in deployment pipelines if Snowflake parity cannot be executed or fails tolerance
+- Who: project maintainer
+- When: introduced in 2026-04-01 hardening implementation
+- Where: CI/CD or production shell
+- How:
+  - Preconditions: Snowflake connector and complete `SNOWFLAKE_*` variables
+  - Expected output: parity pass summary or non-zero exit on failure
+  - Recovery: fix credentials, connector installation, or metric drift before deployment

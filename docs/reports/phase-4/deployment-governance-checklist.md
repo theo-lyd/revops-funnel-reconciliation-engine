@@ -16,6 +16,7 @@ Use this checklist before every production deployment.
 ## C) Production dry run and release
 - `make dbt-build-prod` passes.
 - `make dbt-test-prod` passes.
+- `make metric-parity-check-strict` passes.
 - Query tags are set via `DBT_QUERY_TAG`.
 
 ## D) Post-deploy verification

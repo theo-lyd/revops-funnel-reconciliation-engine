@@ -6,6 +6,7 @@ Provide a governed, non-ambiguous metric dictionary for technical and non-techni
 ## Governance rules
 - Every metric must define business meaning and SQL-level formula.
 - Every metric must define grain, owner, and intended consumption tools.
+- Every metric must have contract metadata: `contract_version`, `effective_from`, `approval_status`, and `approved_by`.
 - Any metric change requires changelog entry and cross-tool parity validation.
 
 ## Core metrics (Batch 4.2)

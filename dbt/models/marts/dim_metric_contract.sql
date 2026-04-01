@@ -1,5 +1,11 @@
 select
     'leakage_ratio' as metric_name,
+    '1.0.0' as contract_version,
+    cast('2026-04-01' as date) as effective_from,
+    cast(null as date) as deprecated_on,
+    'approved' as approval_status,
+    'revops_governance_board' as approved_by,
+    current_date as last_reviewed_on,
     'Leakage points divided by total funnel records.' as business_definition,
     'sum(case when is_leakage_point then 1 else 0 end) / count(*)' as calculation_sql,
     'lead_opportunity' as grain,
@@ -13,6 +19,12 @@ union all
 
 select
     'win_rate' as metric_name,
+    '1.0.0' as contract_version,
+    cast('2026-04-01' as date) as effective_from,
+    cast(null as date) as deprecated_on,
+    'approved' as approval_status,
+    'revops_governance_board' as approved_by,
+    current_date as last_reviewed_on,
     'Won opportunities divided by total opportunities.' as business_definition,
     'sum(case when deal_stage = ''Won'' then 1 else 0 end) / count(*)' as calculation_sql,
     'lead_opportunity' as grain,
@@ -26,6 +38,12 @@ union all
 
 select
     'conversion_ratio_lead_to_engaged' as metric_name,
+    '1.0.0' as contract_version,
+    cast('2026-04-01' as date) as effective_from,
+    cast(null as date) as deprecated_on,
+    'approved' as approval_status,
+    'revops_governance_board' as approved_by,
+    current_date as last_reviewed_on,
     'Share of leads that reached engagement stage.' as business_definition,
     'sum(case when engaged_at is not null then 1 else 0 end) / count(*)' as calculation_sql,
     'lead' as grain,
@@ -39,6 +57,12 @@ union all
 
 select
     'avg_cycle_days' as metric_name,
+    '1.0.0' as contract_version,
+    cast('2026-04-01' as date) as effective_from,
+    cast(null as date) as deprecated_on,
+    'approved' as approval_status,
+    'revops_governance_board' as approved_by,
+    current_date as last_reviewed_on,
     'Average total cycle duration from lead creation to close when available.' as business_definition,
     'avg(total_cycle_days)' as calculation_sql,
     'lead_opportunity' as grain,
@@ -52,6 +76,12 @@ union all
 
 select
     'cac_proxy' as metric_name,
+    '1.0.0' as contract_version,
+    cast('2026-04-01' as date) as effective_from,
+    cast(null as date) as deprecated_on,
+    'approved' as approval_status,
+    'revops_governance_board' as approved_by,
+    current_date as last_reviewed_on,
     'Proxy CAC equal to campaign spend divided by engaged leads.' as business_definition,
     'sum(marketing_spend) / nullif(sum(case when engaged_at is not null then 1 else 0 end), 0)' as calculation_sql,
     'campaign_period' as grain,
@@ -65,6 +95,12 @@ union all
 
 select
     'ltv_proxy' as metric_name,
+    '1.0.0' as contract_version,
+    cast('2026-04-01' as date) as effective_from,
+    cast(null as date) as deprecated_on,
+    'approved' as approval_status,
+    'revops_governance_board' as approved_by,
+    current_date as last_reviewed_on,
     'Proxy LTV equal to average won deal value multiplied by expected repeat factor.' as business_definition,
     'avg(case when deal_stage = ''Won'' then close_value end) * expected_repeat_factor' as calculation_sql,
     'customer_segment' as grain,
