@@ -23,4 +23,5 @@ After checklist completion:
 - Phase 2: Completed and documented (including hardening addendum).
 - Phase 3: Completed initial quality foundation and documented.
 - Phase 4: Completed and documented across batches 4.1 to 4.4 with phase end report.
+- Post-Phase 4 hardening Blocks 1 to 3: Completed and documented.
 - Phase 5+: Planned.

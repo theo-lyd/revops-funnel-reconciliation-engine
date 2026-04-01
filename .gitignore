@@ -206,6 +206,7 @@ data/warehouse/
 *.duckdb
 data/raw/marketing/*.jsonl
 data/processed/
+artifacts/parity/
 .cursorignore
 .cursorindexingignore
 

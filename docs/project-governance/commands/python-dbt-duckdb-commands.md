@@ -195,3 +195,38 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: Snowflake connector and complete `SNOWFLAKE_*` variables
   - Expected output: parity pass summary or non-zero exit on failure
   - Recovery: fix credentials, connector installation, or metric drift before deployment
+
+## Production readiness and parity enforcement block 3 entries
+
+### PDD-017
+- What: python scripts/quality/run_metric_parity_check.py --output-json artifacts/parity/metric_parity_report.json
+- Why: produce a reusable JSON artifact for deployment evidence and parity traceability
+- Who: project maintainer
+- When: 2026-04-01, Block 3 implementation
+- Where: repository root
+- How:
+  - Preconditions: local DuckDB Gold model exists
+  - Expected output: parity report JSON with status, tolerance, and metric deltas
+  - Recovery: rebuild dbt models and rerun if source relation is missing
+
+### PDD-018
+- What: python scripts/quality/run_release_readiness_gate.py
+- Why: run ordered production checks in non-strict mode to preserve local developer workflow
+- Who: project maintainer
+- When: 2026-04-01, Block 3 implementation
+- Where: repository root
+- How:
+  - Preconditions: Python runtime and project dependencies available
+  - Expected output: local-safe skip when Snowflake env vars are not set
+  - Recovery: provide required environment variables to execute full checks
+
+### PDD-019
+- What: python scripts/quality/run_release_readiness_gate.py --strict
+- Why: enforce build/test/parity sequence for controlled production release pipelines
+- Who: project maintainer
+- When: 2026-04-01, Block 3 implementation
+- Where: CI/CD or production shell
+- How:
+  - Preconditions: complete Snowflake credentials and connector availability
+  - Expected output: non-zero failure on missing credentials or failing prod checks
+  - Recovery: remediate credentials/configuration or failing dbt/parity stages before release

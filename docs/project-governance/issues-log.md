@@ -180,3 +180,25 @@ This log tracks implementation issues across all phases.
 - How to avoid: continue incremental reliability controls and mandatory full quality-gate checks
 - Alternative resolution options: Not applicable
 - Verification evidence: lint/test/quality-gate and source freshness checks passed
+
+### Issue ID: ISS-016
+- Phase and batch: Production readiness/parity hardening Block 3
+- Date observed: 2026-04-01
+- Where it occurred: `scripts/quality/run_release_readiness_gate.py`
+- Symptom: Ruff import-order check failed on first lint run
+- Root cause: New script imports were not in tool-expected ordering
+- Resolution: applied Ruff-compatible import ordering and revalidated full gate
+- How to avoid: run file-level Ruff check after creating new scripts
+- Alternative resolution options: use `ruff check --fix` on the changed file before full validation
+- Verification evidence: `make lint` and full validation chain passed
+
+### Issue ID: ISS-017
+- Phase and batch: Production readiness/parity hardening Block 3
+- Date observed: 2026-04-01
+- Where it occurred: Block 3 validation and closeout
+- Symptom: No further blocking defects encountered
+- Root cause: Not applicable
+- Resolution: Not applicable
+- How to avoid: continue strict phased validation discipline and stop-gate enforcement
+- Alternative resolution options: Not applicable
+- Verification evidence: lint/test/quality-gate plus parity-report and readiness-gate checks passed

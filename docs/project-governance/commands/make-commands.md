@@ -300,3 +300,38 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: source has `loaded_at_field` and freshness config
   - Expected output: PASS for configured source freshness checks
   - Recovery: adjust recency windows for realistic source cadence and rerun
+
+## Production readiness and parity enforcement block 3 entries
+
+### MK-026
+- What: make lint && make test && make quality-gate
+- Why: validate Block 3 automation changes without regressing baseline quality controls
+- Who: project maintainer
+- When: 2026-04-01, Block 3 implementation
+- Where: repository root in dev container
+- How:
+  - Preconditions: standard local development dependencies installed
+  - Expected output: lint/test pass, dbt build/test pass, query-pack and quality checks pass
+  - Recovery: fix failing stage and rerun full sequence
+
+### MK-027
+- What: make metric-parity-check-report
+- Why: generate machine-readable parity artifact for release evidence bundles
+- Who: project maintainer
+- When: 2026-04-01, Block 3 implementation
+- Where: repository root in dev container
+- How:
+  - Preconditions: local Gold model is materialized
+  - Expected output: `artifacts/parity/metric_parity_report.json` written
+  - Recovery: run `make dbt-build` if relation missing; validate output path permissions
+
+### MK-028
+- What: make release-readiness-gate
+- Why: execute ordered production-readiness checks in local-safe mode
+- Who: project maintainer
+- When: 2026-04-01, Block 3 implementation
+- Where: repository root in dev container
+- How:
+  - Preconditions: script dependencies available
+  - Expected output: local-safe skip message when Snowflake env vars are absent
+  - Recovery: set required `SNOWFLAKE_*` env vars and run strict target for production pipelines

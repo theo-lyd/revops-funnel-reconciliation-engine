@@ -67,6 +67,15 @@ make dbt-test-prod
 
 # Optional parity check between local DuckDB and Snowflake metrics
 make metric-parity-check
+
+# Generate machine-readable parity report artifact
+make metric-parity-check-report
+
+# End-to-end production readiness gate (local-safe skip without Snowflake env)
+make release-readiness-gate
+
+# Strict production gate for CI/CD with full Snowflake credentials
+make release-readiness-gate-strict
 ```
 
 ## Repository Layout

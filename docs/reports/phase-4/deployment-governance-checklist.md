@@ -17,6 +17,7 @@ Use this checklist before every production deployment.
 - `make dbt-build-prod` passes.
 - `make dbt-test-prod` passes.
 - `make metric-parity-check-strict` passes.
+- `make release-readiness-gate-strict` passes.
 - Query tags are set via `DBT_QUERY_TAG`.
 
 ## D) Post-deploy verification
@@ -30,3 +31,4 @@ Use this checklist before every production deployment.
 - Command logs and outputs summary.
 - Any deviations and approvals.
 - Post-deploy metric parity validation summary.
+- Parity JSON artifact (`artifacts/parity/metric_parity_report.json`) from release run.

@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import argparse
 import importlib
+import json
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 from revops_funnel.config import get_settings
 
@@ -29,6 +31,11 @@ def parse_args() -> argparse.Namespace:
         type=float,
         default=float(os.getenv("PARITY_TOLERANCE", "0.02")),
         help="Maximum allowed absolute delta for metric parity.",
+    )
+    parser.add_argument(
+        "--output-json",
+        default=os.getenv("PARITY_REPORT_PATH", "artifacts/parity/metric_parity_report.json"),
+        help="Path to write machine-readable parity results.",
     )
     return parser.parse_args()
 
@@ -135,38 +142,95 @@ def compare_metric(name: str, left: float | None, right: float | None, tolerance
 
 def main() -> None:
     args = parse_args()
+    effective_tolerance = args.tolerance
+    if args.strict_snowflake and "PARITY_TOLERANCE_STRICT" not in os.environ:
+        effective_tolerance = 0.0
 
     duckdb_metrics = fetch_duckdb_metrics()
     snowflake_metrics = fetch_snowflake_metrics(args.strict_snowflake)
     if snowflake_metrics is None:
         print("Metric parity check completed in local-only mode.")
+        write_report(
+            args.output_json,
+            {
+                "status": "skipped",
+                "reason": "snowflake-unavailable",
+                "strict_mode": args.strict_snowflake,
+                "tolerance": effective_tolerance,
+            },
+        )
         return
+
+    deltas = {
+        "win_rate": metric_delta(duckdb_metrics.win_rate, snowflake_metrics.win_rate),
+        "leakage_ratio": metric_delta(
+            duckdb_metrics.leakage_ratio,
+            snowflake_metrics.leakage_ratio,
+        ),
+        "avg_cycle_days": metric_delta(
+            duckdb_metrics.avg_cycle_days,
+            snowflake_metrics.avg_cycle_days,
+        ),
+    }
 
     checks = [
         compare_metric(
             "win_rate",
             duckdb_metrics.win_rate,
             snowflake_metrics.win_rate,
-            args.tolerance,
+            effective_tolerance,
         ),
         compare_metric(
             "leakage_ratio",
             duckdb_metrics.leakage_ratio,
             snowflake_metrics.leakage_ratio,
-            args.tolerance,
+            effective_tolerance,
         ),
         compare_metric(
             "avg_cycle_days",
             duckdb_metrics.avg_cycle_days,
             snowflake_metrics.avg_cycle_days,
-            args.tolerance,
+            effective_tolerance,
         ),
     ]
+
+    write_report(
+        args.output_json,
+        {
+            "status": "passed" if all(checks) else "failed",
+            "strict_mode": args.strict_snowflake,
+            "tolerance": effective_tolerance,
+            "duckdb": {
+                "win_rate": duckdb_metrics.win_rate,
+                "leakage_ratio": duckdb_metrics.leakage_ratio,
+                "avg_cycle_days": duckdb_metrics.avg_cycle_days,
+            },
+            "snowflake": {
+                "win_rate": snowflake_metrics.win_rate,
+                "leakage_ratio": snowflake_metrics.leakage_ratio,
+                "avg_cycle_days": snowflake_metrics.avg_cycle_days,
+            },
+            "delta": deltas,
+        },
+    )
 
     if not all(checks):
         raise SystemExit(1)
 
     print("Metric parity check passed.")
+
+
+def metric_delta(left: float | None, right: float | None) -> float | None:
+    if left is None or right is None:
+        return None
+    return abs(left - right)
+
+
+def write_report(output_path: str, payload: dict[str, object]) -> None:
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(f"{json.dumps(payload, indent=2)}\n", encoding="utf-8")
+    print(f"Parity report written to {path}")
 
 
 if __name__ == "__main__":

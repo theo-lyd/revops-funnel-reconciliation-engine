@@ -348,3 +348,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful Block 2 commit
   - Expected output: remote branch updated
   - Recovery: resolve remote conflicts and retry push
+
+## Production readiness and parity enforcement block 3 entries
+
+### GIT-030
+- What: git add Makefile .env.example README.md scripts/quality docs/reports/phase-4 docs/project-governance
+- Why: stage Block 3 production-readiness and parity-enforcement changes with governance log updates
+- Who: project maintainer
+- When: 2026-04-01, Block 3 closeout
+- Where: repository root
+- How:
+  - Preconditions: Block 3 validation sequence passed
+  - Expected output: intended Block 3 files staged with no unrelated artifacts
+  - Recovery: unstage out-of-scope files and restage explicitly
+
+### GIT-031
+- What: git commit -m "chore(hardening): implement production readiness block 3"
+- Why: persist release-readiness gate and parity evidence enhancements as one auditable change
+- Who: project maintainer
+- When: 2026-04-01, after staging review
+- Where: repository root
+- How:
+  - Preconditions: staged file set reviewed and clean
+  - Expected output: commit hash and file summary
+  - Recovery: resolve hook issues and recommit
+
+### GIT-032
+- What: git push origin master
+- Why: publish Block 3 completion artifacts and stop-gate status
+- Who: project maintainer
+- When: 2026-04-01, immediately after commit
+- Where: repository root
+- How:
+  - Preconditions: successful Block 3 commit
+  - Expected output: remote branch updated to latest commit
+  - Recovery: resolve remote conflicts and retry push
