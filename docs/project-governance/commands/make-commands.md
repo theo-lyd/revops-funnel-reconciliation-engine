@@ -265,3 +265,38 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: standard local development dependencies installed
   - Expected output: lint/test pass, dbt build/test pass, quality scripts pass
   - Recovery: fix any failing stage and rerun full sequence
+
+## Observability and reliability hardening block 2 entries
+
+### MK-023
+- What: make lint && make test && make quality-gate && make dbt-source-freshness
+- Why: validate Block 2 additions (freshness specs, query-pack runner, release evidence template integration)
+- Who: project maintainer
+- When: 2026-04-01, Block 2 implementation
+- Where: repository root in dev container
+- How:
+  - Preconditions: dbt profile configured and source data available
+  - Expected output: quality-gate pass and freshness pass
+  - Recovery: adjust freshness thresholds/filters for static dataset behavior, then rerun
+
+### MK-024
+- What: make query-pack-validate
+- Why: execute BI query packs as testable reliability artifacts
+- Who: project maintainer
+- When: 2026-04-01, integrated into quality-gate in Block 2
+- Where: repository root in dev container
+- How:
+  - Preconditions: Gold models materialized and query-pack files present
+  - Expected output: per-statement validation messages and final success confirmation
+  - Recovery: fix invalid SQL templates or missing model references
+
+### MK-025
+- What: make dbt-source-freshness
+- Why: enforce dbt-native freshness observability for source recency
+- Who: project maintainer
+- When: 2026-04-01, Block 2 implementation
+- Where: repository root in dev container
+- How:
+  - Preconditions: source has `loaded_at_field` and freshness config
+  - Expected output: PASS for configured source freshness checks
+  - Recovery: adjust recency windows for realistic source cadence and rerun

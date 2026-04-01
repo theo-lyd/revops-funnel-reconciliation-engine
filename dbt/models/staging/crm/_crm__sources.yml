@@ -27,6 +27,10 @@ sources:
       - name: marketing_leads
         description: Synthetic marketing lead events.
         loaded_at_field: created_at
+        freshness:
+          warn_after: {count: 48, period: hour}
+          error_after: {count: 96, period: hour}
+          filter: "created_at >= current_date - interval '30 days'"
 
 models:
   - name: stg_crm_accounts

@@ -313,3 +313,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful commit and remote connectivity
   - Expected output: remote branch updated with Block 1 commit
   - Recovery: resolve remote conflicts and retry
+
+## Observability and reliability hardening block 2 entries
+
+### GIT-027
+- What: git add dbt/models/staging/crm/_crm__sources.yml Makefile scripts/quality docs/project-governance docs/reports/phase-4
+- Why: stage Block 2 observability/reliability artifacts and required governance updates
+- Who: project maintainer
+- When: 2026-04-01, Block 2 closeout
+- Where: repository root
+- How:
+  - Preconditions: validation sequence passed
+  - Expected output: intended Block 2 files staged
+  - Recovery: unstage out-of-scope files and restage explicitly
+
+### GIT-028
+- What: git commit -m "chore(hardening): implement observability and reliability block 2"
+- Why: persist freshness, query-pack validation, and release evidence improvements as a grouped change
+- Who: project maintainer
+- When: 2026-04-01, after staging review
+- Where: repository root
+- How:
+  - Preconditions: staged file set reviewed and clean
+  - Expected output: commit hash and summary
+  - Recovery: resolve hook issues and recommit
+
+### GIT-029
+- What: git push origin master
+- Why: publish Block 2 artifacts and trigger stop-gate decision for next block
+- Who: project maintainer
+- When: 2026-04-01, immediately after commit
+- Where: repository root
+- How:
+  - Preconditions: successful Block 2 commit
+  - Expected output: remote branch updated
+  - Recovery: resolve remote conflicts and retry push

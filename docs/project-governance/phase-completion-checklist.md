@@ -6,6 +6,7 @@ Use this checklist at the end of every phase before requesting go/no-go confirma
 - Scope for current phase is implemented.
 - Tests and quality checks for the phase pass.
 - Required report file is created under docs/reports/phase-X.
+- Release evidence bundle is prepared using `docs/project-governance/release-evidence-bundle-template.md`.
 - Issues log is updated with any new incidents.
 - Command logs are updated with all relevant commands.
 - Commit is created with grouped message.

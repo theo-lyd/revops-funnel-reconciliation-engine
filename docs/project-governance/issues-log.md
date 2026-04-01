@@ -158,3 +158,25 @@ This log tracks implementation issues across all phases.
 - How to avoid: continue policy-first document hardening with mandatory validation after each block
 - Alternative resolution options: Not applicable
 - Verification evidence: lint, tests, dbt build/test, and quality checks all passed
+
+### Issue ID: ISS-014
+- Phase and batch: Observability/reliability hardening Block 2
+- Date observed: 2026-04-01
+- Where it occurred: `dbt source freshness` for `bronze_raw.marketing_leads`
+- Symptom: Freshness failed as stale under initial 12h/24h thresholds
+- Root cause: Static synthetic sample data cadence does not match near-real-time SLA window
+- Resolution: adjusted thresholds to 48h warn / 96h error with same recency filter
+- How to avoid: set source freshness windows based on realistic source cadence and dataset refresh model
+- Alternative resolution options: drive freshness from ingestion audit metadata model instead of source timestamp
+- Verification evidence: `make dbt-source-freshness` passed after threshold update
+
+### Issue ID: ISS-015
+- Phase and batch: Observability/reliability hardening Block 2
+- Date observed: 2026-04-01
+- Where it occurred: Block 2 validation and closeout
+- Symptom: No further blocking defects encountered
+- Root cause: Not applicable
+- Resolution: Not applicable
+- How to avoid: continue incremental reliability controls and mandatory full quality-gate checks
+- Alternative resolution options: Not applicable
+- Verification evidence: lint/test/quality-gate and source freshness checks passed
