@@ -1,0 +1,101 @@
+# Python, dbt, and DuckDB Command Log (5Ws and H)
+
+This file records Python, dbt, and DuckDB-specific commands.
+
+## Entry format
+- What
+- Why
+- Who
+- When
+- Where
+- How
+
+## Entries
+
+### PDD-001
+- What: python scripts/init_warehouse.py
+- Why: create local DuckDB schemas and baseline objects
+- Who: project maintainer
+- When: setup and environment reset
+- Where: repository root
+- How:
+  - Preconditions: project package importable and path writable
+  - Expected output: confirmation of DuckDB initialization path
+  - Recovery: verify module import path and filesystem permissions
+
+### PDD-002
+- What: python scripts/ingest/load_crm_csv_to_duckdb.py
+- Why: load CRM source CSV files into bronze_raw schema
+- Who: project maintainer
+- When: ingestion runs and test-data refresh
+- Where: repository root
+- How:
+  - Preconditions: data/raw/crm files present
+  - Expected output: per-table load confirmation and ingestion audit entries
+  - Recovery: validate CSV paths and schema expectations
+
+### PDD-003
+- What: python scripts/ingest/load_leads_jsonl_to_duckdb.py
+- Why: load synthetic marketing leads into bronze_raw.marketing_leads
+- Who: project maintainer
+- When: ingestion runs and quality-gate prep
+- Where: repository root
+- How:
+  - Preconditions: data/raw/marketing/leads_raw.jsonl exists
+  - Expected output: count of newly loaded lead records
+  - Recovery: generate or fetch JSONL source file and rerun
+
+### PDD-004
+- What: cd dbt && dbt deps
+- Why: install dbt package dependencies such as dbt_utils
+- Who: project maintainer
+- When: setup and package updates
+- Where: dbt project directory
+- How:
+  - Preconditions: dbt profile and internet access
+  - Expected output: package installation summary
+  - Recovery: pin versions and retry
+
+### PDD-005
+- What: cd dbt && dbt build --profiles-dir profiles
+- Why: build full model graph with tests and snapshots
+- Who: project maintainer
+- When: transformation validation and release readiness
+- Where: dbt project directory
+- How:
+  - Preconditions: valid profile and available source tables
+  - Expected output: model/test/snapshot execution summary
+  - Recovery: resolve source availability and test contract errors
+
+### PDD-006
+- What: cd dbt && dbt test --profiles-dir profiles --threads 1
+- Why: execute dbt data tests with stable single-thread behavior in this environment
+- Who: project maintainer
+- When: quality-gate execution
+- Where: dbt project directory
+- How:
+  - Preconditions: models built and profile configured
+  - Expected output: pass/fail totals for data tests
+  - Recovery: inspect compiled failing SQL in dbt target output
+
+### PDD-007
+- What: python scripts/quality/run_data_quality_checks.py
+- Why: execute deterministic quality assertions and write quality audit entries
+- Who: project maintainer
+- When: Phase 3+ quality checkpoints
+- Where: repository root
+- How:
+  - Preconditions: intermediate model tables exist in target schema
+  - Expected output: check-by-check pass/fail with failed row counts
+  - Recovery: align schema references and source model state
+
+### PDD-008
+- What: python scripts/quality/run_great_expectations.py
+- Why: execute additional data quality validations using Great Expectations style checks
+- Who: project maintainer
+- When: quality-gate execution
+- Where: repository root
+- How:
+  - Preconditions: pandas and great-expectations installed, model tables available
+  - Expected output: validation passed summary or listed failures
+  - Recovery: fix data contract violations and rerun
