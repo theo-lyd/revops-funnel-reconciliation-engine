@@ -599,3 +599,27 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: baseline attribution artifact is available and current attribution report status is usable
   - Expected output: non-zero exit on missing baseline/unusable reports or detected regressions
   - Recovery: restore baseline artifact pipeline or disable strict mode for controlled fallback
+
+## Phase 9 Batch 9.1 execution entries
+
+### PDD-051
+- What: python scripts/ops/run_health_checks.py --max-freshness-hours <hours> --max-job-duration-minutes <minutes> --output artifacts/monitoring/health_report.json
+- Why: generate machine-readable production health report validating data freshness and job duration SLOs
+- Who: project maintainer
+- When: 2026-04-02, Phase 9 Batch 9.1 implementation
+- Where: CI deployment integration and release workflow health monitoring
+- How:
+  - Preconditions: dbt artifacts or performance reports available (optional for non-strict mode); Batch 8.1 performance artifacts if job duration metrics needed
+  - Expected output: health report with overall status, check details, and summary counts
+  - Recovery: verify dbt artifacts exist or configure health check telemetry sources before enabling strict mode
+
+### PDD-052
+- What: python scripts/ops/run_health_checks.py --strict-metrics --max-freshness-hours <hours> --max-job-duration-minutes <minutes> --output artifacts/monitoring/health_report.json
+- Why: enforce strict health metric collection in production release contexts where monitoring data is mandatory
+- Who: project maintainer
+- When: 2026-04-02, Phase 9 Batch 9.1 implementation
+- Where: release workflows with `HEALTH_STRICT_METRICS=true`
+- How:
+  - Preconditions: dbt build/test artifacts exist and health telemetry sources are configured
+  - Expected output: non-zero exit when health metrics cannot be collected in strict mode
+  - Recovery: restore health telemetry pipeline or disable strict mode for controlled fallback

@@ -810,3 +810,49 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: pytest dependencies installed
   - Expected output: targeted and full test suites pass with new regression guardrail coverage
   - Recovery: remediate failing tests and rerun
+
+## Phase 9 Batch 9.1 execution entries
+
+### MK-067
+- What: make lint
+- Why: validate health check monitoring module and CLI for style/type safety
+- Who: project maintainer
+- When: 2026-04-02, Phase 9 Batch 9.1 validation
+- Where: repository root
+- How:
+  - Preconditions: dependencies installed and Phase 9.1 files updated
+  - Expected output: Ruff and mypy pass across updated source and scripts
+  - Recovery: resolve lint/type findings and rerun
+
+### MK-068
+- What: make test
+- Why: verify health check freshness/job duration and liveness aggregation logic without regressions
+- Who: project maintainer
+- When: 2026-04-02, Phase 9 Batch 9.1 validation
+- Where: repository root
+- How:
+  - Preconditions: pytest dependencies installed
+  - Expected output: targeted and full test suites pass with new health monitoring coverage
+  - Recovery: remediate failing tests and rerun
+
+### MK-069
+- What: make health-checks
+- Why: run production health checks in local-safe mode with default freshness and job duration SLOs
+- Who: project maintainer
+- When: 2026-04-02+, during operations and monitoring
+- Where: repository root or CI/release context
+- How:
+  - Preconditions: dbt artifacts or performance reports available
+  - Expected output: health report artifact with ok/degraded/unhealthy status and check details
+  - Recovery: review health report and investigate data freshness or job duration issues
+
+### MK-070
+- What: make health-checks-strict
+- Why: enforce health check enforcement in strict deployment contexts where skipped status is not acceptable
+- Who: project maintainer
+- When: 2026-04-02+, during production release validation
+- Where: release workflow or production deployment
+- How:
+  - Preconditions: telemetry metrics are available and health thresholds are configured
+  - Expected output: non-zero exit if health checks cannot be run or status is unhealthy
+  - Recovery: fix health issues or disable strict mode for controlled fallback

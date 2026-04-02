@@ -167,6 +167,13 @@ jobs:
             --max-elapsed-regression-pct 25 \
             --output artifacts/performance/query_cost_regression_report.json
 
+      - name: Run production health checks (safe skip mode)
+        run: |
+          python scripts/ops/run_health_checks.py \
+            --max-freshness-hours 24 \
+            --max-job-duration-minutes 120 \
+            --output artifacts/monitoring/health_report.json
+
       - name: Upload deployment integration artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -183,6 +190,7 @@ jobs:
             artifacts/promotions/rollback_dead_letter_escalation.json
             artifacts/performance/query_cost_attribution_report.json
             artifacts/performance/query_cost_regression_report.json
+            artifacts/monitoring/health_report.json
           if-no-files-found: ignore
 
   production-parity-check:

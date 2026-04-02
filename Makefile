@@ -17,8 +17,12 @@ COST_BASELINE_REPORT_PATH ?= artifacts/performance/query_cost_attribution_baseli
 COST_REGRESSION_REPORT_PATH ?= artifacts/performance/query_cost_regression_report.json
 COST_MAX_CREDITS_REGRESSION_PCT ?= 20
 COST_MAX_ELAPSED_REGRESSION_PCT ?= 25
+HEALTH_MAX_FRESHNESS_HOURS ?= 24
+HEALTH_MAX_JOB_DURATION_MINUTES ?= 120
+HEALTH_REPORT_PATH ?= artifacts/monitoring/health_report.json
+HEALTH_STRICT_METRICS ?= false
 
-.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-build-changed dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-test-changed dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle refresh-caches promote-deployment rollback-deployment production-stop-gate production-stop-gate-strict query-cost-attribution query-cost-attribution-strict query-cost-regression query-cost-regression-strict query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness metabase-setup streamlit-dev anomaly-check insights-generate
+.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-build-changed dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-test-changed dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle refresh-caches promote-deployment rollback-deployment production-stop-gate production-stop-gate-strict query-cost-attribution query-cost-attribution-strict query-cost-regression query-cost-regression-strict health-checks health-checks-strict query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness metabase-setup streamlit-dev anomaly-check insights-generate
 
 setup:
 	$(PIP) install "apache-airflow==$(AIRFLOW_VERSION)" --constraint "$(AIRFLOW_CONSTRAINTS)"
@@ -134,6 +138,12 @@ query-cost-regression:
 
 query-cost-regression-strict:
 	$(PYTHON) scripts/ops/check_query_cost_regression.py --strict-baseline --current-report artifacts/performance/query_cost_attribution_report.json --baseline-report $(COST_BASELINE_REPORT_PATH) --max-credits-regression-pct $(COST_MAX_CREDITS_REGRESSION_PCT) --max-elapsed-regression-pct $(COST_MAX_ELAPSED_REGRESSION_PCT) --output $(COST_REGRESSION_REPORT_PATH)
+
+health-checks:
+	$(PYTHON) scripts/ops/run_health_checks.py --max-freshness-hours $(HEALTH_MAX_FRESHNESS_HOURS) --max-job-duration-minutes $(HEALTH_MAX_JOB_DURATION_MINUTES) --output $(HEALTH_REPORT_PATH)
+
+health-checks-strict:
+	$(PYTHON) scripts/ops/run_health_checks.py --strict-metrics --max-freshness-hours $(HEALTH_MAX_FRESHNESS_HOURS) --max-job-duration-minutes $(HEALTH_MAX_JOB_DURATION_MINUTES) --output $(HEALTH_REPORT_PATH)
 
 production-stop-gate:
 	$(MAKE) quality-gate

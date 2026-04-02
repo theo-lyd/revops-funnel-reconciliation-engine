@@ -30,6 +30,7 @@ jobs:
       QUERY_COST_ATTRIBUTION_REPORT_PATH: artifacts/performance/query_cost_attribution_report.json
       QUERY_COST_BASELINE_REPORT_PATH: artifacts/performance/query_cost_attribution_baseline.json
       QUERY_COST_REGRESSION_REPORT_PATH: artifacts/performance/query_cost_regression_report.json
+      HEALTH_REPORT_PATH: artifacts/monitoring/health_report.json
 
     permissions:
       contents: read
@@ -175,6 +176,16 @@ jobs:
             --output "$QUERY_COST_REGRESSION_REPORT_PATH" \
             $STRICT_FLAG
 
+      - name: Run production health checks
+        env:
+          HEALTH_MAX_FRESHNESS_HOURS: ${{ vars.HEALTH_MAX_FRESHNESS_HOURS || '24' }}
+          HEALTH_MAX_JOB_DURATION_MINUTES: ${{ vars.HEALTH_MAX_JOB_DURATION_MINUTES || '120' }}
+        run: |
+          python scripts/ops/run_health_checks.py \
+            --max-freshness-hours "$HEALTH_MAX_FRESHNESS_HOURS" \
+            --max-job-duration-minutes "$HEALTH_MAX_JOB_DURATION_MINUTES" \
+            --output "$HEALTH_REPORT_PATH"
+
       - name: Refresh runtime caches
         run: |
           python scripts/ops/refresh_runtime_caches.py --output "$CACHE_REFRESH_REPORT_PATH"
@@ -279,6 +290,7 @@ jobs:
             artifacts/performance/dbt_test_prod_report.json
             artifacts/performance/query_cost_attribution_report.json
             artifacts/performance/query_cost_regression_report.json
+            artifacts/monitoring/health_report.json
             artifacts/promotions/deployment_promotion.json
             artifacts/promotions/deployment_rollback.json
             artifacts/promotions/deployment_rollback_execution.json

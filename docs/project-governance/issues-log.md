@@ -433,3 +433,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: publish baseline artifacts per release and enable strict mode only where baseline availability is enforced
 - Alternative resolution options: fetch baseline from artifact storage/object store before executing regression checks
 - Verification evidence: targeted CLI tests cover missing-baseline skip behavior and regression-failure behavior
+
+### Issue ID: ISS-039
+- Phase and batch: Phase 9 Batch 9.1 - Production health checks and liveness monitoring
+- Date observed: 2026-04-02
+- Where it occurred: Batch 9.1 implementation and validation
+- Symptom: No blocking defects encountered
+- Root cause: Not applicable
+- Resolution: Not applicable
+- How to avoid: preserve strict/non-strict health check modes and validate local-safe skip behavior in automated tests
+- Alternative resolution options: Not applicable
+- Verification evidence: targeted unit and CLI tests cover freshness validation, job duration checks, and liveness aggregation
