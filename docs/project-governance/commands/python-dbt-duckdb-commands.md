@@ -407,3 +407,27 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: promotion report exists; rollback reason/trigger context provided via environment or arguments
   - Expected output: rollback manifest JSON with source release metadata and recommended rollback actions
   - Recovery: ensure promotion artifact exists and rerun rollback step
+
+## Phase 7 Batch 7.1 execution entries
+
+### PDD-035
+- What: python scripts/quality/run_metric_parity_check.py --strict-snowflake --output-json artifacts/parity/metric_parity_report.json
+- Why: validate strict parity in deployment contexts with password-or-key-pair Snowflake auth support
+- Who: project maintainer
+- When: 2026-04-02, Phase 7 Batch 7.1 implementation
+- Where: CI release workflow context
+- How:
+  - Preconditions: `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER`, role/database/warehouse, and either `SNOWFLAKE_PASSWORD` or `SNOWFLAKE_PRIVATE_KEY_PATH`
+  - Expected output: parity report JSON with pass/fail status in strict mode
+  - Recovery: provide missing auth mode variables or fix parity drift before retry
+
+### PDD-036
+- What: python scripts/quality/run_release_readiness_gate.py --strict
+- Why: enforce strict release-readiness with flexible Snowflake auth mode requirements in deployment workflows
+- Who: project maintainer
+- When: 2026-04-02, Phase 7 Batch 7.1 implementation
+- Where: deployment and release gate runtime
+- How:
+  - Preconditions: production Snowflake vars set plus one valid auth mode (password or key-pair)
+  - Expected output: build/test/parity checks pass under strict enforcement
+  - Recovery: set missing auth-mode env vars and rerun gate

@@ -142,6 +142,12 @@ Phase 6 extends monitoring and delivery into operational automation:
 7. **Batch 6.6**: [Release concurrency and rollback automation](docs/reports/phase-6/batch-6.6-release-concurrency-and-rollback-automation.md)
 8. **End Report**: [Phase 6 end report](docs/reports/phase-6/phase-6-end-report.md)
 
+### Phase 7: Security Hardening and Access Controls
+Phase 7 begins with authentication hardening and release access controls:
+
+1. **Plan**: [Phase 7 implementation plan](docs/reports/phase-7/PHASE-7-PLAN.md)
+2. **Batch 7.1**: [Snowflake key-pair auth and release access controls](docs/reports/phase-7/batch-7.1-keypair-auth-and-release-access-controls.md)
+
 ### Project Governance
 - [Standing instructions and process documentation](docs/project-governance/standing-instructions.md)
 - [Phase completion checklist and stop-gate workflow](docs/project-governance/phase-completion-checklist.md)

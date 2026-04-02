@@ -7,10 +7,9 @@ import os
 import subprocess
 from collections.abc import Sequence
 
+from revops_funnel.snowflake_auth import missing_required_snowflake_env, snowflake_auth_from_env
+
 REQUIRED_SNOWFLAKE_ENV = (
-    "SNOWFLAKE_ACCOUNT",
-    "SNOWFLAKE_USER",
-    "SNOWFLAKE_PASSWORD",
     "SNOWFLAKE_ROLE",
     "SNOWFLAKE_DATABASE",
     "SNOWFLAKE_WAREHOUSE",
@@ -38,7 +37,10 @@ def run_command(command: Sequence[str]) -> None:
 def main() -> None:
     args = parse_args()
 
-    missing = [key for key in REQUIRED_SNOWFLAKE_ENV if not os.getenv(key)]
+    auth = snowflake_auth_from_env()
+    missing = missing_required_snowflake_env(auth) + [
+        key for key in REQUIRED_SNOWFLAKE_ENV if not os.getenv(key)
+    ]
     if missing:
         message = "Skipping release readiness gate; missing Snowflake env vars: " + ", ".join(
             missing

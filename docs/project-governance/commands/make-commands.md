@@ -618,3 +618,27 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: pytest dependencies installed
   - Expected output: full test suite pass with expected optional-Airflow skip behavior
   - Recovery: remediate failing tests and rerun gates
+
+## Phase 7 Batch 7.1 execution entries
+
+### MK-051
+- What: make lint
+- Why: validate Phase 7.1 key-pair auth and release access-control changes for style/type safety
+- Who: project maintainer
+- When: 2026-04-02, Phase 7 Batch 7.1 validation
+- Where: repository root
+- How:
+  - Preconditions: dependencies installed and security hardening files updated
+  - Expected output: Ruff and mypy pass across 31 source files
+  - Recovery: fix lint/type findings and rerun
+
+### MK-052
+- What: make test
+- Why: verify new key-pair auth helper tests and preserve prior-phase regression coverage
+- Who: project maintainer
+- When: 2026-04-02, Phase 7 Batch 7.1 validation
+- Where: repository root
+- How:
+  - Preconditions: pytest dependencies installed
+  - Expected output: full suite pass with expected optional-Airflow skip behavior
+  - Recovery: remediate failing tests and rerun gates

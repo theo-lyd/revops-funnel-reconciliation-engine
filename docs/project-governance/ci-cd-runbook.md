@@ -32,7 +32,9 @@ The CI/CD pipeline enforces code quality, data model correctness, and production
 - GitHub repository must have configured secrets:
   - `SNOWFLAKE_ACCOUNT`
   - `SNOWFLAKE_USER`
-  - `SNOWFLAKE_PASSWORD`
+  - `SNOWFLAKE_PASSWORD` (optional when key-pair auth is configured)
+  - `SNOWFLAKE_PRIVATE_KEY_PEM` (recommended for key-pair auth)
+  - `SNOWFLAKE_PRIVATE_KEY_PASSPHRASE` (optional)
   - `SNOWFLAKE_ROLE`
   - `SNOWFLAKE_DATABASE`
   - `SNOWFLAKE_WAREHOUSE`
@@ -104,7 +106,8 @@ To enable the production parity job:
 3. **Security Best Practices**:
    - Use a dedicated CI/CD service account with minimal role permissions.
    - Rotate credentials regularly.
-   - Consider using Snowflake key-pair authentication instead of password-based (future enhancement).
+  - Prefer Snowflake key-pair authentication in release contexts.
+  - Restrict release execution with `RELEASE_ALLOWED_ACTORS` secret.
    - Never commit secrets to repository.
 
 ---
@@ -161,7 +164,7 @@ if: |
 
 ## Future Enhancements
 
-1. **Snowflake Key-Pair Authentication**: Replace passwords with key-pair auth for better security.
-2. **Conditional Secret Handling**: Extend logic to handle other environment-specific deployments.
-3. **Integration Tests**: Add integration test job for deployment-specific validation.
-4. **Artifact Retention**: Archive evidence bundles and parity reports as CI artifacts.
+1. **Conditional Secret Handling**: Extend logic to handle other environment-specific deployments.
+2. **Integration Tests**: Add integration test job for deployment-specific validation.
+3. **Artifact Retention**: Archive evidence bundles and parity reports as CI artifacts.
+4. **Automated Rollback Execution**: Progress from manifest-based rollback context to controlled rollback execution playbooks.

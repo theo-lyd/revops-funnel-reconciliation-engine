@@ -47,11 +47,27 @@ def parse_args() -> argparse.Namespace:
         default=os.getenv("DEPLOYMENT_ENVIRONMENT", "production"),
         help="Environment name for the rollback report.",
     )
+    parser.add_argument(
+        "--require-release-access",
+        action="store_true",
+        help="Require actor to be listed in RELEASE_ALLOWED_ACTORS before writing rollback report.",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
+    if args.require_release_access:
+        actors = [actor.strip() for actor in os.getenv("RELEASE_ALLOWED_ACTORS", "").split(",")]
+        allowed = [actor for actor in actors if actor]
+        actor = os.getenv("GITHUB_ACTOR", "")
+        if allowed and actor not in allowed:
+            allowed_display = ", ".join(allowed)
+            raise SystemExit(
+                "Rollback report generation blocked for actor "
+                f"'{actor}'. Allowed actors: {allowed_display}"
+            )
+
     report = create_deployment_rollback_report(
         release_id=args.release_id,
         rollback_reason=args.rollback_reason,

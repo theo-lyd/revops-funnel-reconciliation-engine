@@ -10,6 +10,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from revops_funnel.config import get_settings
+from revops_funnel.snowflake_auth import (
+    build_snowflake_connector_auth_kwargs,
+    missing_required_snowflake_env,
+    snowflake_auth_from_env,
+)
 
 
 @dataclass(frozen=True)
@@ -64,15 +69,9 @@ def fetch_duckdb_metrics() -> MetricSnapshot:
 
 
 def fetch_snowflake_metrics(strict_snowflake: bool) -> MetricSnapshot | None:
-    required = [
-        "SNOWFLAKE_ACCOUNT",
-        "SNOWFLAKE_USER",
-        "SNOWFLAKE_PASSWORD",
-        "SNOWFLAKE_ROLE",
-        "SNOWFLAKE_DATABASE",
-        "SNOWFLAKE_WAREHOUSE",
-    ]
-    missing = [key for key in required if not os.getenv(key)]
+    auth = snowflake_auth_from_env()
+    required = ["SNOWFLAKE_ROLE", "SNOWFLAKE_DATABASE", "SNOWFLAKE_WAREHOUSE"]
+    missing = missing_required_snowflake_env(auth) + [key for key in required if not os.getenv(key)]
     if missing:
         message = f"Skipping Snowflake parity check; missing env vars: {', '.join(missing)}"
         if strict_snowflake:
@@ -101,13 +100,13 @@ def fetch_snowflake_metrics(strict_snowflake: bool) -> MetricSnapshot | None:
     """
 
     conn = connector.connect(
-        account=os.getenv("SNOWFLAKE_ACCOUNT"),
-        user=os.getenv("SNOWFLAKE_USER"),
-        password=os.getenv("SNOWFLAKE_PASSWORD"),
+        account=auth.account,
+        user=auth.user,
         role=os.getenv("SNOWFLAKE_ROLE"),
         warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
         database=os.getenv("SNOWFLAKE_DATABASE"),
         schema=os.getenv("SNOWFLAKE_SCHEMA", "analytics"),
+        **build_snowflake_connector_auth_kwargs(auth),
     )
 
     cursor = conn.cursor()

@@ -873,3 +873,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful commit and remote connectivity
   - Expected output: remote master updated with Phase 6.6 changes
   - Recovery: resolve conflicts and retry push
+
+## Phase 7: Security hardening and release access controls entries
+
+### GIT-075
+- What: git add src/revops_funnel/snowflake_auth.py scripts/quality/run_metric_parity_check.py scripts/quality/run_release_readiness_gate.py scripts/preflight_check.py scripts/ops/rollback_deployment.py .github/workflows/release.yml dbt/profiles/profiles.yml.example .env.example tests/test_snowflake_auth.py docs/reports/phase-7/PHASE-7-PLAN.md docs/reports/phase-7/batch-7.1-keypair-auth-and-release-access-controls.md docs/project-governance/ci-cd-runbook.md README.md docs/project-governance/issues-log.md docs/project-governance/commands/make-commands.md docs/project-governance/commands/git-commands.md docs/project-governance/commands/python-dbt-duckdb-commands.md docs/project-governance/phase-completion-checklist.md
+- Why: stage Phase 7.1 security hardening scope and governance updates as one auditable batch
+- Who: data engineer or analytics lead
+- When: 2026-04-02, Phase 7 Batch 7.1 completion
+- Where: repository root
+- How:
+  - Preconditions: lint/test gates pass for Phase 7.1 changes
+  - Expected output: intended Phase 7.1 files staged with no generated artifacts
+  - Recovery: unstage unrelated files and restage explicit scope
+
+### GIT-076
+- What: git commit -m "feat(phase-7): add keypair auth and release access controls"
+- Why: persist initial Phase 7 security controls for Snowflake authentication and release/deployment authorization
+- Who: data engineer or analytics lead
+- When: 2026-04-02, after staging review
+- Where: repository root
+- How:
+  - Preconditions: staged files reviewed and hooks passing
+  - Expected output: commit hash for Phase 7.1 batch
+  - Recovery: resolve hook findings and recommit
+
+### GIT-077
+- What: git push origin master
+- Why: publish Phase 7.1 security hardening updates to remote
+- Who: data engineer or analytics lead
+- When: 2026-04-02, immediately after commit
+- Where: repository root
+- How:
+  - Preconditions: successful commit and remote connectivity
+  - Expected output: remote master updated with Phase 7.1 changes
+  - Recovery: resolve conflicts and retry push

@@ -345,3 +345,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: run `ruff check` immediately after extending test imports
 - Alternative resolution options: use `ruff check --fix` on changed test files pre-gate
 - Verification evidence: `make lint` and `make test` passed with 27 tests and 1 expected skip
+
+### Issue ID: ISS-031
+- Phase and batch: Phase 7 Batch 7.1 - Key-pair auth and release access controls
+- Date observed: 2026-04-02
+- Where it occurred: `scripts/ops/rollback_deployment.py` during lint validation
+- Symptom: Ruff flagged a long formatted access-control error line
+- Root cause: actor allowlist message exceeded repository line-length policy
+- Resolution: wrapped message into shorter composed string with intermediate display variable
+- How to avoid: run Ruff immediately after adding verbose security/logging messages
+- Alternative resolution options: move formatted messages into helper functions to keep CLI paths concise
+- Verification evidence: `make lint` and `make test` passed with 32 tests and 1 expected skip
