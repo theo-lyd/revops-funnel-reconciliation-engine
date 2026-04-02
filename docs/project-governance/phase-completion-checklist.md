@@ -27,4 +27,6 @@ After checklist completion:
 - Phase 5: Completed and documented.
 - Phase 6: Completed and documented.
 - Phase 7: Completed and documented.
-- Phase 8: In progress (Batches 8.1 and 8.2 completed; Batch 8.3 started).
+- Phase 8: Completed and documented (batches 8.1–8.3 with end report).
+- Phase 8: Completed and documented.
+- Phase 9: In progress (planning and initial implementation).

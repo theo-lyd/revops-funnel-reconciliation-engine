@@ -160,6 +160,13 @@ Phase 8 adds performance and cost guardrails for production transformation paths
 2. **Batch 8.1**: [Budgeted dbt execution for production build/test](docs/reports/phase-8/batch-8.1-budgeted-dbt-execution.md)
 3. **Batch 8.2**: [Query-cost observability and spend attribution artifacts](docs/reports/phase-8/batch-8.2-query-cost-observability-and-spend-attribution.md)
 4. **Batch 8.3**: [Query-cost regression guardrails](docs/reports/phase-8/batch-8.3-query-cost-regression-guardrails.md)
+5. **End Report**: [Phase 8 end report](docs/reports/phase-8/phase-8-end-report.md)
+
+### Phase 9: Operational Excellence and Production Runbooks
+
+Phase 9 establishes production-grade observability, health monitoring, SLO/SLI tracking, and on-call runbook automation:
+
+1. **Plan**: [Phase 9 implementation plan](docs/reports/phase-9/PHASE-9-PLAN.md)
 
 ### Project Governance
 - [Standing instructions and process documentation](docs/project-governance/standing-instructions.md)
