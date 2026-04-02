@@ -444,3 +444,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: preserve strict/non-strict health check modes and validate local-safe skip behavior in automated tests
 - Alternative resolution options: Not applicable
 - Verification evidence: targeted unit and CLI tests cover freshness validation, job duration checks, and liveness aggregation
+
+### Issue ID: ISS-040
+- Phase and batch: Phase 9 Batch 9.2 - Operational dashboards and SLO/SLI tracking
+- Date observed: 2026-04-02
+- Where it occurred: Batch 9.2 implementation and validation
+- Symptom: No blocking defects encountered
+- Root cause: Not applicable
+- Resolution: Not applicable
+- How to avoid: preserve strict/non-strict dashboard modes and validate correlation calculations with edge cases (zero stdev, insufficient data)
+- Alternative resolution options: Not applicable
+- Verification evidence: 22 unit tests cover trend calculation, SLI evaluation, correlation math, and dashboard serialization; 4 CLI tests cover both safe-skip and strict failure modes

@@ -31,6 +31,7 @@ jobs:
       QUERY_COST_BASELINE_REPORT_PATH: artifacts/performance/query_cost_attribution_baseline.json
       QUERY_COST_REGRESSION_REPORT_PATH: artifacts/performance/query_cost_regression_report.json
       HEALTH_REPORT_PATH: artifacts/monitoring/health_report.json
+      DASHBOARD_OUTPUT_PATH: artifacts/monitoring/operational_dashboard.json
 
     permissions:
       contents: read
@@ -186,6 +187,14 @@ jobs:
             --max-job-duration-minutes "$HEALTH_MAX_JOB_DURATION_MINUTES" \
             --output "$HEALTH_REPORT_PATH"
 
+      - name: Generate operational dashboards
+        run: |
+          python scripts/ops/generate_operational_dashboards.py \
+            --health-report "$HEALTH_REPORT_PATH" \
+            --cost-report "$QUERY_COST_ATTRIBUTION_REPORT_PATH" \
+            --performance-report artifacts/performance/dbt_build_prod_report.json \
+            --output "$DASHBOARD_OUTPUT_PATH"
+
       - name: Refresh runtime caches
         run: |
           python scripts/ops/refresh_runtime_caches.py --output "$CACHE_REFRESH_REPORT_PATH"
@@ -291,6 +300,7 @@ jobs:
             artifacts/performance/query_cost_attribution_report.json
             artifacts/performance/query_cost_regression_report.json
             artifacts/monitoring/health_report.json
+            artifacts/monitoring/operational_dashboard.json
             artifacts/promotions/deployment_promotion.json
             artifacts/promotions/deployment_rollback.json
             artifacts/promotions/deployment_rollback_execution.json

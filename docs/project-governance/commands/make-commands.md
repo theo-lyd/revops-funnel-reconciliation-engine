@@ -856,3 +856,25 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: telemetry metrics are available and health thresholds are configured
   - Expected output: non-zero exit if health checks cannot be run or status is unhealthy
   - Recovery: fix health issues or disable strict mode for controlled fallback
+
+### MK-071
+- What: make dashboards
+- Why: generate operational dashboards with SLO/SLI metrics, trend analysis, and scaling recommendations
+- Who: project maintainer
+- When: 2026-04-02+, during deployment and release validation
+- Where: repository root or release workflow
+- How:
+  - Preconditions: health report, cost attribution, and performance artifacts available
+  - Expected output: operational dashboard JSON artifact with SLI metrics, trends, correlations, and recommendations
+  - Recovery: verify prerequisite artifacts exist and review error messages for missing telemetry
+
+### MK-072
+- What: make dashboards-strict
+- Why: enforce strict dashboard generation in production contexts where telemetry data is required
+- Who: project maintainer
+- When: 2026-04-02+, during production release gates
+- Where: release workflow
+- How:
+  - Preconditions: all telemetry artifacts (health, cost, performance) must be available
+  - Expected output: non-zero exit if any telemetry is unavailable
+  - Recovery: ensure health, cost, and performance checks have completed successfully before retrying

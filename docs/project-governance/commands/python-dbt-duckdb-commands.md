@@ -623,3 +623,25 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: dbt build/test artifacts exist and health telemetry sources are configured
   - Expected output: non-zero exit when health metrics cannot be collected in strict mode
   - Recovery: restore health telemetry pipeline or disable strict mode for controlled fallback
+
+### PDD-053
+- What: python scripts/ops/generate_operational_dashboards.py --health-report <path> --cost-report <path> --performance-report <path> --output <path>
+- Why: generate operational dashboards aggregating health, cost, and performance telemetry for SLO/SLI tracking and scaling recommendations
+- Who: project maintainer
+- When: 2026-04-02+, during release validation and continuous monitoring
+- Where: release workflow and CI deployment integration
+- How:
+  - Preconditions: health report, cost attribution, and performance artifacts available (optional for non-strict mode)
+  - Expected output: operational dashboard JSON with SLI metrics, trend analyses, correlations, and scaling recommendations
+  - Recovery: verify telemetry artifacts exist or run in non-strict mode for safe skipped status
+
+### PDD-054
+- What: python scripts/ops/generate_operational_dashboards.py --strict-metrics --health-report <path> --cost-report <path> --performance-report <path> --output <path>
+- Why: enforce strict operational dashboard generation in production release contexts where complete observability is mandatory
+- Who: project maintainer
+- When: 2026-04-02+, during production release promotion gates
+- Where: release workflows with strict telemetry enforcement
+- How:
+  - Preconditions: health report, cost attribution, and performance artifacts must all be available
+  - Expected output: non-zero exit when telemetry artifacts are unavailable in strict mode
+  - Recovery: ensure health-checks, cost-attribution, and dbt-build-prod have completed successfully before retrying

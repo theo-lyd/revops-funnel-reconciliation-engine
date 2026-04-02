@@ -21,8 +21,12 @@ HEALTH_MAX_FRESHNESS_HOURS ?= 24
 HEALTH_MAX_JOB_DURATION_MINUTES ?= 120
 HEALTH_REPORT_PATH ?= artifacts/monitoring/health_report.json
 HEALTH_STRICT_METRICS ?= false
+DASHBOARD_OUTPUT_PATH ?= artifacts/monitoring/operational_dashboard.json
+DASHBOARD_HEALTH_REPORT ?= artifacts/monitoring/health_report.json
+DASHBOARD_COST_REPORT ?= artifacts/monitoring/query_cost_attribution.json
+DASHBOARD_PERFORMANCE_REPORT ?= artifacts/performance/dbt_build_prod_report.json
 
-.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-build-changed dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-test-changed dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle refresh-caches promote-deployment rollback-deployment production-stop-gate production-stop-gate-strict query-cost-attribution query-cost-attribution-strict query-cost-regression query-cost-regression-strict health-checks health-checks-strict query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness metabase-setup streamlit-dev anomaly-check insights-generate
+.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-build-changed dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-test-changed dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle refresh-caches promote-deployment rollback-deployment production-stop-gate production-stop-gate-strict query-cost-attribution query-cost-attribution-strict query-cost-regression query-cost-regression-strict health-checks health-checks-strict dashboards dashboards-strict query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness metabase-setup streamlit-dev anomaly-check insights-generate
 
 setup:
 	$(PIP) install "apache-airflow==$(AIRFLOW_VERSION)" --constraint "$(AIRFLOW_CONSTRAINTS)"
@@ -144,6 +148,12 @@ health-checks:
 
 health-checks-strict:
 	$(PYTHON) scripts/ops/run_health_checks.py --strict-metrics --max-freshness-hours $(HEALTH_MAX_FRESHNESS_HOURS) --max-job-duration-minutes $(HEALTH_MAX_JOB_DURATION_MINUTES) --output $(HEALTH_REPORT_PATH)
+
+dashboards:
+	$(PYTHON) scripts/ops/generate_operational_dashboards.py --health-report $(DASHBOARD_HEALTH_REPORT) --cost-report $(DASHBOARD_COST_REPORT) --performance-report $(DASHBOARD_PERFORMANCE_REPORT) --output $(DASHBOARD_OUTPUT_PATH)
+
+dashboards-strict:
+	$(PYTHON) scripts/ops/generate_operational_dashboards.py --strict-metrics --health-report $(DASHBOARD_HEALTH_REPORT) --cost-report $(DASHBOARD_COST_REPORT) --performance-report $(DASHBOARD_PERFORMANCE_REPORT) --output $(DASHBOARD_OUTPUT_PATH)
 
 production-stop-gate:
 	$(MAKE) quality-gate
