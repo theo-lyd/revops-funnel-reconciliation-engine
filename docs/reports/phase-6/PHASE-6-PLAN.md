@@ -8,6 +8,7 @@ Automate the lifecycle of the data product with CI selection, test automation, r
 - Batch 6.2: CI/CD and operations automation.
 - Batch 6.3: Release gate integrity and artifact auditability.
 - Batch 6.4: CI slimming and selector determinism.
+- Batch 6.5: Airflow operational reliability hardening.
 
 ## Design Principles
 - Preserve local-safe behavior when SMTP settings are absent.
@@ -17,6 +18,7 @@ Automate the lifecycle of the data product with CI selection, test automation, r
 - Keep promotion guarded by explicit release gates and reproducible manifests.
 - Ensure release workflows produce auditable evidence artifacts for every promotion decision.
 - Ensure selector decisions are deterministic and captured as machine-readable CI artifacts.
+- Keep scheduled orchestration deterministic, bounded, and resilient for unattended runs.
 
 ## Success Criteria
 - Monitoring alerts can be sent through SMTP when configured.
@@ -26,3 +28,4 @@ Automate the lifecycle of the data product with CI selection, test automation, r
 - Automated release and promotion workflows are documented and executable.
 - Release promotion remains blocked unless strict parity gates pass.
 - CI avoids duplicate dbt execution paths while preserving confidence by event type.
+- Airflow scheduled runs execute deterministic full validation path with explicit recovery gates.

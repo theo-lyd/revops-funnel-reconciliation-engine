@@ -803,3 +803,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful commit and remote connectivity
   - Expected output: remote master updated with Phase 6.4 changes
   - Recovery: resolve conflicts and retry push
+
+## Phase 6: Airflow operational reliability hardening entries
+
+### GIT-069
+- What: git add dags/revops_end_to_end_pipeline.py tests/test_airflow_pipeline_dag.py docs/reports/phase-6/batch-6.5-airflow-operational-reliability-hardening.md docs/reports/phase-6/PHASE-6-PLAN.md docs/reports/phase-6/phase-6-end-report.md README.md docs/project-governance/issues-log.md docs/project-governance/commands/make-commands.md docs/project-governance/commands/git-commands.md
+- Why: stage Phase 6.5 orchestration reliability updates, tests, docs, and governance logs as one auditable batch
+- Who: data engineer or analytics lead
+- When: 2026-04-02, Phase 6 Batch 6.5 completion
+- Where: repository root
+- How:
+  - Preconditions: lint/test gates pass for Phase 6.5 changes
+  - Expected output: intended Phase 6.5 files staged without generated artifacts
+  - Recovery: unstage unrelated files and restage explicit batch scope
+
+### GIT-070
+- What: git commit -m "refactor(phase-6): harden airflow operational reliability"
+- Why: persist deterministic Airflow scheduling path, retry/timeout controls, and reliability test coverage
+- Who: data engineer or analytics lead
+- When: 2026-04-02, after staging review
+- Where: repository root
+- How:
+  - Preconditions: staged files reviewed and hooks passing
+  - Expected output: commit hash for Phase 6.5 batch
+  - Recovery: resolve hook findings and recommit
+
+### GIT-071
+- What: git push origin master
+- Why: publish Phase 6.5 Airflow reliability hardening to remote
+- Who: data engineer or analytics lead
+- When: 2026-04-02, immediately after commit
+- Where: repository root
+- How:
+  - Preconditions: successful commit and remote connectivity
+  - Expected output: remote master updated with Phase 6.5 changes
+  - Recovery: resolve conflicts and retry push

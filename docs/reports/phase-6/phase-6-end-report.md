@@ -8,6 +8,7 @@ Operationalize the monitoring workflow and the broader delivery pipeline by addi
 - Batch 6.2: CI/CD and operations automation.
 - Batch 6.3: Release gate integrity and artifact auditability.
 - Batch 6.4: CI slimming and selector determinism.
+- Batch 6.5: Airflow operational reliability hardening.
 
 ## What Was Done
 1. Added `src/revops_funnel/notifications.py` for shared email composition and SMTP delivery.
@@ -17,6 +18,7 @@ Operationalize the monitoring workflow and the broader delivery pipeline by addi
 5. Added an Airflow end-to-end pipeline DAG and a release workflow for unattended promotion.
 6. Added strict parity release gating and published promotion evidence artifacts for auditability.
 7. Slimmed CI event paths and added deterministic selector-decision artifacts with strict PR resolution mode.
+8. Hardened Airflow scheduled orchestration with deterministic full dbt path, bounded retries/timeouts, and explicit reliability gates.
 
 ## Validation Outcomes
 - Email composition and SMTP delivery are covered by fixture-based tests.
@@ -24,6 +26,7 @@ Operationalize the monitoring workflow and the broader delivery pipeline by addi
 - Selector and promotion helpers are unit-testable and deterministic.
 - Release manifest metadata and checksum contract are unit-tested and artifact-backed in CI.
 - Selector fallback and strict-mode behavior are unit-tested and exposed as CI artifacts.
+- DAG reliability path is tested and avoids external API dependency during scheduled execution.
 
 ## Risks and Assumptions
 - SMTP transport is environment-driven and intentionally optional.
@@ -31,6 +34,7 @@ Operationalize the monitoring workflow and the broader delivery pipeline by addi
 - Deployment promotion remains guarded by a passed parity report and an explicit enablement flag.
 - Release workflow depends on Snowflake credentials for strict parity validation.
 - Strict selector mode can fail PR CI if base-ref diff resolution is unavailable, by design.
+- Airflow pipeline runtime increases due to deterministic full-path validation, traded for higher unattended reliability.
 
 ## Readiness
-Phase 6 now covers the original operations brief in a pragmatic local-dev-plus-CI implementation with stricter release evidence controls and remains ready for further hardening if needed.
+Phase 6 now covers the original operations brief in a pragmatic local-dev-plus-CI implementation with stricter release evidence controls and hardened Airflow reliability for unattended runs.

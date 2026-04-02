@@ -323,3 +323,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: run local Ruff check immediately after extending test import blocks
 - Alternative resolution options: apply `ruff check --fix` to changed test files before full gates
 - Verification evidence: `make lint` and `make test` passed with 26 tests
+
+### Issue ID: ISS-029
+- Phase and batch: Phase 6 Batch 6.5 - Airflow operational reliability hardening
+- Date observed: 2026-04-02
+- Where it occurred: `tests/test_airflow_pipeline_dag.py` in local test execution
+- Symptom: Airflow DAG reliability test was skipped in environments without Airflow installed
+- Root cause: test intentionally uses `pytest.importorskip("airflow")` to preserve local-safe behavior
+- Resolution: retained skip behavior and validated DAG through lint/mypy; environments with Airflow installed execute the test normally
+- How to avoid: install Airflow dev dependencies in CI/runtime environments where DAG execution tests are required
+- Alternative resolution options: add static text-based DAG checks only, but that would reduce behavioral confidence
+- Verification evidence: `make lint` passed; `make test` passed with 26 tests and 1 expected skip
