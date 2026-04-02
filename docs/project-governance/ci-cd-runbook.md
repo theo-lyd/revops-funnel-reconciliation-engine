@@ -173,3 +173,23 @@ if: |
 1. **Conditional Secret Handling**: Extend logic to handle other environment-specific deployments.
 2. **Artifact Retention**: Tune retention windows and centralized indexing for CI evidence artifacts.
 3. **Escalation Routing Policies**: Add severity-based routing and ownership metadata for escalated dead-letter incidents.
+
+---
+
+## On-Call Runbook Artifacts (Phase 9.3)
+
+Deployment integration and release workflows emit `artifacts/runbooks/oncall_runbook_report.json`.
+
+- Inputs:
+  - `artifacts/monitoring/health_report.json`
+  - `artifacts/monitoring/operational_dashboard.json`
+  - `artifacts/promotions/deployment_rollback_execution*.json`
+  - `artifacts/promotions/rollback_incident_dispatch.json`
+  - `artifacts/promotions/rollback_dead_letter_escalation.json`
+- Output:
+  - deterministic failure patterns with severity (`p1`/`p2`/`p3`)
+  - recommended responder actions with SLAs
+  - escalation routing plan (primary endpoint, secondary endpoint for P1, ticket queue)
+- Modes:
+  - non-strict: emits `overall_status=skipped` when no input artifacts are found
+  - strict: fails when no input artifacts are available

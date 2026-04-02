@@ -182,6 +182,16 @@ jobs:
             --performance-report artifacts/performance/dbt_build_prod_report.json \
             --output artifacts/monitoring/operational_dashboard.json
 
+      - name: Generate on-call runbook (safe skip mode)
+        run: |
+          python scripts/ops/run_oncall_runbooks.py \
+            --health-report artifacts/monitoring/health_report.json \
+            --dashboard-report artifacts/monitoring/operational_dashboard.json \
+            --rollback-report artifacts/promotions/deployment_rollback_execution_controlled.json \
+            --incident-dispatch-report artifacts/promotions/rollback_incident_dispatch.json \
+            --dead-letter-escalation-report artifacts/promotions/rollback_dead_letter_escalation.json \
+            --output artifacts/runbooks/oncall_runbook_report.json
+
       - name: Upload deployment integration artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -200,6 +210,7 @@ jobs:
             artifacts/performance/query_cost_regression_report.json
             artifacts/monitoring/health_report.json
             artifacts/monitoring/operational_dashboard.json
+            artifacts/runbooks/oncall_runbook_report.json
           if-no-files-found: ignore
 
   production-parity-check:

@@ -25,8 +25,17 @@ DASHBOARD_OUTPUT_PATH ?= artifacts/monitoring/operational_dashboard.json
 DASHBOARD_HEALTH_REPORT ?= artifacts/monitoring/health_report.json
 DASHBOARD_COST_REPORT ?= artifacts/monitoring/query_cost_attribution.json
 DASHBOARD_PERFORMANCE_REPORT ?= artifacts/performance/dbt_build_prod_report.json
+ONCALL_RUNBOOK_REPORT_PATH ?= artifacts/runbooks/oncall_runbook_report.json
+ONCALL_HEALTH_REPORT ?= artifacts/monitoring/health_report.json
+ONCALL_DASHBOARD_REPORT ?= artifacts/monitoring/operational_dashboard.json
+ONCALL_ROLLBACK_REPORT ?= artifacts/promotions/deployment_rollback_execution.json
+ONCALL_INCIDENT_DISPATCH_REPORT ?= artifacts/promotions/rollback_incident_dispatch.json
+ONCALL_DEAD_LETTER_ESCALATION_REPORT ?= artifacts/promotions/rollback_dead_letter_escalation.json
+ONCALL_PRIMARY_ENDPOINT ?= pagerduty-primary
+ONCALL_SECONDARY_ENDPOINT ?= pagerduty-secondary
+ONCALL_TICKET_QUEUE ?= revops-platform
 
-.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-build-changed dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-test-changed dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle refresh-caches promote-deployment rollback-deployment production-stop-gate production-stop-gate-strict query-cost-attribution query-cost-attribution-strict query-cost-regression query-cost-regression-strict health-checks health-checks-strict dashboards dashboards-strict query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness metabase-setup streamlit-dev anomaly-check insights-generate
+.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-build-changed dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-test-changed dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle refresh-caches promote-deployment rollback-deployment production-stop-gate production-stop-gate-strict query-cost-attribution query-cost-attribution-strict query-cost-regression query-cost-regression-strict health-checks health-checks-strict dashboards dashboards-strict oncall-runbooks oncall-runbooks-strict query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness metabase-setup streamlit-dev anomaly-check insights-generate
 
 setup:
 	$(PIP) install "apache-airflow==$(AIRFLOW_VERSION)" --constraint "$(AIRFLOW_CONSTRAINTS)"
@@ -154,6 +163,12 @@ dashboards:
 
 dashboards-strict:
 	$(PYTHON) scripts/ops/generate_operational_dashboards.py --strict-metrics --health-report $(DASHBOARD_HEALTH_REPORT) --cost-report $(DASHBOARD_COST_REPORT) --performance-report $(DASHBOARD_PERFORMANCE_REPORT) --output $(DASHBOARD_OUTPUT_PATH)
+
+oncall-runbooks:
+	$(PYTHON) scripts/ops/run_oncall_runbooks.py --health-report $(ONCALL_HEALTH_REPORT) --dashboard-report $(ONCALL_DASHBOARD_REPORT) --rollback-report $(ONCALL_ROLLBACK_REPORT) --incident-dispatch-report $(ONCALL_INCIDENT_DISPATCH_REPORT) --dead-letter-escalation-report $(ONCALL_DEAD_LETTER_ESCALATION_REPORT) --primary-endpoint "$(ONCALL_PRIMARY_ENDPOINT)" --secondary-endpoint "$(ONCALL_SECONDARY_ENDPOINT)" --ticket-queue "$(ONCALL_TICKET_QUEUE)" --output $(ONCALL_RUNBOOK_REPORT_PATH)
+
+oncall-runbooks-strict:
+	$(PYTHON) scripts/ops/run_oncall_runbooks.py --strict-artifacts --health-report $(ONCALL_HEALTH_REPORT) --dashboard-report $(ONCALL_DASHBOARD_REPORT) --rollback-report $(ONCALL_ROLLBACK_REPORT) --incident-dispatch-report $(ONCALL_INCIDENT_DISPATCH_REPORT) --dead-letter-escalation-report $(ONCALL_DEAD_LETTER_ESCALATION_REPORT) --primary-endpoint "$(ONCALL_PRIMARY_ENDPOINT)" --secondary-endpoint "$(ONCALL_SECONDARY_ENDPOINT)" --ticket-queue "$(ONCALL_TICKET_QUEUE)" --output $(ONCALL_RUNBOOK_REPORT_PATH)
 
 production-stop-gate:
 	$(MAKE) quality-gate

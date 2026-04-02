@@ -32,6 +32,7 @@ jobs:
       QUERY_COST_REGRESSION_REPORT_PATH: artifacts/performance/query_cost_regression_report.json
       HEALTH_REPORT_PATH: artifacts/monitoring/health_report.json
       DASHBOARD_OUTPUT_PATH: artifacts/monitoring/operational_dashboard.json
+      ONCALL_RUNBOOK_REPORT_PATH: artifacts/runbooks/oncall_runbook_report.json
 
     permissions:
       contents: read
@@ -287,6 +288,20 @@ jobs:
             --output "$DEPLOYMENT_ROLLBACK_ESCALATION_REPORT_PATH" \
             $STRICT_FLAG
 
+      - name: Generate on-call runbook
+        if: always()
+        run: |
+          python scripts/ops/run_oncall_runbooks.py \
+            --health-report "$HEALTH_REPORT_PATH" \
+            --dashboard-report "$DASHBOARD_OUTPUT_PATH" \
+            --rollback-report "$DEPLOYMENT_ROLLBACK_EXECUTION_REPORT_PATH" \
+            --incident-dispatch-report "$DEPLOYMENT_ROLLBACK_INCIDENT_DISPATCH_REPORT_PATH" \
+            --dead-letter-escalation-report "$DEPLOYMENT_ROLLBACK_ESCALATION_REPORT_PATH" \
+            --primary-endpoint "pagerduty-primary" \
+            --secondary-endpoint "pagerduty-secondary" \
+            --ticket-queue "revops-platform" \
+            --output "$ONCALL_RUNBOOK_REPORT_PATH"
+
       - name: Upload release gate artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -301,6 +316,7 @@ jobs:
             artifacts/performance/query_cost_regression_report.json
             artifacts/monitoring/health_report.json
             artifacts/monitoring/operational_dashboard.json
+            artifacts/runbooks/oncall_runbook_report.json
             artifacts/promotions/deployment_promotion.json
             artifacts/promotions/deployment_rollback.json
             artifacts/promotions/deployment_rollback_execution.json

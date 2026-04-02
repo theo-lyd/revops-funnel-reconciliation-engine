@@ -645,3 +645,25 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: health report, cost attribution, and performance artifacts must all be available
   - Expected output: non-zero exit when telemetry artifacts are unavailable in strict mode
   - Recovery: ensure health-checks, cost-attribution, and dbt-build-prod have completed successfully before retrying
+
+### PDD-055
+- What: python scripts/ops/run_oncall_runbooks.py --health-report <path> --dashboard-report <path> --rollback-report <path> --incident-dispatch-report <path> --dead-letter-escalation-report <path> --output <path>
+- Why: generate deterministic on-call runbook artifacts with failure-pattern detection and escalation routing
+- Who: project maintainer
+- When: 2026-04-02+, during release monitoring and incident triage
+- Where: CI deployment integration, release workflow, and local operational debugging
+- How:
+  - Preconditions: at least one telemetry artifact is available; safe-skip allowed in non-strict mode
+  - Expected output: runbook artifact containing incident_required status, severity, actions, and escalation steps
+  - Recovery: verify artifact paths and regenerate upstream health/dashboard/rollback artifacts before rerun
+
+### PDD-056
+- What: python scripts/ops/run_oncall_runbooks.py --strict-artifacts --health-report <path> --dashboard-report <path> --rollback-report <path> --incident-dispatch-report <path> --dead-letter-escalation-report <path> --output <path>
+- Why: enforce strict runbook generation in production contexts where missing evidence must fail fast
+- Who: project maintainer
+- When: 2026-04-02+, during strict incident-governance and release controls
+- Where: production release workflows and automated operational gates
+- How:
+  - Preconditions: required telemetry artifacts must be present and parseable
+  - Expected output: non-zero exit when no runbook artifacts are found
+  - Recovery: restore artifact-producing steps (health, dashboards, rollback, dispatch/escalation) and rerun

@@ -878,3 +878,25 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: all telemetry artifacts (health, cost, performance) must be available
   - Expected output: non-zero exit if any telemetry is unavailable
   - Recovery: ensure health, cost, and performance checks have completed successfully before retrying
+
+### MK-073
+- What: make oncall-runbooks
+- Why: generate on-call runbook artifacts from health, dashboard, rollback, and escalation telemetry
+- Who: project maintainer
+- When: 2026-04-02+, during deployment integration and release monitoring
+- Where: repository root, CI deployment integration, and release workflow
+- How:
+  - Preconditions: optional telemetry artifacts available; safe-skip behavior allowed in non-strict mode
+  - Expected output: JSON runbook artifact with failure patterns, recommended actions, and escalation plan
+  - Recovery: verify input artifact paths and rerun after health/dashboard/incident steps complete
+
+### MK-074
+- What: make oncall-runbooks-strict
+- Why: enforce runbook generation only when telemetry evidence is present in strict production contexts
+- Who: project maintainer
+- When: 2026-04-02+, during production incident response and release gates
+- Where: release workflow and controlled operational automation
+- How:
+  - Preconditions: health, dashboard, rollback, dispatch, and escalation artifacts available
+  - Expected output: non-zero exit when no runbook input artifacts are found
+  - Recovery: ensure upstream observability and rollback artifact generation succeeded, then rerun

@@ -455,3 +455,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: preserve strict/non-strict dashboard modes and validate correlation calculations with edge cases (zero stdev, insufficient data)
 - Alternative resolution options: Not applicable
 - Verification evidence: 22 unit tests cover trend calculation, SLI evaluation, correlation math, and dashboard serialization; 4 CLI tests cover both safe-skip and strict failure modes
+
+### Issue ID: ISS-041
+- Phase and batch: Phase 9 Batch 9.3 - On-call runbooks, failure patterns, and escalation procedures
+- Date observed: 2026-04-02
+- Where it occurred: Batch 9.3 implementation and validation
+- Symptom: No blocking defects encountered
+- Root cause: Not applicable
+- Resolution: Not applicable
+- How to avoid: keep failure-pattern detection deterministic and preserve strict/non-strict runbook modes for local-safe and production contexts
+- Alternative resolution options: Not applicable
+- Verification evidence: unit and CLI tests validate unhealthy/degraded pattern detection, escalation routing, runbook serialization, safe-skip behavior, and strict-artifact enforcement
