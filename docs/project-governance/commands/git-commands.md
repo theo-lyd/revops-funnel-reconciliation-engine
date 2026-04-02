@@ -733,3 +733,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful commit and remote connectivity
   - Expected output: remote master updated with Phase 6.2 batch
   - Recovery: resolve conflicts and retry push
+
+## Phase 6: Release gate integrity and artifact auditability entries
+
+### GIT-063
+- What: git add .github/workflows/release.yml src/revops_funnel/deployment_ops.py scripts/ops/promote_deployment.py tests/test_deployment_ops.py docs/reports/phase-6/batch-6.3-release-gate-integrity-and-artifact-auditability.md docs/reports/phase-6/PHASE-6-PLAN.md docs/reports/phase-6/phase-6-end-report.md README.md docs/project-governance/issues-log.md docs/project-governance/commands/make-commands.md docs/project-governance/commands/git-commands.md docs/project-governance/commands/python-dbt-duckdb-commands.md
+- Why: stage Phase 6.3 release hardening, evidence automation, tests, and governance updates as one auditable unit
+- Who: data engineer or analytics lead
+- When: 2026-04-02, Phase 6 Batch 6.3 completion
+- Where: repository root
+- How:
+  - Preconditions: lint and tests pass for Phase 6.3 updates
+  - Expected output: intended Phase 6.3 files staged without generated artifacts
+  - Recovery: unstage unrelated files and restage explicit scope
+
+### GIT-064
+- What: git commit -m "feat(phase-6): harden release gates and promotion audit artifacts"
+- Why: persist strict release parity gating, promotion contract metadata, and evidence upload workflow
+- Who: data engineer or analytics lead
+- When: 2026-04-02, after staging review
+- Where: repository root
+- How:
+  - Preconditions: staged files reviewed; pre-commit hooks pass
+  - Expected output: commit hash for Phase 6.3 hardening batch
+  - Recovery: resolve hook feedback and recommit
+
+### GIT-065
+- What: git push origin master
+- Why: publish Phase 6.3 release integrity improvements to remote
+- Who: data engineer or analytics lead
+- When: 2026-04-02, immediately after commit
+- Where: repository root
+- How:
+  - Preconditions: successful commit and remote connectivity
+  - Expected output: remote master updated with Phase 6.3 changes
+  - Recovery: resolve conflicts and retry push

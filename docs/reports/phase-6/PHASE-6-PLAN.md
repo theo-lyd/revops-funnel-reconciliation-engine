@@ -6,6 +6,7 @@ Automate the lifecycle of the data product with CI selection, test automation, r
 ## Planned Scope
 - Batch 6.1: Email notification delivery for monitoring alerts.
 - Batch 6.2: CI/CD and operations automation.
+- Batch 6.3: Release gate integrity and artifact auditability.
 
 ## Design Principles
 - Preserve local-safe behavior when SMTP settings are absent.
@@ -13,6 +14,7 @@ Automate the lifecycle of the data product with CI selection, test automation, r
 - Reuse the existing monitoring report and anomaly summaries.
 - Keep dbt execution focused on changed models in CI when possible.
 - Keep promotion guarded by explicit release gates and reproducible manifests.
+- Ensure release workflows produce auditable evidence artifacts for every promotion decision.
 
 ## Success Criteria
 - Monitoring alerts can be sent through SMTP when configured.
@@ -20,3 +22,4 @@ Automate the lifecycle of the data product with CI selection, test automation, r
 - Email behavior is covered by fixture-based tests.
 - CI can infer and run only the impacted dbt models.
 - Automated release and promotion workflows are documented and executable.
+- Release promotion remains blocked unless strict parity gates pass.

@@ -301,3 +301,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: run targeted mypy after editing helper return signatures and avoid partial patch states
 - Alternative resolution options: replace helper with pydantic/TypedDict validation in future hardening
 - Verification evidence: `make lint` passed with mypy success across 29 source files; `make test` passed with 23 tests
+
+### Issue ID: ISS-027
+- Phase and batch: Phase 6 Batch 6.3 - Release gate integrity and artifact auditability
+- Date observed: 2026-04-02
+- Where it occurred: `src/revops_funnel/deployment_ops.py` during pre-merge lint validation
+- Symptom: Ruff flagged import block ordering after metadata/hash enhancements were added
+- Root cause: standard-library imports were not in tool-expected order
+- Resolution: reordered imports and reran full lint/test gates
+- How to avoid: run `ruff check` immediately after adding new imports in shared helpers
+- Alternative resolution options: use `ruff check --fix` for import normalization before full gate
+- Verification evidence: `make lint` and `make test` passed after import-order correction

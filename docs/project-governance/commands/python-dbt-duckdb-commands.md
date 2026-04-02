@@ -346,3 +346,27 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: `DEPLOYMENT_PROMOTION_ENABLED=true`, parity report exists with status passed, cache refresh report exists
   - Expected output: deployment promotion JSON artifact with selector and release metadata
   - Recovery: run missing gate steps and rerun promotion command
+
+## Phase 6 Batch 6.3 execution entries
+
+### PDD-030
+- What: python scripts/quality/run_metric_parity_check.py --strict-snowflake --output-json artifacts/parity/metric_parity_report.json
+- Why: enforce release-time parity as a strict promotion gate and emit an auditable parity artifact
+- Who: project maintainer
+- When: 2026-04-02, Phase 6 Batch 6.3 workflow hardening
+- Where: CI release workflow context
+- How:
+  - Preconditions: Snowflake credentials and local DuckDB Gold baseline are available
+  - Expected output: parity report JSON with status `passed`; non-zero exit on drift or missing strict prerequisites
+  - Recovery: fix parity drift or credentials, then rerun release workflow
+
+### PDD-031
+- What: python scripts/ops/promote_deployment.py --parity-report artifacts/parity/metric_parity_report.json --cache-refresh-report artifacts/cache/cache_refresh.json --output artifacts/promotions/deployment_promotion.json
+- Why: persist promotion decisions with release metadata and checksum-backed artifact references
+- Who: project maintainer
+- When: 2026-04-02, Phase 6 Batch 6.3 workflow hardening
+- Where: CI release workflow context
+- How:
+  - Preconditions: promotion enabled, strict parity report present and passed, cache refresh report present
+  - Expected output: promotion manifest with release metadata (`git_commit_sha`, `workflow_run_id`, `source_base_ref`) and artifact checksums
+  - Recovery: execute missing gate steps or fix invalid reports, then rerun promotion step

@@ -52,12 +52,20 @@ def test_create_deployment_promotion_report_requires_passed_parity(tmp_path: Pat
         selector="path:models/marts",
         parity_report_path=parity_report,
         cache_refresh_report_path=cache_report,
+        source_base_ref="origin/master",
+        git_commit_sha="abc123",
+        workflow_run_id="run-99",
         output_path=output,
     )
 
     assert output.exists()
     assert report.release_id == "release-123"
     assert report.parity_status == "passed"
+    assert report.git_commit_sha == "abc123"
+    assert report.workflow_run_id == "run-99"
+    assert report.release_gate_status == "passed"
+    assert report.parity_report_sha256
+    assert report.cache_refresh_report_sha256
 
 
 def test_write_cache_refresh_report_creates_json(tmp_path: Path) -> None:

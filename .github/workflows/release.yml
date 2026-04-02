@@ -11,6 +11,10 @@ on:
 jobs:
   promote:
     runs-on: ubuntu-latest
+    env:
+      PARITY_REPORT_PATH: artifacts/parity/metric_parity_report.json
+      CACHE_REFRESH_REPORT_PATH: artifacts/cache/cache_refresh.json
+      DEPLOYMENT_PROMOTION_REPORT_PATH: artifacts/promotions/deployment_promotion.json
 
     steps:
       - name: Checkout
@@ -29,6 +33,19 @@ jobs:
           pip install "apache-airflow==2.10.5" --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-2.10.5/constraints-3.10.txt"
           pip install -r requirements/base.txt -r requirements/dev.txt
 
+      - name: Setup DuckDB warehouse for parity baseline
+        run: |
+          mkdir -p data/warehouse
+          cp dbt/profiles/profiles.yml.example dbt/profiles/profiles.yml
+          python scripts/init_warehouse.py
+          python scripts/ingest/load_crm_csv_to_duckdb.py
+
+      - name: Build local Gold layer for parity
+        run: |
+          cd dbt
+          dbt deps
+          dbt build --profiles-dir profiles --select path:models/staging path:models/intermediate path:models/marts
+
       - name: Build and test production models
         env:
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
@@ -40,11 +57,41 @@ jobs:
           SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
         run: make dbt-deploy-prod
 
+      - name: Run strict metric parity gate
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
+        run: |
+          python scripts/quality/run_metric_parity_check.py \
+            --strict-snowflake \
+            --output-json "$PARITY_REPORT_PATH"
+
       - name: Refresh runtime caches
-        run: make refresh-caches
+        run: |
+          python scripts/ops/refresh_runtime_caches.py --output "$CACHE_REFRESH_REPORT_PATH"
 
       - name: Create deployment promotion manifest
         env:
           DEPLOYMENT_PROMOTION_ENABLED: 'true'
           RELEASE_ID: ${{ inputs.release_id }}
-        run: make promote-deployment
+          DBT_BASE_REF: ${{ github.ref_name }}
+        run: |
+          python scripts/ops/promote_deployment.py \
+            --parity-report "$PARITY_REPORT_PATH" \
+            --cache-refresh-report "$CACHE_REFRESH_REPORT_PATH" \
+            --output "$DEPLOYMENT_PROMOTION_REPORT_PATH"
+
+      - name: Upload release gate artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-gate-artifacts-${{ github.run_id }}
+          path: |
+            artifacts/parity/metric_parity_report.json
+            artifacts/cache/cache_refresh.json
+            artifacts/promotions/deployment_promotion.json

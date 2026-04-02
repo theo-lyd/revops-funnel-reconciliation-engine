@@ -27,6 +27,16 @@ def parse_args() -> argparse.Namespace:
         help="Git ref used to determine the selector recorded in the report.",
     )
     parser.add_argument(
+        "--git-commit-sha",
+        default=os.getenv("GITHUB_SHA", os.getenv("GIT_COMMIT_SHA", "unknown")),
+        help="Git commit SHA recorded in the promotion report.",
+    )
+    parser.add_argument(
+        "--workflow-run-id",
+        default=os.getenv("GITHUB_RUN_ID", os.getenv("WORKFLOW_RUN_ID", "unknown")),
+        help="Workflow run ID recorded in the promotion report.",
+    )
+    parser.add_argument(
         "--parity-report",
         default=os.getenv("PARITY_REPORT_PATH", "artifacts/parity/metric_parity_report.json"),
         help="Path to the metric parity report.",
@@ -64,6 +74,9 @@ def main() -> int:
         selector=selector,
         parity_report_path=args.parity_report,
         cache_refresh_report_path=args.cache_refresh_report,
+        source_base_ref=args.base_ref,
+        git_commit_sha=args.git_commit_sha,
+        workflow_run_id=args.workflow_run_id,
         environment=args.environment,
         output_path=args.output,
     )
