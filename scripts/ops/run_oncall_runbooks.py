@@ -76,6 +76,49 @@ def parse_args() -> argparse.Namespace:
         help="Fail when no runbook input artifacts are available.",
     )
     parser.add_argument(
+        "--strict-quality-gate",
+        action="store_true",
+        help="Fail if runbook quality score does not meet threshold.",
+    )
+    parser.add_argument(
+        "--quality-threshold",
+        type=float,
+        default=float(os.getenv("ONCALL_QUALITY_THRESHOLD", "0.8")),
+        help="Minimum runbook quality score in strict mode.",
+    )
+    parser.add_argument(
+        "--recent-patterns",
+        default=os.getenv("ONCALL_RECENT_PATTERNS_PATH", "artifacts/runbooks/recent_patterns.json"),
+        help="Path to recent pattern IDs used for flap suppression.",
+    )
+    parser.add_argument(
+        "--flap-threshold",
+        type=int,
+        default=int(os.getenv("ONCALL_FLAP_THRESHOLD", "3")),
+        help="Suppress patterns seen this many times in recent windows.",
+    )
+    parser.add_argument(
+        "--last-game-day-utc",
+        default=os.getenv("ONCALL_LAST_GAME_DAY_UTC"),
+        help="Last game-day execution timestamp in ISO8601 UTC.",
+    )
+    parser.add_argument(
+        "--game-day-cadence-days",
+        type=int,
+        default=int(os.getenv("ONCALL_GAME_DAY_CADENCE_DAYS", "30")),
+        help="Expected cadence for game-day exercises.",
+    )
+    parser.add_argument(
+        "--timeline-output",
+        default=os.getenv("ONCALL_TIMELINE_OUTPUT", "artifacts/runbooks/incident_timeline.json"),
+        help="Output path for incident timeline artifact.",
+    )
+    parser.add_argument(
+        "--safe-commands-only",
+        action="store_true",
+        help="Fail if generated runbook commands contain unsafe operations.",
+    )
+    parser.add_argument(
         "--output",
         default=DEFAULT_ONCALL_OUTPUT,
         help="Output path for on-call runbook report artifact.",
@@ -98,6 +141,30 @@ def _read_json(path: str) -> dict[str, Any] | None:
     return payload
 
 
+def _read_recent_patterns(path: str) -> list[str]:
+    payload = _read_json(path)
+    if not payload:
+        return []
+    values = payload.get("pattern_ids")
+    if not isinstance(values, list):
+        return []
+    return [str(value) for value in values if value]
+
+
+def _has_unsafe_commands(report_payload: dict[str, Any]) -> bool:
+    unsafe_tokens = [" rm ", "drop ", "truncate ", "shutdown", "reboot"]
+    actions = report_payload.get("recommended_actions", [])
+    if not isinstance(actions, list):
+        return False
+    for action in actions:
+        if not isinstance(action, dict):
+            continue
+        command = f" {str(action.get('command', '')).lower()} "
+        if any(token in command for token in unsafe_tokens):
+            return True
+    return False
+
+
 def main() -> int:
     args = parse_args()
 
@@ -106,6 +173,7 @@ def main() -> int:
     rollback_report = _read_json(args.rollback_report)
     incident_dispatch_report = _read_json(args.incident_dispatch_report)
     dead_letter_escalation_report = _read_json(args.dead_letter_escalation_report)
+    recent_pattern_ids = _read_recent_patterns(args.recent_patterns)
 
     has_any_artifact = any(
         [
@@ -139,14 +207,35 @@ def main() -> int:
         primary_endpoint=args.primary_endpoint,
         secondary_endpoint=args.secondary_endpoint,
         ticket_queue=args.ticket_queue,
+        recent_pattern_ids=recent_pattern_ids,
+        flap_threshold=max(1, args.flap_threshold),
+        strict_quality_threshold=max(0.0, args.quality_threshold),
+        dependency_impact=(dashboard_report or {}).get("dependency_impact", {}),
+        last_game_day_utc=args.last_game_day_utc,
+        game_day_cadence_days=max(1, args.game_day_cadence_days),
     )
-    artifact_path = write_json_artifact(args.output, report.to_dict())
+    report_payload = report.to_dict()
+    artifact_path = write_json_artifact(args.output, report_payload)
+    write_json_artifact(
+        args.timeline_output,
+        {"timeline": report_payload.get("incident_timeline", [])},
+    )
+
+    if args.safe_commands_only and _has_unsafe_commands(report_payload):
+        print("Error: unsafe runbook command detected (--safe-commands-only enabled)")
+        return 1
+
+    if args.strict_quality_gate and not bool(report_payload.get("quality_gate_passed", False)):
+        print("Error: runbook quality gate failed (--strict-quality-gate enabled)")
+        return 1
 
     print(f"✓ On-call runbook generated: {artifact_path}")
     print(f"  Overall status: {report.overall_status}")
     print(f"  Incident required: {report.incident_required}")
     print(f"  Failure patterns: {len(report.failure_patterns)}")
     print(f"  Escalation steps: {len(report.escalation_steps)}")
+    print(f"  Runbook quality score: {report.runbook_quality_score}")
+    print(f"  Game-day due: {report.game_day_due}")
     return 0
 
 

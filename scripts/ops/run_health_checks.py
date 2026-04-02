@@ -10,16 +10,22 @@ from pathlib import Path
 
 from revops_funnel.artifacts import write_json_artifact
 from revops_funnel.health_monitoring import (
+    ErrorBudgetPolicy,
     HealthCheck,
     HealthStatus,
     HealthThresholds,
+    build_incident_timeline_events,
     check_data_freshness,
     check_job_duration,
+    compute_error_budget_status,
     generate_health_report,
 )
 
 DEFAULT_FRESHNESS_HOURS = 24.0
 DEFAULT_JOB_DURATION_MINUTES = 120.0
+DEFAULT_ERROR_BUDGET_MONTHLY_MINUTES = 720.0
+DEFAULT_BURN_RATE_WARNING = 1.0
+DEFAULT_BURN_RATE_CRITICAL = 2.0
 DEFAULT_OUTPUT = os.getenv(
     "HEALTH_REPORT_PATH",
     "artifacts/monitoring/health_report.json",
@@ -51,6 +57,34 @@ def parse_args() -> argparse.Namespace:
         "--output",
         default=DEFAULT_OUTPUT,
         help="Output path for health report artifact.",
+    )
+    parser.add_argument(
+        "--error-budget-monthly-minutes",
+        type=float,
+        default=float(
+            os.getenv(
+                "HEALTH_ERROR_BUDGET_MONTHLY_MINUTES",
+                str(DEFAULT_ERROR_BUDGET_MONTHLY_MINUTES),
+            )
+        ),
+        help="Monthly error budget in minutes used for burn-rate estimation.",
+    )
+    parser.add_argument(
+        "--burn-rate-warning",
+        type=float,
+        default=float(os.getenv("HEALTH_BURN_RATE_WARNING", str(DEFAULT_BURN_RATE_WARNING))),
+        help="Warning threshold for burn rate.",
+    )
+    parser.add_argument(
+        "--burn-rate-critical",
+        type=float,
+        default=float(os.getenv("HEALTH_BURN_RATE_CRITICAL", str(DEFAULT_BURN_RATE_CRITICAL))),
+        help="Critical threshold for burn rate.",
+    )
+    parser.add_argument(
+        "--strict-error-budget",
+        action="store_true",
+        help="Fail when error budget burn-rate reaches critical.",
     )
     return parser.parse_args()
 
@@ -140,16 +174,26 @@ def main() -> int:
             )
         ]
 
-    report = generate_health_report(checks)
+    policy = ErrorBudgetPolicy(
+        monthly_budget_minutes=max(1.0, args.error_budget_monthly_minutes),
+        burn_rate_warning=max(0.1, args.burn_rate_warning),
+        burn_rate_critical=max(args.burn_rate_warning, args.burn_rate_critical),
+    )
+    error_budget = compute_error_budget_status(checks, policy)
+    report = generate_health_report(checks, error_budget=error_budget)
+    report["incident_timeline"] = build_incident_timeline_events(checks)
     overall = str(report.get("overall_status", ""))
+    budget_status = str(error_budget.status)
 
     payload = {
-        "status": "ok" if overall != "unhealthy" else "error",
+        "status": "ok" if (overall != "unhealthy" and budget_status != "critical") else "error",
         "strict_metrics": bool(args.strict_metrics),
+        "strict_error_budget": bool(args.strict_error_budget),
         "report": report,
     }
 
-    code = 1 if overall == "unhealthy" else 0
+    budget_failed = args.strict_error_budget and budget_status == "critical"
+    code = 1 if (overall == "unhealthy" or budget_failed) else 0
     write_json_artifact(args.output, payload)
     print(json.dumps(payload, indent=2, sort_keys=True))
     return code

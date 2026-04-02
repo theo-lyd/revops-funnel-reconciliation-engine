@@ -68,6 +68,7 @@ def test_run_oncall_runbooks_with_input_artifacts(tmp_path: Path) -> None:
     health_path = tmp_path / "health.json"
     dashboard_path = tmp_path / "dashboard.json"
     output_path = tmp_path / "runbook.json"
+    timeline_path = tmp_path / "timeline.json"
 
     health_path.write_text(json.dumps({"overall_status": "unhealthy"}), encoding="utf-8")
     dashboard_path.write_text(
@@ -81,6 +82,7 @@ def test_run_oncall_runbooks_with_input_artifacts(tmp_path: Path) -> None:
             "scripts/ops/run_oncall_runbooks.py",
             f"--health-report={health_path}",
             f"--dashboard-report={dashboard_path}",
+            f"--timeline-output={timeline_path}",
             f"--output={output_path}",
         ],
         cwd="/workspaces/revops-funnel-reconciliation-engine",
@@ -91,6 +93,39 @@ def test_run_oncall_runbooks_with_input_artifacts(tmp_path: Path) -> None:
 
     assert result.returncode == 0
     payload = json.loads(output_path.read_text(encoding="utf-8"))
+    timeline = json.loads(timeline_path.read_text(encoding="utf-8"))
     assert payload["overall_status"] == "incident"
     assert payload["incident_required"] is True
     assert payload["highest_severity"] == "p1"
+    assert isinstance(timeline.get("timeline"), list)
+
+
+def test_run_oncall_runbooks_strict_quality_gate_fails(tmp_path: Path) -> None:
+    health_path = tmp_path / "health.json"
+    dashboard_path = tmp_path / "dashboard.json"
+    output_path = tmp_path / "runbook.json"
+
+    health_path.write_text(json.dumps({"overall_status": "unhealthy"}), encoding="utf-8")
+    dashboard_path.write_text(
+        json.dumps({"operational_status": "critical", "sli_metrics": []}),
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/ops/run_oncall_runbooks.py",
+            f"--health-report={health_path}",
+            f"--dashboard-report={dashboard_path}",
+            "--strict-quality-gate",
+            "--quality-threshold=1.1",
+            f"--output={output_path}",
+        ],
+        cwd="/workspaces/revops-funnel-reconciliation-engine",
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 1
+    assert "quality gate failed" in result.stdout.lower()

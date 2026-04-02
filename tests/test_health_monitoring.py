@@ -3,11 +3,14 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 from revops_funnel.health_monitoring import (
+    ErrorBudgetPolicy,
     HealthCheck,
     HealthStatus,
     HealthThresholds,
+    build_incident_timeline_events,
     check_data_freshness,
     check_job_duration,
+    compute_error_budget_status,
     evaluate_liveness,
     generate_health_report,
 )
@@ -122,5 +125,36 @@ def test_generate_health_report() -> None:
     assert report["summary"]["healthy"] == 1
     assert report["summary"]["degraded"] == 1
     assert len(report["checks"]) == 2
+    assert report["contract_version"] == "2.0"
     assert report["checks"][0]["status"] == "healthy"
     assert report["checks"][1]["status"] == "degraded"
+
+
+def test_compute_error_budget_status_warning() -> None:
+    checks = [
+        HealthCheck("c1", HealthStatus.DEGRADED, "degraded", "2026-04-02T00:00:00+00:00"),
+        HealthCheck("c2", HealthStatus.UNHEALTHY, "bad", "2026-04-02T00:10:00+00:00"),
+    ]
+    policy = ErrorBudgetPolicy(
+        monthly_budget_minutes=720.0,
+        burn_rate_warning=1.0,
+        burn_rate_critical=3.0,
+    )
+
+    status = compute_error_budget_status(checks, policy)
+
+    assert status.consumed_minutes > 0
+    assert status.remaining_minutes < 720.0
+    assert status.status in {"healthy", "warning", "critical"}
+
+
+def test_build_incident_timeline_events_filters_healthy() -> None:
+    checks = [
+        HealthCheck("c1", HealthStatus.HEALTHY, "ok", "2026-04-02T00:00:00+00:00"),
+        HealthCheck("c2", HealthStatus.DEGRADED, "slow", "2026-04-02T00:05:00+00:00"),
+    ]
+
+    events = build_incident_timeline_events(checks)
+
+    assert len(events) == 1
+    assert events[0]["event_type"] == "health_signal"

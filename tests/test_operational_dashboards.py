@@ -10,6 +10,7 @@ from revops_funnel.operational_dashboards import (
     ScalingRecommendation,
     SLIMetric,
     TrendAnalysis,
+    analyze_dependency_impact,
     analyze_metric_trend,
     calculate_cost_performance_correlation,
     calculate_trend,
@@ -278,6 +279,51 @@ class TestDashboardStatus:
         ]
         status = determine_dashboard_status(metrics)
         assert status == "degraded"
+
+
+def test_analyze_dependency_impact_high_blast_radius() -> None:
+    sli_metrics = [
+        SLIMetric(
+            name="transformation_latency",
+            current_value=160.0,
+            slo_threshold=120.0,
+            unit="minutes",
+            status="unhealthy",
+            trend=MetricTrend.DEGRADING,
+            last_updated=datetime.utcnow().isoformat(),
+        )
+    ]
+    dependency_graph = {
+        "transformation_latency": ["dbt-runner", "warehouse", "bi-api", "alerts", "scheduler"]
+    }
+
+    impact = analyze_dependency_impact(sli_metrics, dependency_graph)
+    assert impact["blast_radius"] == "high"
+    assert impact["impacted_services"] == 5
+
+
+def test_generate_dashboard_includes_contract_fields() -> None:
+    sli_metrics = [
+        SLIMetric(
+            name="latency",
+            current_value=150.0,
+            slo_threshold=120.0,
+            unit="minutes",
+            status="unhealthy",
+            trend=MetricTrend.DEGRADING,
+            last_updated=datetime.utcnow().isoformat(),
+        )
+    ]
+    dashboard = generate_operational_dashboard(
+        sli_metrics=sli_metrics,
+        trend_analyses={},
+        dependency_graph={"latency": ["warehouse"]},
+        error_budget={"status": "healthy"},
+        cost_of_reliability={"cost_per_latency_minute": 0.001},
+    )
+    payload = dashboard.to_dict()
+    assert payload["contract_version"] == "2.0"
+    assert payload["dependency_impact"]["impacted_services"] == 1
 
     def test_dashboard_with_unhealthy(self) -> None:
         """Test dashboard status with unhealthy metrics."""

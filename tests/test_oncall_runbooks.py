@@ -4,9 +4,12 @@ from revops_funnel.oncall_runbooks import (
     IncidentSeverity,
     build_escalation_steps,
     build_recommended_actions,
+    dedupe_failure_patterns,
     detect_failure_patterns,
     generate_oncall_runbook_report,
     highest_severity,
+    is_game_day_due,
+    suppress_flapping_patterns,
 )
 
 
@@ -131,6 +134,7 @@ def test_generate_oncall_runbook_report_healthy_defaults() -> None:
     assert report.incident_required is False
     assert report.highest_severity is None
     assert len(report.failure_patterns) == 0
+    assert report.quality_gate_passed is True
 
 
 def test_generate_oncall_runbook_report_incident() -> None:
@@ -165,5 +169,49 @@ def test_report_serialization_converts_enum_values() -> None:
     )
 
     payload = report.to_dict()
+    assert payload["contract_version"] == "2.0"
     assert payload["highest_severity"] == "p1"
     assert payload["failure_patterns"][0]["severity"] == "p1"
+
+
+def test_dedupe_failure_patterns() -> None:
+    patterns = detect_failure_patterns(
+        health_report={"overall_status": "unhealthy"},
+        dashboard_report={"operational_status": "critical", "sli_metrics": []},
+        rollback_execution_report=None,
+        incident_dispatch_report=None,
+        dead_letter_escalation_report=None,
+    )
+    deduped = dedupe_failure_patterns(patterns + patterns)
+    assert len(deduped) == len(patterns)
+
+
+def test_suppress_flapping_patterns() -> None:
+    patterns = detect_failure_patterns(
+        health_report={"overall_status": "degraded"},
+        dashboard_report=None,
+        rollback_execution_report=None,
+        incident_dispatch_report=None,
+        dead_letter_escalation_report=None,
+    )
+    filtered = suppress_flapping_patterns(patterns, ["health_degraded"] * 4, flap_threshold=3)
+    assert len(filtered) == 0
+
+
+def test_dependency_impact_escalates_to_p1() -> None:
+    report = generate_oncall_runbook_report(
+        health_report={"overall_status": "degraded"},
+        dashboard_report={"operational_status": "degraded", "sli_metrics": []},
+        rollback_execution_report=None,
+        incident_dispatch_report=None,
+        dead_letter_escalation_report=None,
+        primary_endpoint="oncall-primary",
+        secondary_endpoint="oncall-secondary",
+        ticket_queue="revops-queue",
+        dependency_impact={"blast_radius": "high"},
+    )
+    assert report.highest_severity == IncidentSeverity.P1
+
+
+def test_game_day_due_without_timestamp() -> None:
+    assert is_game_day_due(None, cadence_days=30) is True

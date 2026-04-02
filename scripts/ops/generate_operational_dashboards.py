@@ -59,6 +59,13 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Fail when telemetry data is unavailable.",
     )
+    parser.add_argument(
+        "--dependency-graph",
+        default=os.getenv(
+            "DASHBOARD_DEPENDENCY_GRAPH", "artifacts/monitoring/dependency_graph.json"
+        ),
+        help="Path to dependency graph artifact for blast-radius analysis.",
+    )
     return parser.parse_args()
 
 
@@ -75,6 +82,27 @@ def fetch_health_status() -> dict[str, Any] | None:
         return None
     except (OSError, json.JSONDecodeError):
         return None
+
+
+def fetch_dependency_graph(path: str) -> dict[str, list[str]] | None:
+    graph_path = Path(path)
+    if not graph_path.exists():
+        return None
+
+    try:
+        payload = json.loads(graph_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+
+    if not isinstance(payload, dict):
+        return None
+
+    graph: dict[str, list[str]] = {}
+    for key, value in payload.items():
+        if not isinstance(key, str) or not isinstance(value, list):
+            continue
+        graph[key] = [str(item) for item in value if item]
+    return graph
 
 
 def fetch_cost_metrics() -> list[dict[str, Any]] | None:
@@ -234,6 +262,38 @@ def generate_sli_metrics(
     return sli_metrics
 
 
+def extract_error_budget(health_status: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not health_status:
+        return None
+    report = health_status.get("report")
+    if isinstance(report, dict):
+        budget = report.get("error_budget")
+        if isinstance(budget, dict):
+            return budget
+    budget = health_status.get("error_budget")
+    if isinstance(budget, dict):
+        return budget
+    return None
+
+
+def estimate_cost_of_reliability(
+    cost_metrics: list[PerformanceMetric], latency_metrics: list[PerformanceMetric]
+) -> dict[str, float] | None:
+    if not cost_metrics or not latency_metrics:
+        return None
+
+    avg_cost = sum(m.value for m in cost_metrics) / len(cost_metrics)
+    avg_latency_minutes = (sum(m.value for m in latency_metrics) / len(latency_metrics)) / 60.0
+    if avg_latency_minutes <= 0:
+        return None
+
+    return {
+        "avg_cost_per_record": round(avg_cost, 6),
+        "avg_latency_minutes": round(avg_latency_minutes, 3),
+        "cost_per_latency_minute": round(avg_cost / avg_latency_minutes, 6),
+    }
+
+
 def main() -> int:
     """Generate operational dashboard."""
     args = parse_args()
@@ -242,6 +302,7 @@ def main() -> int:
     health_status = fetch_health_status()
     cost_data = fetch_cost_metrics()
     performance_data = fetch_performance_metrics()
+    dependency_graph = fetch_dependency_graph(args.dependency_graph)
 
     # Check if we have any data
     has_data = any([health_status, cost_data, performance_data])
@@ -280,12 +341,17 @@ def main() -> int:
     perf_values = [m.value / 60 for m in latency_metrics] if latency_metrics else None
 
     # Generate dashboard
+    error_budget = extract_error_budget(health_status)
+    reliability_cost = estimate_cost_of_reliability(cost_metrics, latency_metrics)
     dashboard = generate_operational_dashboard(
         sli_metrics=sli_metrics,
         trend_analyses=trend_analyses,
         cost_values=cost_values,
         performance_values=perf_values,
         deployment_version=args.deployment_version,
+        dependency_graph=dependency_graph,
+        error_budget=error_budget,
+        cost_of_reliability=reliability_cost,
     )
 
     # Write artifact

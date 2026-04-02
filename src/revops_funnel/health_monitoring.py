@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 
+OBSERVABILITY_CONTRACT_VERSION = "2.0"
+
 
 class HealthStatus(str, Enum):
     HEALTHY = "healthy"
@@ -18,6 +20,33 @@ class HealthStatus(str, Enum):
 class HealthThresholds:
     max_freshness_hours: float
     max_job_duration_minutes: float
+
+
+@dataclass(frozen=True)
+class ErrorBudgetPolicy:
+    monthly_budget_minutes: float
+    burn_rate_warning: float
+    burn_rate_critical: float
+
+
+@dataclass(frozen=True)
+class ErrorBudgetStatus:
+    monthly_budget_minutes: float
+    consumed_minutes: float
+    remaining_minutes: float
+    burn_rate_24h: float
+    burn_rate_7d: float
+    status: str
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "monthly_budget_minutes": round(self.monthly_budget_minutes, 3),
+            "consumed_minutes": round(self.consumed_minutes, 3),
+            "remaining_minutes": round(self.remaining_minutes, 3),
+            "burn_rate_24h": round(self.burn_rate_24h, 3),
+            "burn_rate_7d": round(self.burn_rate_7d, 3),
+            "status": self.status,
+        }
 
 
 @dataclass(frozen=True)
@@ -189,6 +218,7 @@ def evaluate_liveness(checks: list[HealthCheck]) -> HealthStatus:
 
 def generate_health_report(
     checks: list[HealthCheck],
+    error_budget: ErrorBudgetStatus | None = None,
 ) -> dict[str, object]:
     """Generate machine-readable health report from checks."""
     overall_status = evaluate_liveness(checks)
@@ -198,7 +228,8 @@ def generate_health_report(
     healthy_count = sum(1 for c in checks if c.status == HealthStatus.HEALTHY)
     skipped_count = sum(1 for c in checks if c.status == HealthStatus.SKIPPED)
 
-    return {
+    report: dict[str, object] = {
+        "contract_version": OBSERVABILITY_CONTRACT_VERSION,
         "generated_at_utc": _timestamp_iso(),
         "overall_status": str(overall_status.value),
         "summary": {
@@ -210,3 +241,64 @@ def generate_health_report(
         },
         "checks": [check.to_dict() for check in checks],
     }
+
+    if error_budget is not None:
+        report["error_budget"] = error_budget.to_dict()
+
+    return report
+
+
+def compute_error_budget_status(
+    checks: list[HealthCheck],
+    policy: ErrorBudgetPolicy,
+) -> ErrorBudgetStatus:
+    """Estimate error budget consumption from degraded/unhealthy check windows.
+
+    The model is intentionally conservative and deterministic for CI/release usage.
+    """
+    degraded = sum(1 for c in checks if c.status == HealthStatus.DEGRADED)
+    unhealthy = sum(1 for c in checks if c.status == HealthStatus.UNHEALTHY)
+
+    consumed_minutes = (degraded * 15.0) + (unhealthy * 45.0)
+    remaining_minutes = max(policy.monthly_budget_minutes - consumed_minutes, 0.0)
+
+    # Window approximations: degraded contributes less burn pressure than unhealthy.
+    burn_24h = 0.0
+    if policy.monthly_budget_minutes > 0:
+        burn_24h = ((degraded * 0.5) + (unhealthy * 1.5)) / (
+            policy.monthly_budget_minutes / (30 * 24)
+        )
+    burn_7d = burn_24h / 2.0
+
+    if burn_24h >= policy.burn_rate_critical:
+        status = "critical"
+    elif burn_24h >= policy.burn_rate_warning:
+        status = "warning"
+    else:
+        status = "healthy"
+
+    return ErrorBudgetStatus(
+        monthly_budget_minutes=policy.monthly_budget_minutes,
+        consumed_minutes=consumed_minutes,
+        remaining_minutes=remaining_minutes,
+        burn_rate_24h=burn_24h,
+        burn_rate_7d=burn_7d,
+        status=status,
+    )
+
+
+def build_incident_timeline_events(checks: list[HealthCheck]) -> list[dict[str, str]]:
+    """Build timeline events from health checks for incident reconstruction."""
+    events: list[dict[str, str]] = []
+    for check in checks:
+        if check.status in {HealthStatus.DEGRADED, HealthStatus.UNHEALTHY}:
+            events.append(
+                {
+                    "timestamp_utc": check.evaluated_at_utc,
+                    "source": "health_report",
+                    "event_type": "health_signal",
+                    "severity": str(check.status.value),
+                    "summary": check.detail,
+                }
+            )
+    return events

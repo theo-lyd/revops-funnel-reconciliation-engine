@@ -8,6 +8,8 @@ Establish production-grade operational automation, observability, and runbook co
 - Batch 9.2: Production dashboards and SLO/SLI tracking for transformation latency and cost-per-record metrics.
 - Batch 9.3: On-call runbooks and escalation procedures for common transformation failures and anomalies.
 
+For audit navigation and control-level verification, refer to the companion closure note at [phase-9.1-9.5-closure-note.md](docs/reports/phase-9/phase-9.1-9.5-closure-note.md), which enumerates exact defaults, strict release gates, operational runbook controls, and artifact evidence for Phase 9.1-9.5 hardening.
+
 ## What Was Done
 1. Added health monitoring primitives and CLI automation to evaluate freshness and job duration SLOs with clear healthy/degraded/unhealthy/skipped outcomes.
 2. Added operational dashboard generation that aggregates SLI metrics, trend analyses, cost-vs-performance correlation, and scaling recommendations.

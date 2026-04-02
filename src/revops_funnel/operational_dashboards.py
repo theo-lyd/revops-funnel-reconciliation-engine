@@ -8,6 +8,8 @@ from enum import Enum
 from statistics import mean, stdev
 from typing import Any
 
+OBSERVABILITY_CONTRACT_VERSION = "2.0"
+
 
 class MetricTrend(str, Enum):
     """Trend direction for metrics."""
@@ -97,10 +99,14 @@ class OperationalDashboard:
     scaling_recommendations: list[ScalingRecommendationDetail]
     cost_performance_correlation: float | None  # -1.0 to 1.0
     operational_status: str  # healthy, degraded, critical
+    dependency_impact: dict[str, Any] | None = None
+    error_budget: dict[str, Any] | None = None
+    cost_of_reliability: dict[str, float] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to machine-readable dictionary."""
         return {
+            "contract_version": OBSERVABILITY_CONTRACT_VERSION,
             "dashboard_id": self.dashboard_id,
             "generated_at": self.generated_at,
             "deployment_version": self.deployment_version,
@@ -121,7 +127,45 @@ class OperationalDashboard:
             ],
             "cost_performance_correlation": self.cost_performance_correlation,
             "operational_status": self.operational_status,
+            "dependency_impact": self.dependency_impact,
+            "error_budget": self.error_budget,
+            "cost_of_reliability": self.cost_of_reliability,
         }
+
+
+def analyze_dependency_impact(
+    sli_metrics: list[SLIMetric],
+    dependency_graph: dict[str, list[str]] | None,
+) -> dict[str, Any]:
+    """Estimate blast radius by mapping unhealthy/degraded SLIs to dependencies."""
+    if not dependency_graph:
+        return {
+            "at_risk_dependencies": [],
+            "blast_radius": "unknown",
+            "impacted_services": 0,
+        }
+
+    at_risk: list[str] = []
+    for metric in sli_metrics:
+        if metric.status in {"degraded", "unhealthy"}:
+            at_risk.extend(dependency_graph.get(metric.name, []))
+
+    deduped = sorted({value for value in at_risk if value})
+    impacted_services = len(deduped)
+    if impacted_services >= 5:
+        blast = "high"
+    elif impacted_services >= 2:
+        blast = "medium"
+    elif impacted_services == 1:
+        blast = "low"
+    else:
+        blast = "none"
+
+    return {
+        "at_risk_dependencies": deduped,
+        "blast_radius": blast,
+        "impacted_services": impacted_services,
+    }
 
 
 def calculate_trend(
@@ -318,6 +362,9 @@ def generate_operational_dashboard(
     cost_values: list[float] | None = None,
     performance_values: list[float] | None = None,
     deployment_version: str | None = None,
+    dependency_graph: dict[str, list[str]] | None = None,
+    error_budget: dict[str, Any] | None = None,
+    cost_of_reliability: dict[str, float] | None = None,
 ) -> OperationalDashboard:
     """Generate complete operational dashboard."""
     # Calculate correlation if data available
@@ -334,6 +381,7 @@ def generate_operational_dashboard(
         recommendations = generate_scaling_recommendations(latency_trend, throughput_trend)
 
     dashboard_status = determine_dashboard_status(sli_metrics)
+    dependency_impact = analyze_dependency_impact(sli_metrics, dependency_graph)
 
     return OperationalDashboard(
         dashboard_id=f"dashboard_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}",
@@ -344,4 +392,7 @@ def generate_operational_dashboard(
         scaling_recommendations=recommendations,
         cost_performance_correlation=correlation,
         operational_status=dashboard_status,
+        dependency_impact=dependency_impact,
+        error_budget=error_budget,
+        cost_of_reliability=cost_of_reliability,
     )

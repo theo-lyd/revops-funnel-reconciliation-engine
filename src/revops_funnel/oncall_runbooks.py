@@ -7,6 +7,8 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
+OBSERVABILITY_CONTRACT_VERSION = "2.0"
+
 
 class IncidentSeverity(str, Enum):
     """Incident severity levels used for runbook routing."""
@@ -69,9 +71,14 @@ class OnCallRunbookReport:
     failure_patterns: list[FailurePattern]
     recommended_actions: list[RunbookAction]
     escalation_steps: list[EscalationStep]
+    runbook_quality_score: float
+    quality_gate_passed: bool
+    incident_timeline: list[dict[str, str]]
+    game_day_due: bool
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "contract_version": OBSERVABILITY_CONTRACT_VERSION,
             "generated_at_utc": self.generated_at_utc,
             "overall_status": self.overall_status,
             "incident_required": self.incident_required,
@@ -81,6 +88,10 @@ class OnCallRunbookReport:
             "failure_patterns": [pattern.to_dict() for pattern in self.failure_patterns],
             "recommended_actions": [asdict(action) for action in self.recommended_actions],
             "escalation_steps": [step.to_dict() for step in self.escalation_steps],
+            "runbook_quality_score": self.runbook_quality_score,
+            "quality_gate_passed": self.quality_gate_passed,
+            "incident_timeline": self.incident_timeline,
+            "game_day_due": self.game_day_due,
         }
 
 
@@ -248,6 +259,165 @@ def detect_failure_patterns(
     return patterns
 
 
+def dedupe_failure_patterns(patterns: list[FailurePattern]) -> list[FailurePattern]:
+    """Collapse duplicated pattern ids to reduce alert storms."""
+    deduped: dict[str, FailurePattern] = {}
+    for pattern in patterns:
+        deduped.setdefault(pattern.pattern_id, pattern)
+    return list(deduped.values())
+
+
+def suppress_flapping_patterns(
+    patterns: list[FailurePattern],
+    recent_pattern_ids: list[str] | None,
+    flap_threshold: int,
+) -> list[FailurePattern]:
+    """Suppress patterns that repeatedly reappear across recent windows."""
+    if not recent_pattern_ids or flap_threshold <= 1:
+        return patterns
+
+    counts: dict[str, int] = {}
+    for pattern_id in recent_pattern_ids:
+        counts[pattern_id] = counts.get(pattern_id, 0) + 1
+
+    filtered: list[FailurePattern] = []
+    for pattern in patterns:
+        if counts.get(pattern.pattern_id, 0) >= flap_threshold:
+            continue
+        filtered.append(pattern)
+    return filtered
+
+
+def apply_multi_signal_severity(
+    patterns: list[FailurePattern],
+    health_report: dict[str, Any] | None,
+    dashboard_report: dict[str, Any] | None,
+) -> list[FailurePattern]:
+    """Promote severity when multiple independent signals confirm impact."""
+    if not patterns:
+        return patterns
+
+    health_status = _safe_str(health_report or {}, "overall_status", "unknown")
+    dashboard_status = _safe_str(dashboard_report or {}, "operational_status", "unknown")
+    multi_signal = health_status in {"degraded", "unhealthy"} and dashboard_status in {
+        "degraded",
+        "critical",
+    }
+    if not multi_signal:
+        return patterns
+
+    promoted: list[FailurePattern] = []
+    for pattern in patterns:
+        if pattern.severity == IncidentSeverity.P2:
+            promoted.append(
+                FailurePattern(
+                    pattern_id=pattern.pattern_id,
+                    detected=pattern.detected,
+                    severity=IncidentSeverity.P1,
+                    summary=f"[multi-signal] {pattern.summary}",
+                    source_artifact=pattern.source_artifact,
+                    evidence=pattern.evidence,
+                )
+            )
+        else:
+            promoted.append(pattern)
+    return promoted
+
+
+def apply_dependency_aware_severity(
+    patterns: list[FailurePattern], dependency_impact: dict[str, Any] | None
+) -> list[FailurePattern]:
+    """Escalate severity when blast radius is high."""
+    if not patterns:
+        return patterns
+
+    blast_radius = _safe_str(dependency_impact or {}, "blast_radius", "none")
+    if blast_radius != "high":
+        return patterns
+
+    adjusted: list[FailurePattern] = []
+    for pattern in patterns:
+        if pattern.severity in {IncidentSeverity.P2, IncidentSeverity.P3}:
+            adjusted.append(
+                FailurePattern(
+                    pattern_id=pattern.pattern_id,
+                    detected=pattern.detected,
+                    severity=IncidentSeverity.P1,
+                    summary=f"[high-blast-radius] {pattern.summary}",
+                    source_artifact=pattern.source_artifact,
+                    evidence=pattern.evidence,
+                )
+            )
+        else:
+            adjusted.append(pattern)
+    return adjusted
+
+
+def score_runbook_quality(
+    patterns: list[FailurePattern],
+    actions: list[RunbookAction],
+    escalation_steps: list[EscalationStep],
+) -> float:
+    """Score runbook quality for strict release gating."""
+    score = 1.0
+
+    if patterns and len(actions) < 3:
+        score -= 0.35
+    if (
+        any(pattern.severity == IncidentSeverity.P1 for pattern in patterns)
+        and not escalation_steps
+    ):
+        score -= 0.4
+    if patterns and not any("timeline" in action.step.lower() for action in actions):
+        score -= 0.15
+
+    return round(max(score, 0.0), 3)
+
+
+def build_incident_timeline(
+    generated_at_utc: str,
+    patterns: list[FailurePattern],
+    actions: list[RunbookAction],
+) -> list[dict[str, str]]:
+    """Construct a deterministic timeline for post-incident reconstruction."""
+    timeline: list[dict[str, str]] = []
+    for pattern in patterns:
+        timeline.append(
+            {
+                "timestamp_utc": generated_at_utc,
+                "source": pattern.source_artifact,
+                "event_type": "pattern_detected",
+                "severity": pattern.severity.value,
+                "summary": pattern.summary,
+            }
+        )
+
+    for action in actions:
+        timeline.append(
+            {
+                "timestamp_utc": generated_at_utc,
+                "source": "runbook",
+                "event_type": "action_recommended",
+                "severity": "info",
+                "summary": action.step,
+            }
+        )
+    return timeline
+
+
+def is_game_day_due(last_game_day_utc: str | None, cadence_days: int) -> bool:
+    """Return whether the next resilience game-day exercise is due."""
+    if cadence_days <= 0:
+        return False
+    if not last_game_day_utc:
+        return True
+    try:
+        last_game_day = datetime.fromisoformat(last_game_day_utc.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        return True
+    return (datetime.now(timezone.utc) - last_game_day).days >= cadence_days
+
+
 def highest_severity(patterns: list[FailurePattern]) -> IncidentSeverity | None:
     """Return highest severity among detected patterns."""
     if not patterns:
@@ -401,6 +571,12 @@ def generate_oncall_runbook_report(
     primary_endpoint: str,
     secondary_endpoint: str,
     ticket_queue: str,
+    recent_pattern_ids: list[str] | None = None,
+    flap_threshold: int = 3,
+    strict_quality_threshold: float = 0.8,
+    dependency_impact: dict[str, Any] | None = None,
+    last_game_day_utc: str | None = None,
+    game_day_cadence_days: int = 30,
 ) -> OnCallRunbookReport:
     """Generate full runbook report from available telemetry artifacts."""
     patterns = detect_failure_patterns(
@@ -410,6 +586,11 @@ def generate_oncall_runbook_report(
         incident_dispatch_report=incident_dispatch_report,
         dead_letter_escalation_report=dead_letter_escalation_report,
     )
+    patterns = dedupe_failure_patterns(patterns)
+    patterns = suppress_flapping_patterns(patterns, recent_pattern_ids, flap_threshold)
+    patterns = apply_multi_signal_severity(patterns, health_report, dashboard_report)
+    patterns = apply_dependency_aware_severity(patterns, dependency_impact)
+
     severity = highest_severity(patterns)
     actions = build_recommended_actions(patterns)
     escalations = build_escalation_steps(
@@ -418,14 +599,23 @@ def generate_oncall_runbook_report(
         secondary_endpoint=secondary_endpoint,
         ticket_queue=ticket_queue,
     )
+    quality_score = score_runbook_quality(patterns, actions, escalations)
+    quality_gate_passed = quality_score >= strict_quality_threshold
+    now = _timestamp_utc()
+    timeline = build_incident_timeline(now, patterns, actions)
+    game_day_due = is_game_day_due(last_game_day_utc, game_day_cadence_days)
 
     status = "healthy" if not patterns else "incident"
     return OnCallRunbookReport(
-        generated_at_utc=_timestamp_utc(),
+        generated_at_utc=now,
         overall_status=status,
         incident_required=bool(patterns),
         highest_severity=severity,
         failure_patterns=patterns,
         recommended_actions=actions,
         escalation_steps=escalations,
+        runbook_quality_score=quality_score,
+        quality_gate_passed=quality_gate_passed,
+        incident_timeline=timeline,
+        game_day_due=game_day_due,
     )

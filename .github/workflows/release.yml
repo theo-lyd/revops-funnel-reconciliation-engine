@@ -40,6 +40,16 @@ jobs:
       HEALTH_REPORT_PATH: artifacts/monitoring/health_report.json
       DASHBOARD_OUTPUT_PATH: artifacts/monitoring/operational_dashboard.json
       ONCALL_RUNBOOK_REPORT_PATH: artifacts/runbooks/oncall_runbook_report.json
+      ONCALL_TIMELINE_OUTPUT: artifacts/runbooks/incident_timeline.json
+      HEALTH_ERROR_BUDGET_MONTHLY_MINUTES: ${{ vars.HEALTH_ERROR_BUDGET_MONTHLY_MINUTES || '720' }}
+      HEALTH_BURN_RATE_WARNING: ${{ vars.HEALTH_BURN_RATE_WARNING || '1.0' }}
+      HEALTH_BURN_RATE_CRITICAL: ${{ vars.HEALTH_BURN_RATE_CRITICAL || '2.0' }}
+      HEALTH_STRICT_ERROR_BUDGET: ${{ vars.HEALTH_STRICT_ERROR_BUDGET || 'true' }}
+      ONCALL_STRICT_QUALITY_GATE: ${{ vars.ONCALL_STRICT_QUALITY_GATE || 'true' }}
+      ONCALL_QUALITY_THRESHOLD: ${{ vars.ONCALL_QUALITY_THRESHOLD || '0.8' }}
+      ONCALL_FLAP_THRESHOLD: ${{ vars.ONCALL_FLAP_THRESHOLD || '3' }}
+      ONCALL_GAME_DAY_CADENCE_DAYS: ${{ vars.ONCALL_GAME_DAY_CADENCE_DAYS || '30' }}
+      ONCALL_LAST_GAME_DAY_UTC: ${{ vars.ONCALL_LAST_GAME_DAY_UTC || '' }}
 
     permissions:
       contents: read
@@ -192,10 +202,19 @@ jobs:
           HEALTH_MAX_FRESHNESS_HOURS: ${{ vars.HEALTH_MAX_FRESHNESS_HOURS || '24' }}
           HEALTH_MAX_JOB_DURATION_MINUTES: ${{ vars.HEALTH_MAX_JOB_DURATION_MINUTES || '120' }}
         run: |
+          STRICT_BUDGET_FLAG=""
+          if [[ "$HEALTH_STRICT_ERROR_BUDGET" == "true" ]]; then
+            STRICT_BUDGET_FLAG="--strict-error-budget"
+          fi
+
           python scripts/ops/run_health_checks.py \
             --max-freshness-hours "$HEALTH_MAX_FRESHNESS_HOURS" \
             --max-job-duration-minutes "$HEALTH_MAX_JOB_DURATION_MINUTES" \
-            --output "$HEALTH_REPORT_PATH"
+            --error-budget-monthly-minutes "$HEALTH_ERROR_BUDGET_MONTHLY_MINUTES" \
+            --burn-rate-warning "$HEALTH_BURN_RATE_WARNING" \
+            --burn-rate-critical "$HEALTH_BURN_RATE_CRITICAL" \
+            --output "$HEALTH_REPORT_PATH" \
+            $STRICT_BUDGET_FLAG
 
       - name: Run Phase 8.2 enhanced cost signals (opt-in)
         if: env.PHASE82_ENABLE == 'true'
@@ -341,6 +360,11 @@ jobs:
       - name: Generate on-call runbook
         if: always()
         run: |
+          STRICT_QUALITY_FLAG=""
+          if [[ "$ONCALL_STRICT_QUALITY_GATE" == "true" ]]; then
+            STRICT_QUALITY_FLAG="--strict-quality-gate"
+          fi
+
           python scripts/ops/run_oncall_runbooks.py \
             --health-report "$HEALTH_REPORT_PATH" \
             --dashboard-report "$DASHBOARD_OUTPUT_PATH" \
@@ -350,31 +374,38 @@ jobs:
             --primary-endpoint "pagerduty-primary" \
             --secondary-endpoint "pagerduty-secondary" \
             --ticket-queue "revops-platform" \
-            --output "$ONCALL_RUNBOOK_REPORT_PATH"
+            --quality-threshold "$ONCALL_QUALITY_THRESHOLD" \
+            --flap-threshold "$ONCALL_FLAP_THRESHOLD" \
+            --last-game-day-utc "$ONCALL_LAST_GAME_DAY_UTC" \
+            --game-day-cadence-days "$ONCALL_GAME_DAY_CADENCE_DAYS" \
+            --safe-commands-only \
+            --timeline-output "$ONCALL_TIMELINE_OUTPUT" \
+            --output "$ONCALL_RUNBOOK_REPORT_PATH" \
+            $STRICT_QUALITY_FLAG
 
-          - name: Summarize failure-path observability
-          if: always()
-          run: |
-            python - <<'PY'
-            import json
-            from pathlib import Path
+      - name: Summarize failure-path observability
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
 
-            def status(path: str, key: str) -> str:
-              p = Path(path)
-              if not p.exists():
-                return "missing"
-              try:
-                payload = json.loads(p.read_text(encoding="utf-8"))
-              except Exception:
-                return "invalid-json"
-              return str(payload.get(key, "unknown"))
+          def status(path: str, key: str) -> str:
+            p = Path(path)
+            if not p.exists():
+              return "missing"
+            try:
+              payload = json.loads(p.read_text(encoding="utf-8"))
+            except Exception:
+              return "invalid-json"
+            return str(payload.get(key, "unknown"))
 
-            print("Phase 7 Failure-Path Summary")
-            print(f"- rollback_execution: {status('artifacts/promotions/deployment_rollback_execution.json', 'execution_mode')}")
-            print(f"- incident_dispatch: {status('artifacts/promotions/rollback_incident_dispatch.json', 'dispatch_status')}")
-            print(f"- dead_letter_escalation: {status('artifacts/promotions/rollback_dead_letter_escalation.json', 'escalation_status')}")
-            print(f"- oncall_runbook: {status('artifacts/runbooks/oncall_runbook_report.json', 'overall_status')}")
-            PY
+          print("Phase 9 Failure-Path Summary")
+          print(f"- rollback_execution: {status('artifacts/promotions/deployment_rollback_execution.json', 'execution_mode')}")
+          print(f"- incident_dispatch: {status('artifacts/promotions/rollback_incident_dispatch.json', 'dispatch_status')}")
+          print(f"- dead_letter_escalation: {status('artifacts/promotions/rollback_dead_letter_escalation.json', 'escalation_status')}")
+          print(f"- oncall_runbook: {status('artifacts/runbooks/oncall_runbook_report.json', 'overall_status')}")
+          PY
 
       - name: Upload release gate artifacts
         if: always()
@@ -391,6 +422,7 @@ jobs:
             artifacts/monitoring/health_report.json
             artifacts/monitoring/operational_dashboard.json
             artifacts/runbooks/oncall_runbook_report.json
+            artifacts/runbooks/incident_timeline.json
             artifacts/promotions/deployment_promotion.json
             artifacts/promotions/deployment_rollback.json
             artifacts/promotions/deployment_rollback_execution.json
