@@ -99,6 +99,9 @@ promote-deployment:
 rollback-deployment:
 	$(PYTHON) scripts/ops/rollback_deployment.py
 
+execute-rollback-playbook:
+	$(PYTHON) scripts/ops/execute_rollback_playbook.py --rollback-report artifacts/promotions/deployment_rollback.json
+
 production-stop-gate:
 	$(MAKE) quality-gate
 	$(MAKE) metric-parity-check-report

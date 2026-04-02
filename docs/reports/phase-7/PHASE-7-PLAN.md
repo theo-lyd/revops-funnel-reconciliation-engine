@@ -5,6 +5,7 @@ Strengthen deployment security posture by introducing Snowflake key-pair authent
 
 ## Planned Scope
 - Batch 7.1: Snowflake key-pair authentication and release access controls.
+- Batch 7.2: Controlled rollback playbook execution and deployment integration validation.
 
 ## Design Principles
 - Keep local development non-blocking and fallback-safe.
@@ -16,4 +17,6 @@ Strengthen deployment security posture by introducing Snowflake key-pair authent
 - Release/deployment scripts support password or key-pair auth without regressions.
 - Release workflow supports key-pair secret materialization.
 - Release execution is constrained by branch and actor access checks.
+- Rollback automation supports dry-run and controlled execution modes with auditable artifacts.
+- CI includes deployment-focused integration validation for rollback manifest/execution paths.
 - Security changes are documented and covered by tests.

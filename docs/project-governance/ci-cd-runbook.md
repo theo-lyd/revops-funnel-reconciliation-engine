@@ -165,6 +165,5 @@ if: |
 ## Future Enhancements
 
 1. **Conditional Secret Handling**: Extend logic to handle other environment-specific deployments.
-2. **Integration Tests**: Add integration test job for deployment-specific validation.
-3. **Artifact Retention**: Archive evidence bundles and parity reports as CI artifacts.
-4. **Automated Rollback Execution**: Progress from manifest-based rollback context to controlled rollback execution playbooks.
+2. **Artifact Retention**: Tune retention windows and centralized indexing for CI evidence artifacts.
+3. **Rollback Integrations**: Integrate controlled rollback playbook outputs with incident/ticketing APIs.

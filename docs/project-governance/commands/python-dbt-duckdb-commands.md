@@ -431,3 +431,27 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: production Snowflake vars set plus one valid auth mode (password or key-pair)
   - Expected output: build/test/parity checks pass under strict enforcement
   - Recovery: set missing auth-mode env vars and rerun gate
+
+## Phase 7 Batch 7.2 execution entries
+
+### PDD-037
+- What: python scripts/ops/execute_rollback_playbook.py --rollback-report artifacts/promotions/deployment_rollback.json --output artifacts/promotions/deployment_rollback_execution.json
+- Why: execute rollback playbook in dry-run mode and emit an auditable execution report artifact
+- Who: project maintainer
+- When: 2026-04-02, Phase 7 Batch 7.2 implementation
+- Where: release workflow failure path and integration validation job
+- How:
+  - Preconditions: rollback report artifact exists and is valid JSON
+  - Expected output: execution report with `execution_mode` set to `dry-run` and deferred action list populated
+  - Recovery: regenerate rollback report and rerun playbook command
+
+### PDD-038
+- What: python scripts/ops/execute_rollback_playbook.py --rollback-report artifacts/promotions/deployment_rollback.json --execute --output artifacts/promotions/deployment_rollback_execution.json
+- Why: run controlled rollback playbook execution for approved artifact-producing actions
+- Who: project maintainer
+- When: 2026-04-02, Phase 7 Batch 7.2 implementation
+- Where: integration validation job and release workflows with `ROLLBACK_EXECUTION_ENABLED=true`
+- How:
+  - Preconditions: rollback report exists; execution toggle is explicitly enabled
+  - Expected output: execution report with applied actions plus generated lock/incident payload artifacts
+  - Recovery: disable execute mode for dry-run fallback or fix malformed rollback action payloads

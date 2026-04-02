@@ -143,10 +143,11 @@ Phase 6 extends monitoring and delivery into operational automation:
 8. **End Report**: [Phase 6 end report](docs/reports/phase-6/phase-6-end-report.md)
 
 ### Phase 7: Security Hardening and Access Controls
-Phase 7 begins with authentication hardening and release access controls:
+Phase 7 continues with authentication hardening, access controls, and controlled rollback execution:
 
 1. **Plan**: [Phase 7 implementation plan](docs/reports/phase-7/PHASE-7-PLAN.md)
 2. **Batch 7.1**: [Snowflake key-pair auth and release access controls](docs/reports/phase-7/batch-7.1-keypair-auth-and-release-access-controls.md)
+3. **Batch 7.2**: [Controlled rollback execution and deployment integration validation](docs/reports/phase-7/batch-7.2-controlled-rollback-execution-and-integration-validation.md)
 
 ### Project Governance
 - [Standing instructions and process documentation](docs/project-governance/standing-instructions.md)

@@ -908,3 +908,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful commit and remote connectivity
   - Expected output: remote master updated with Phase 7.1 changes
   - Recovery: resolve conflicts and retry push
+
+## Phase 7: Controlled rollback execution and deployment integration validation entries
+
+### GIT-078
+- What: git add .github/workflows/ci.yml .github/workflows/release.yml Makefile src/revops_funnel/deployment_ops.py scripts/ops/execute_rollback_playbook.py tests/test_rollback_playbook.py docs/reports/phase-7/PHASE-7-PLAN.md docs/reports/phase-7/batch-7.2-controlled-rollback-execution-and-integration-validation.md docs/project-governance/ci-cd-runbook.md README.md docs/project-governance/issues-log.md docs/project-governance/commands/make-commands.md docs/project-governance/commands/python-dbt-duckdb-commands.md docs/project-governance/commands/git-commands.md docs/project-governance/phase-completion-checklist.md
+- Why: stage Phase 7.2 rollback execution and deployment-integration hardening with governance updates as one auditable unit
+- Who: data engineer or analytics lead
+- When: 2026-04-02, Phase 7 Batch 7.2 completion
+- Where: repository root
+- How:
+  - Preconditions: lint/test gates pass for Phase 7.2 scope
+  - Expected output: only intended Phase 7.2 files staged
+  - Recovery: unstage unrelated files and restage explicit scope
+
+### GIT-079
+- What: git commit -m "feat(phase-7): add controlled rollback playbook execution"
+- Why: persist Phase 7.2 rollback execution controls and deployment integration validation coverage
+- Who: data engineer or analytics lead
+- When: 2026-04-02, after staging review
+- Where: repository root
+- How:
+  - Preconditions: staged files reviewed and hooks passing
+  - Expected output: commit hash for Phase 7.2 batch
+  - Recovery: resolve hook findings and recommit
+
+### GIT-080
+- What: git push origin master
+- Why: publish Phase 7.2 hardening updates to remote
+- Who: data engineer or analytics lead
+- When: 2026-04-02, immediately after commit
+- Where: repository root
+- How:
+  - Preconditions: successful commit and remote connectivity
+  - Expected output: remote master updated with Phase 7.2 changes
+  - Recovery: resolve conflicts and retry push

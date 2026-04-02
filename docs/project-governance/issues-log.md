@@ -356,3 +356,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: run Ruff immediately after adding verbose security/logging messages
 - Alternative resolution options: move formatted messages into helper functions to keep CLI paths concise
 - Verification evidence: `make lint` and `make test` passed with 32 tests and 1 expected skip
+
+### Issue ID: ISS-032
+- Phase and batch: Phase 7 Batch 7.2 - Controlled rollback execution and deployment integration validation
+- Date observed: 2026-04-02
+- Where it occurred: Batch 7.2 implementation and validation
+- Symptom: No blocking defects encountered
+- Root cause: Not applicable
+- Resolution: Not applicable
+- How to avoid: continue shipping rollback controls behind explicit execution flags and validate with dedicated integration coverage
+- Alternative resolution options: Not applicable
+- Verification evidence: `make lint` passed and `make test` passed with 34 tests and 1 expected skip

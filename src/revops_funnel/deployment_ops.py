@@ -24,6 +24,7 @@ DEFAULT_CACHE_PATHS = (
 DEFAULT_CACHE_REFRESH_OUTPUT = Path("artifacts/cache/cache_refresh.json")
 DEFAULT_PROMOTION_OUTPUT = Path("artifacts/promotions/deployment_promotion.json")
 DEFAULT_ROLLBACK_OUTPUT = Path("artifacts/promotions/deployment_rollback.json")
+DEFAULT_ROLLBACK_EXECUTION_OUTPUT = Path("artifacts/promotions/deployment_rollback_execution.json")
 
 
 @dataclass(frozen=True)
@@ -63,6 +64,20 @@ class DeploymentRollbackReport:
     workflow_run_id: str
     rollback_actions: list[str]
     rolled_back_at_utc: str
+
+
+@dataclass(frozen=True)
+class DeploymentRollbackExecutionReport:
+    release_id: str
+    environment: str
+    execution_mode: str
+    execution_enabled: bool
+    source_rollback_report_path: str
+    source_rollback_report_sha256: str
+    applied_actions: list[str]
+    deferred_actions: list[str]
+    generated_artifacts: list[str]
+    executed_at_utc: str
 
 
 @dataclass(frozen=True)
@@ -322,6 +337,79 @@ def create_deployment_rollback_report(
             "Attach rollback report to incident ticket and notify stakeholders",
         ],
         rolled_back_at_utc=datetime.now(timezone.utc).isoformat(),
+    )
+    write_json_artifact(str(output_path), asdict(report))
+    return report
+
+
+def execute_deployment_rollback_playbook(
+    rollback_report_path: str | Path,
+    execution_enabled: bool,
+    environment: str = "production",
+    output_path: str | Path = DEFAULT_ROLLBACK_EXECUTION_OUTPUT,
+) -> DeploymentRollbackExecutionReport:
+    rollback_path = Path(rollback_report_path)
+    if not rollback_path.exists():
+        raise FileNotFoundError(f"Rollback report not found: {rollback_path}")
+
+    payload = _load_json_payload(rollback_path)
+    release_id = str(payload.get("release_id", "unknown-release"))
+    actions_raw = payload.get("rollback_actions", [])
+    actions = [str(item) for item in actions_raw] if isinstance(actions_raw, list) else []
+
+    mode = "controlled" if execution_enabled else "dry-run"
+    applied_actions: list[str] = []
+    deferred_actions: list[str] = []
+    generated_artifacts: list[str] = []
+
+    base_dir = Path("artifacts/promotions")
+    base_dir.mkdir(parents=True, exist_ok=True)
+
+    for action in actions:
+        if not execution_enabled:
+            deferred_actions.append(action)
+            continue
+
+        if action.startswith("Disable promotion flag"):
+            lock_path = base_dir / "release_lock.json"
+            write_json_artifact(
+                str(lock_path),
+                {
+                    "release_id": release_id,
+                    "locked": True,
+                    "reason": "rollback-execution",
+                    "created_at_utc": datetime.now(timezone.utc).isoformat(),
+                },
+            )
+            generated_artifacts.append(str(lock_path))
+            applied_actions.append(action)
+        elif action.startswith("Attach rollback report"):
+            incident_path = base_dir / "rollback_incident_payload.json"
+            write_json_artifact(
+                str(incident_path),
+                {
+                    "release_id": release_id,
+                    "environment": environment,
+                    "rollback_report_path": str(rollback_path),
+                    "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+                },
+            )
+            generated_artifacts.append(str(incident_path))
+            applied_actions.append(action)
+        else:
+            deferred_actions.append(action)
+
+    report = DeploymentRollbackExecutionReport(
+        release_id=release_id,
+        environment=environment,
+        execution_mode=mode,
+        execution_enabled=execution_enabled,
+        source_rollback_report_path=str(rollback_path),
+        source_rollback_report_sha256=_sha256_file(rollback_path),
+        applied_actions=applied_actions,
+        deferred_actions=deferred_actions,
+        generated_artifacts=generated_artifacts,
+        executed_at_utc=datetime.now(timezone.utc).isoformat(),
     )
     write_json_artifact(str(output_path), asdict(report))
     return report

@@ -77,6 +77,71 @@ jobs:
       - name: Great Expectations validation
         run: python scripts/quality/run_great_expectations.py
 
+  deployment-integration:
+    needs: quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install "apache-airflow==2.10.5" --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-2.10.5/constraints-3.10.txt"
+          pip install -r requirements/base.txt -r requirements/dev.txt
+
+      - name: Create synthetic promotion report
+        run: |
+          mkdir -p artifacts/promotions
+          cat <<'JSON' > artifacts/promotions/deployment_promotion.json
+          {
+            "release_id": "ci-integration",
+            "deployment_environment": "production",
+            "promotion_decision": "approved"
+          }
+          JSON
+
+      - name: Generate rollback manifest artifact
+        run: |
+          python scripts/ops/rollback_deployment.py \
+            --release-id ci-integration \
+            --rollback-reason integration-test \
+            --rollback-trigger github-actions \
+            --promotion-report artifacts/promotions/deployment_promotion.json \
+            --output artifacts/promotions/deployment_rollback.json
+
+      - name: Execute rollback playbook (dry-run)
+        run: |
+          python scripts/ops/execute_rollback_playbook.py \
+            --rollback-report artifacts/promotions/deployment_rollback.json \
+            --output artifacts/promotions/deployment_rollback_execution_dry_run.json
+
+      - name: Execute rollback playbook (controlled)
+        run: |
+          python scripts/ops/execute_rollback_playbook.py \
+            --rollback-report artifacts/promotions/deployment_rollback.json \
+            --execute \
+            --output artifacts/promotions/deployment_rollback_execution_controlled.json
+
+      - name: Upload deployment integration artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-integration-${{ github.run_id }}
+          path: |
+            artifacts/promotions/deployment_rollback.json
+            artifacts/promotions/deployment_rollback_execution_dry_run.json
+            artifacts/promotions/deployment_rollback_execution_controlled.json
+            artifacts/promotions/release_lock.json
+            artifacts/promotions/rollback_incident_payload.json
+          if-no-files-found: ignore
+
   production-parity-check:
     # Run only on pushes to master with Snowflake credentials available (deployment contexts)
     # Local contributors and PRs without secrets will not be blocked by this job

@@ -642,3 +642,27 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: pytest dependencies installed
   - Expected output: full suite pass with expected optional-Airflow skip behavior
   - Recovery: remediate failing tests and rerun gates
+
+## Phase 7 Batch 7.2 execution entries
+
+### MK-053
+- What: make lint
+- Why: validate rollback playbook execution implementation and workflow updates for style/type safety
+- Who: project maintainer
+- When: 2026-04-02, Phase 7 Batch 7.2 validation
+- Where: repository root
+- How:
+  - Preconditions: dependencies installed and Phase 7.2 files updated
+  - Expected output: Ruff and mypy pass across 32 source files
+  - Recovery: fix lint/type findings and rerun
+
+### MK-054
+- What: make test
+- Why: verify rollback playbook execution unit coverage and preserve regression safety
+- Who: project maintainer
+- When: 2026-04-02, Phase 7 Batch 7.2 validation
+- Where: repository root
+- How:
+  - Preconditions: pytest dependencies installed
+  - Expected output: full test suite pass with expected optional-Airflow skip behavior
+  - Recovery: remediate failing tests and rerun gates

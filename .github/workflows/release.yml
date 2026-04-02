@@ -22,6 +22,7 @@ jobs:
       CACHE_REFRESH_REPORT_PATH: artifacts/cache/cache_refresh.json
       DEPLOYMENT_PROMOTION_REPORT_PATH: artifacts/promotions/deployment_promotion.json
       DEPLOYMENT_ROLLBACK_REPORT_PATH: artifacts/promotions/deployment_rollback.json
+      DEPLOYMENT_ROLLBACK_EXECUTION_REPORT_PATH: artifacts/promotions/deployment_rollback_execution.json
 
     permissions:
       contents: read
@@ -151,6 +152,25 @@ jobs:
             --promotion-report "$DEPLOYMENT_PROMOTION_REPORT_PATH" \
             --output "$DEPLOYMENT_ROLLBACK_REPORT_PATH"
 
+      - name: Execute rollback playbook on failure
+        if: failure()
+        env:
+          ROLLBACK_EXECUTION_ENABLED: ${{ vars.ROLLBACK_EXECUTION_ENABLED || 'false' }}
+        run: |
+          MODE_FLAG=""
+          if [[ "$ROLLBACK_EXECUTION_ENABLED" == "true" ]]; then
+            MODE_FLAG="--execute"
+            echo "Rollback playbook execution is enabled"
+          else
+            echo "Rollback playbook execution disabled; running dry-run"
+          fi
+
+          python scripts/ops/execute_rollback_playbook.py \
+            --rollback-report "$DEPLOYMENT_ROLLBACK_REPORT_PATH" \
+            --environment production \
+            --output "$DEPLOYMENT_ROLLBACK_EXECUTION_REPORT_PATH" \
+            $MODE_FLAG
+
       - name: Upload release gate artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -161,4 +181,7 @@ jobs:
             artifacts/cache/cache_refresh.json
             artifacts/promotions/deployment_promotion.json
             artifacts/promotions/deployment_rollback.json
+            artifacts/promotions/deployment_rollback_execution.json
+            artifacts/promotions/release_lock.json
+            artifacts/promotions/rollback_incident_payload.json
           if-no-files-found: ignore
