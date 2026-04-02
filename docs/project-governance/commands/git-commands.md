@@ -1014,6 +1014,41 @@ This file records Git commands used in the project with beginner-friendly contex
   - Expected output: remote master updated with Phase 7.4 changes
   - Recovery: resolve conflicts and retry push
 
+## Phase 7 closeout entries
+
+### GIT-087
+- What: git add docs/reports/phase-7/phase-7-end-report.md docs/project-governance/phase-completion-checklist.md README.md docs/project-governance/commands/git-commands.md
+- Why: stage Phase 7 closeout report and final governance/status updates as one auditable unit
+- Who: data engineer or analytics lead
+- When: 2026-04-02, Phase 7 closeout
+- Where: repository root
+- How:
+  - Preconditions: all Phase 7 batches completed and validated
+  - Expected output: only closeout files staged
+  - Recovery: unstage unrelated files and restage explicit scope
+
+### GIT-088
+- What: git commit -m "docs(phase-7): publish end report and close phase"
+- Why: formally close Phase 7 with an auditable phase-end report and status update
+- Who: data engineer or analytics lead
+- When: 2026-04-02, after closeout review
+- Where: repository root
+- How:
+  - Preconditions: staged closeout files reviewed and ready
+  - Expected output: commit hash for Phase 7 closeout
+  - Recovery: resolve hook findings and recommit
+
+### GIT-089
+- What: git push origin master
+- Why: publish Phase 7 closeout documentation and governance status to remote
+- Who: data engineer or analytics lead
+- When: 2026-04-02, immediately after commit
+- Where: repository root
+- How:
+  - Preconditions: successful closeout commit and remote connectivity
+  - Expected output: remote master updated with Phase 7 closeout
+  - Recovery: resolve remote conflicts and retry push
+
 ## Phase 7: Dead-letter escalation automation entries
 
 ### GIT-087
