@@ -411,3 +411,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: keep budget defaults conservative and validate both timeout and thread-cap behavior with focused tests
 - Alternative resolution options: Not applicable
 - Verification evidence: `make lint` and `make test` passed with budgeted dbt execution coverage
+
+### Issue ID: ISS-037
+- Phase and batch: Phase 8 Batch 8.2 - Query-cost observability and warehouse spend attribution
+- Date observed: 2026-04-02
+- Where it occurred: Batch 8.2 implementation and validation
+- Symptom: No blocking defects encountered
+- Root cause: Not applicable
+- Resolution: Not applicable
+- How to avoid: preserve strict/non-strict telemetry collection paths and validate no-data/skip behavior in automated tests
+- Alternative resolution options: Not applicable
+- Verification evidence: `make lint` and `make test` passed with query-cost attribution coverage

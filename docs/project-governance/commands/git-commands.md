@@ -107,13 +107,55 @@ This file records Git commands used in the project with beginner-friendly contex
 ## Phase 4 Batch 4.2 execution entries
 
 ### GIT-009
-- What: git add dbt/models/marts docs/reports/phase-4 docs/project-governance Makefile
-- Why: stage semantic contract implementation, phase docs, governance updates, and build-stability tweak
-- Who: project maintainer
-- When: 2026-04-01, end of Phase 4 Batch 4.2
 - Where: repository root
 - How:
   - Preconditions: all validation commands passed
+
+## Phase 8 Batch 8.2 execution entries
+
+### GIT-120
+ - What: git status --short
+ - Why: verify working tree scope before staging Batch 8.2 query-cost observability and spend-attribution artifacts
+ - Who: project maintainer
+ - When: 2026-04-02, Phase 8 Batch 8.2 closeout
+ - Where: local repository root
+ - How:
+   - Preconditions: repository available locally
+   - Expected output: concise list of modified/new Batch 8.2 files
+   - Recovery: investigate unexpected file deltas before staging
+
+### GIT-121
+ - What: git add src/revops_funnel/cost_observability.py scripts/ops/generate_query_cost_attribution.py tests/test_cost_observability.py tests/test_generate_query_cost_attribution_cli.py Makefile .env.example .github/workflows/release.yml .github/workflows/ci.yml docs/reports/phase-8/PHASE-8-PLAN.md docs/reports/phase-8/batch-8.2-query-cost-observability-and-spend-attribution.md README.md docs/project-governance/phase-completion-checklist.md docs/project-governance/issues-log.md docs/project-governance/commands/make-commands.md docs/project-governance/commands/python-dbt-duckdb-commands.md docs/project-governance/commands/git-commands.md
+ - Why: stage Batch 8.2 implementation, workflow integration, tests, and governance evidence for a single auditable commit
+ - Who: project maintainer
+ - When: 2026-04-02, Phase 8 Batch 8.2 closeout
+ - Where: local repository root
+ - How:
+   - Preconditions: lint/tests pass or have known accepted exceptions
+   - Expected output: staged index includes only intended Batch 8.2 files
+   - Recovery: unstage mistaken files and restage exact target set
+
+### GIT-122
+ - What: git commit -m "feat(perf): add query-cost observability and spend attribution"
+ - Why: preserve Batch 8.2 deliverables as a traceable phase artifact
+ - Who: project maintainer
+ - When: 2026-04-02, Phase 8 Batch 8.2 closeout
+ - Where: local repository root
+ - How:
+   - Preconditions: staged Batch 8.2 files, passing quality gates
+   - Expected output: new commit hash for Batch 8.2
+   - Recovery: amend staged set/message if pre-commit review finds mismatch
+
+### GIT-123
+ - What: git push origin master
+ - Why: publish Batch 8.2 query-cost observability and warehouse spend-attribution capabilities to shared branch
+ - Who: project maintainer
+ - When: 2026-04-02, Phase 8 Batch 8.2 closeout
+ - Where: local repository root
+ - How:
+   - Preconditions: authenticated push permissions and up-to-date branch
+   - Expected output: Batch 8.2 commit available on `origin/master`
+   - Recovery: rebase/merge on rejection, rerun validation, and retry push
   - Expected output: intended files staged and ready for commit
   - Recovery: unstage accidental files before commit
 

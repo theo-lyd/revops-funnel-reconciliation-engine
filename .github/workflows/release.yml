@@ -27,6 +27,7 @@ jobs:
       DEPLOYMENT_ROLLBACK_INCIDENT_DISPATCH_REPORT_PATH: artifacts/promotions/rollback_incident_dispatch.json
       DEPLOYMENT_ROLLBACK_INCIDENT_DEAD_LETTER_PATH: artifacts/promotions/rollback_incident_dead_letter.json
       DEPLOYMENT_ROLLBACK_ESCALATION_REPORT_PATH: artifacts/promotions/rollback_dead_letter_escalation.json
+      QUERY_COST_ATTRIBUTION_REPORT_PATH: artifacts/performance/query_cost_attribution_report.json
 
     permissions:
       contents: read
@@ -134,6 +135,25 @@ jobs:
             --strict-snowflake \
             --output-json "$PARITY_REPORT_PATH"
 
+      - name: Generate query-cost attribution artifact
+        env:
+          COST_LOOKBACK_HOURS: ${{ vars.COST_LOOKBACK_HOURS || '24' }}
+          COST_MAX_QUERIES: ${{ vars.COST_MAX_QUERIES || '2000' }}
+          COST_QUERY_TAG_PREFIX: ${{ vars.COST_QUERY_TAG_PREFIX || '' }}
+          COST_ATTRIBUTION_STRICT: ${{ vars.COST_ATTRIBUTION_STRICT || 'false' }}
+        run: |
+          STRICT_FLAG=""
+          if [[ "$COST_ATTRIBUTION_STRICT" == "true" ]]; then
+            STRICT_FLAG="--strict-snowflake"
+          fi
+
+          python scripts/ops/generate_query_cost_attribution.py \
+            --lookback-hours "$COST_LOOKBACK_HOURS" \
+            --max-queries "$COST_MAX_QUERIES" \
+            --query-tag-prefix "$COST_QUERY_TAG_PREFIX" \
+            --output "$QUERY_COST_ATTRIBUTION_REPORT_PATH" \
+            $STRICT_FLAG
+
       - name: Refresh runtime caches
         run: |
           python scripts/ops/refresh_runtime_caches.py --output "$CACHE_REFRESH_REPORT_PATH"
@@ -236,6 +256,7 @@ jobs:
             artifacts/cache/cache_refresh.json
             artifacts/performance/dbt_build_prod_report.json
             artifacts/performance/dbt_test_prod_report.json
+            artifacts/performance/query_cost_attribution_report.json
             artifacts/promotions/deployment_promotion.json
             artifacts/promotions/deployment_rollback.json
             artifacts/promotions/deployment_rollback_execution.json

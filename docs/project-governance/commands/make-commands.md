@@ -762,3 +762,27 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: pytest dependencies installed
   - Expected output: full suite pass including new performance budget tests
   - Recovery: remediate failing tests and rerun
+
+## Phase 8 Batch 8.2 execution entries
+
+### MK-063
+- What: make lint
+- Why: validate query-cost attribution helper and telemetry CLI additions for style/type safety
+- Who: project maintainer
+- When: 2026-04-02, Phase 8 Batch 8.2 validation
+- Where: repository root
+- How:
+  - Preconditions: dependencies installed and Phase 8.2 files updated
+  - Expected output: Ruff and mypy pass across source and ops modules
+  - Recovery: fix lint/type findings and rerun
+
+### MK-064
+- What: make test
+- Why: verify spend-attribution aggregation and CLI behavior while preserving existing coverage
+- Who: project maintainer
+- When: 2026-04-02, Phase 8 Batch 8.2 validation
+- Where: repository root
+- How:
+  - Preconditions: pytest dependencies installed
+  - Expected output: full suite pass including query-cost observability tests
+  - Recovery: remediate failing tests and rerun

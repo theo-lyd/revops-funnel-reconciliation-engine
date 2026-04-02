@@ -551,3 +551,27 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: dbt build path and profiles are available
   - Expected output: dbt test execution report artifact with budgeted runtime metadata
   - Recovery: adjust thread/timeout budgets and rerun after investigating failing tests or timeouts
+
+## Phase 8 Batch 8.2 execution entries
+
+### PDD-047
+- What: python scripts/ops/generate_query_cost_attribution.py --lookback-hours <hours> --max-queries <count> --query-tag-prefix "<prefix>" --output artifacts/performance/query_cost_attribution_report.json
+- Why: generate machine-readable query-cost observability and spend-attribution artifacts by query tag and warehouse
+- Who: project maintainer
+- When: 2026-04-02, Phase 8 Batch 8.2 implementation
+- Where: release workflow and CI deployment-integration paths
+- How:
+  - Preconditions: Snowflake credentials and connector availability for telemetry collection; non-strict mode can run without telemetry
+  - Expected output: attribution report with status `ok`, `no-data`, or `skipped`
+  - Recovery: verify Snowflake role/warehouse visibility or run in non-strict mode for local-safe fallback
+
+### PDD-048
+- What: python scripts/ops/generate_query_cost_attribution.py --strict-snowflake --lookback-hours <hours> --max-queries <count> --output artifacts/performance/query_cost_attribution_report.json
+- Why: enforce strict telemetry collection in deployment contexts where cost attribution is mandatory
+- Who: project maintainer
+- When: 2026-04-02, Phase 8 Batch 8.2 implementation
+- Where: release workflows with `COST_ATTRIBUTION_STRICT=true`
+- How:
+  - Preconditions: Snowflake telemetry access is available and credentials are configured
+  - Expected output: successful attribution artifact generation; non-zero exit when telemetry prerequisites are missing
+  - Recovery: restore telemetry access/credentials or disable strict mode for fallback operation

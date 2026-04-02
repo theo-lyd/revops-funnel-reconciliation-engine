@@ -151,6 +151,13 @@ jobs:
             --dead-letter artifacts/promotions/rollback_incident_dead_letter.json \
             --output artifacts/promotions/rollback_dead_letter_escalation.json
 
+      - name: Generate query-cost attribution (safe skip mode)
+        run: |
+          python scripts/ops/generate_query_cost_attribution.py \
+            --lookback-hours 24 \
+            --max-queries 200 \
+            --output artifacts/performance/query_cost_attribution_report.json
+
       - name: Upload deployment integration artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -165,6 +172,7 @@ jobs:
             artifacts/promotions/rollback_incident_dispatch.json
             artifacts/promotions/rollback_incident_dead_letter.json
             artifacts/promotions/rollback_dead_letter_escalation.json
+            artifacts/performance/query_cost_attribution_report.json
           if-no-files-found: ignore
 
   production-parity-check:

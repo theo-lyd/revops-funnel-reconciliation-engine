@@ -5,6 +5,7 @@ Improve runtime efficiency and cost discipline by adding explicit execution budg
 
 ## Planned Scope
 - Batch 8.1: Budgeted dbt execution for production build/test with thread caps and timeout enforcement.
+- Batch 8.2: Query-cost observability and warehouse spend attribution artifacts.
 
 ## Design Principles
 - Preserve local-safe defaults and avoid blocking contributor workflows.
@@ -15,4 +16,6 @@ Improve runtime efficiency and cost discipline by adding explicit execution budg
 ## Success Criteria
 - Production dbt execution is bounded by configurable thread caps and timeout budgets.
 - Release workflows publish dbt performance/cost-control artifacts for each deployment run.
+- Release workflows publish query-cost attribution artifacts scoped by warehouse and query tag.
+- Cost observability logic supports local-safe fallback when Snowflake telemetry is unavailable.
 - Budget-control logic is covered by automated tests and governance documentation.
