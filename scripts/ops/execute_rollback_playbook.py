@@ -73,6 +73,7 @@ def main() -> int:
         execution_enabled=bool(args.execute),
         environment=args.environment,
         output_path=args.output,
+        strict_validation=args.require_release_access,
     )
     print(json.dumps(asdict(report), indent=2, sort_keys=True))
     return 0

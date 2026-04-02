@@ -52,6 +52,12 @@ def parse_args() -> argparse.Namespace:
         help="Fixed backoff delay between retry attempts.",
     )
     parser.add_argument(
+        "--max-backoff-seconds",
+        type=float,
+        default=float(os.getenv("ROLLBACK_INCIDENT_MAX_BACKOFF_SECONDS", "30")),
+        help="Maximum capped backoff delay when retrying dispatch attempts.",
+    )
+    parser.add_argument(
         "--dead-letter-output",
         default=str(DEFAULT_ROLLBACK_INCIDENT_DEAD_LETTER_OUTPUT),
         help="Path for dead-letter artifact when dispatch fails after retries.",
@@ -78,8 +84,10 @@ def main() -> int:
         timeout_seconds=args.timeout_seconds,
         max_attempts=args.max_attempts,
         backoff_seconds=args.backoff_seconds,
+        max_backoff_seconds=args.max_backoff_seconds,
         dead_letter_output_path=args.dead_letter_output,
         output_path=args.output,
+        strict_validation=args.strict,
     )
     print(json.dumps(asdict(report), indent=2, sort_keys=True))
 

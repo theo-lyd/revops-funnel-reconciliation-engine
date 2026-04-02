@@ -192,6 +192,30 @@ jobs:
             --dead-letter-escalation-report artifacts/promotions/rollback_dead_letter_escalation.json \
             --output artifacts/runbooks/oncall_runbook_report.json
 
+      - name: Summarize failure-path observability (safe skip)
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          def status(path: str, key: str) -> str:
+              p = Path(path)
+              if not p.exists():
+                  return "missing"
+              try:
+                  payload = json.loads(p.read_text(encoding="utf-8"))
+              except Exception:
+                  return "invalid-json"
+              return str(payload.get(key, "unknown"))
+
+          print("Phase 7/9 Deployment Integration Summary")
+          print(f"- rollback_execution_controlled: {status('artifacts/promotions/deployment_rollback_execution_controlled.json', 'execution_mode')}")
+          print(f"- incident_dispatch: {status('artifacts/promotions/rollback_incident_dispatch.json', 'dispatch_status')}")
+          print(f"- dead_letter_escalation: {status('artifacts/promotions/rollback_dead_letter_escalation.json', 'escalation_status')}")
+          print(f"- oncall_runbook: {status('artifacts/runbooks/oncall_runbook_report.json', 'overall_status')}")
+          PY
+
       - name: Upload deployment integration artifacts
         if: always()
         uses: actions/upload-artifact@v4

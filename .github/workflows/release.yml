@@ -253,6 +253,7 @@ jobs:
           ROLLBACK_INCIDENT_STRICT: ${{ vars.ROLLBACK_INCIDENT_STRICT || 'false' }}
           ROLLBACK_INCIDENT_MAX_ATTEMPTS: ${{ vars.ROLLBACK_INCIDENT_MAX_ATTEMPTS || '3' }}
           ROLLBACK_INCIDENT_BACKOFF_SECONDS: ${{ vars.ROLLBACK_INCIDENT_BACKOFF_SECONDS || '2' }}
+          ROLLBACK_INCIDENT_MAX_BACKOFF_SECONDS: ${{ vars.ROLLBACK_INCIDENT_MAX_BACKOFF_SECONDS || '30' }}
         run: |
           STRICT_FLAG=""
           if [[ "$ROLLBACK_INCIDENT_STRICT" == "true" ]]; then
@@ -263,6 +264,7 @@ jobs:
             --incident-payload "$DEPLOYMENT_ROLLBACK_INCIDENT_PAYLOAD_PATH" \
             --max-attempts "$ROLLBACK_INCIDENT_MAX_ATTEMPTS" \
             --backoff-seconds "$ROLLBACK_INCIDENT_BACKOFF_SECONDS" \
+            --max-backoff-seconds "$ROLLBACK_INCIDENT_MAX_BACKOFF_SECONDS" \
             --dead-letter-output "$DEPLOYMENT_ROLLBACK_INCIDENT_DEAD_LETTER_PATH" \
             --output "$DEPLOYMENT_ROLLBACK_INCIDENT_DISPATCH_REPORT_PATH" \
             $STRICT_FLAG
@@ -275,6 +277,7 @@ jobs:
           ROLLBACK_ESCALATION_STRICT: ${{ vars.ROLLBACK_ESCALATION_STRICT || 'false' }}
           ROLLBACK_ESCALATION_MAX_ATTEMPTS: ${{ vars.ROLLBACK_ESCALATION_MAX_ATTEMPTS || '2' }}
           ROLLBACK_ESCALATION_BACKOFF_SECONDS: ${{ vars.ROLLBACK_ESCALATION_BACKOFF_SECONDS || '3' }}
+          ROLLBACK_ESCALATION_MAX_BACKOFF_SECONDS: ${{ vars.ROLLBACK_ESCALATION_MAX_BACKOFF_SECONDS || '30' }}
         run: |
           STRICT_FLAG=""
           if [[ "$ROLLBACK_ESCALATION_STRICT" == "true" ]]; then
@@ -285,6 +288,7 @@ jobs:
             --dead-letter "$DEPLOYMENT_ROLLBACK_INCIDENT_DEAD_LETTER_PATH" \
             --max-attempts "$ROLLBACK_ESCALATION_MAX_ATTEMPTS" \
             --backoff-seconds "$ROLLBACK_ESCALATION_BACKOFF_SECONDS" \
+            --max-backoff-seconds "$ROLLBACK_ESCALATION_MAX_BACKOFF_SECONDS" \
             --output "$DEPLOYMENT_ROLLBACK_ESCALATION_REPORT_PATH" \
             $STRICT_FLAG
 
@@ -301,6 +305,30 @@ jobs:
             --secondary-endpoint "pagerduty-secondary" \
             --ticket-queue "revops-platform" \
             --output "$ONCALL_RUNBOOK_REPORT_PATH"
+
+          - name: Summarize failure-path observability
+          if: always()
+          run: |
+            python - <<'PY'
+            import json
+            from pathlib import Path
+
+            def status(path: str, key: str) -> str:
+              p = Path(path)
+              if not p.exists():
+                return "missing"
+              try:
+                payload = json.loads(p.read_text(encoding="utf-8"))
+              except Exception:
+                return "invalid-json"
+              return str(payload.get(key, "unknown"))
+
+            print("Phase 7 Failure-Path Summary")
+            print(f"- rollback_execution: {status('artifacts/promotions/deployment_rollback_execution.json', 'execution_mode')}")
+            print(f"- incident_dispatch: {status('artifacts/promotions/rollback_incident_dispatch.json', 'dispatch_status')}")
+            print(f"- dead_letter_escalation: {status('artifacts/promotions/rollback_dead_letter_escalation.json', 'escalation_status')}")
+            print(f"- oncall_runbook: {status('artifacts/runbooks/oncall_runbook_report.json', 'overall_status')}")
+            PY
 
       - name: Upload release gate artifacts
         if: always()

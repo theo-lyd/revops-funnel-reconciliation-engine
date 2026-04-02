@@ -193,3 +193,27 @@ Deployment integration and release workflows emit `artifacts/runbooks/oncall_run
 - Modes:
   - non-strict: emits `overall_status=skipped` when no input artifacts are found
   - strict: fails when no input artifacts are available
+
+## Phase 7 Operational SLOs (Dispatch and Escalation)
+
+### Objective
+Define response-time expectations for rollback incident dispatch and dead-letter escalation to improve incident handling consistency.
+
+### SLO Targets
+- Dispatch first-attempt response objective: <= 30 seconds from rollback execution artifact creation.
+- Dispatch delivery objective (with retries): <= 5 minutes for configured webhook endpoints.
+- Escalation first-attempt response objective: <= 60 seconds from dead-letter artifact creation.
+- Escalation delivery objective (with retries): <= 10 minutes for configured escalation endpoints.
+
+### Ownership
+- Primary owner: Platform on-call
+- Secondary owner: Release manager
+- Escalation owner: Incident commander
+
+### Alerting Thresholds
+- Warning: dispatch or escalation exceeds 50% of delivery objective.
+- Critical: dispatch or escalation exceeds full delivery objective or ends in `failed` status.
+
+### Artifact Contract Notes
+- Phase 7 incident artifacts now include `contract_version` and `correlation_id` for traceability.
+- Webhook endpoints are represented by redacted alias/fingerprint fields in artifacts to avoid leaking sensitive endpoint values.

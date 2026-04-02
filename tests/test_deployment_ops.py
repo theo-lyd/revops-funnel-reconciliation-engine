@@ -71,6 +71,8 @@ def test_create_deployment_promotion_report_requires_passed_parity(tmp_path: Pat
 
     assert output.exists()
     assert report.release_id == "release-123"
+    assert report.contract_version
+    assert report.correlation_id
     assert report.parity_status == "passed"
     assert report.git_commit_sha == "abc123"
     assert report.workflow_run_id == "run-99"
@@ -160,6 +162,10 @@ def test_validate_release_actor_access() -> None:
     assert blocked is False
     assert allowlist_blocked == ["alice", "bob"]
 
+    allowed_ci, allowlist_ci = validate_release_actor_access(" Alice,BOB ", "alice")
+    assert allowed_ci is True
+    assert allowlist_ci == ["alice", "bob"]
+
 
 def test_dispatch_rollback_incident_payload_skips_without_webhook(tmp_path: Path) -> None:
     payload = tmp_path / "rollback_incident_payload.json"
@@ -176,6 +182,8 @@ def test_dispatch_rollback_incident_payload_skips_without_webhook(tmp_path: Path
     )
 
     assert report.dispatch_status == "skipped"
+    assert report.contract_version
+    assert report.correlation_id
     assert report.incident_webhook_configured is False
     assert report.attempt_count == 0
     assert report.dead_letter_created is False
@@ -232,6 +240,9 @@ def test_dispatch_rollback_incident_payload_handles_request_error(tmp_path: Path
     assert "network down" in report.error_message
     assert report.dead_letter_created is True
     assert report.dead_letter_path == str(dead_letter)
+    dead_letter_payload = json.loads(dead_letter.read_text(encoding="utf-8"))
+    assert dead_letter_payload["incident_webhook_url"] == "redacted"
+    assert dead_letter_payload["incident_webhook_endpoint_fingerprint"]
     assert output.exists()
     assert dead_letter.exists()
 
@@ -330,6 +341,8 @@ def test_escalate_rollback_dead_letter_skips_without_webhook(tmp_path: Path) -> 
 
     assert report.dead_letter_found is True
     assert report.escalation_status == "skipped-no-webhook"
+    assert report.contract_version
+    assert report.correlation_id
     assert output.exists()
 
 
@@ -354,6 +367,7 @@ def test_escalate_rollback_dead_letter_sends_webhook(tmp_path: Path) -> None:
 
     assert report.escalation_status == "sent"
     assert report.http_status_code == 202
+    assert report.escalation_endpoint_fingerprint
     assert output.exists()
 
 

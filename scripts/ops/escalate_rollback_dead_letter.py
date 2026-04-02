@@ -51,6 +51,12 @@ def parse_args() -> argparse.Namespace:
         help="Fixed backoff delay between escalation retries.",
     )
     parser.add_argument(
+        "--max-backoff-seconds",
+        type=float,
+        default=float(os.getenv("ROLLBACK_ESCALATION_MAX_BACKOFF_SECONDS", "30")),
+        help="Maximum capped backoff delay when retrying escalation attempts.",
+    )
+    parser.add_argument(
         "--strict",
         action="store_true",
         help="Fail when dead-letter exists but escalation is not sent.",
@@ -72,7 +78,9 @@ def main() -> int:
         timeout_seconds=args.timeout_seconds,
         max_attempts=args.max_attempts,
         backoff_seconds=args.backoff_seconds,
+        max_backoff_seconds=args.max_backoff_seconds,
         output_path=args.output,
+        strict_validation=args.strict,
     )
     print(json.dumps(asdict(report), indent=2, sort_keys=True))
 

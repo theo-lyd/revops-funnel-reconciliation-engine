@@ -5,14 +5,17 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import random
 import shutil
 import subprocess
 import time
+import warnings
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import cast
+from uuid import NAMESPACE_DNS, uuid5
 
 import requests
 
@@ -38,6 +41,16 @@ DEFAULT_ROLLBACK_INCIDENT_DEAD_LETTER_OUTPUT = Path(
 DEFAULT_ROLLBACK_ESCALATION_OUTPUT = Path(
     "artifacts/promotions/rollback_dead_letter_escalation.json"
 )
+CONTRACT_VERSION = "phase7.v2"
+
+DISPATCH_STATUS_SENT = "sent"
+DISPATCH_STATUS_FAILED = "failed"
+DISPATCH_STATUS_SKIPPED = "skipped"
+
+ESCALATION_STATUS_SENT = "sent"
+ESCALATION_STATUS_FAILED = "failed"
+ESCALATION_STATUS_SKIPPED_NO_DEAD_LETTER = "skipped-no-dead-letter"
+ESCALATION_STATUS_SKIPPED_NO_WEBHOOK = "skipped-no-webhook"
 
 
 @dataclass(frozen=True)
@@ -48,6 +61,8 @@ class CacheRefreshReport:
 
 @dataclass(frozen=True)
 class DeploymentPromotionReport:
+    contract_version: str
+    correlation_id: str
     release_id: str
     environment: str
     selector: str
@@ -66,6 +81,8 @@ class DeploymentPromotionReport:
 
 @dataclass(frozen=True)
 class DeploymentRollbackReport:
+    contract_version: str
+    correlation_id: str
     release_id: str
     environment: str
     rollback_trigger: str
@@ -81,6 +98,8 @@ class DeploymentRollbackReport:
 
 @dataclass(frozen=True)
 class DeploymentRollbackExecutionReport:
+    contract_version: str
+    correlation_id: str
     release_id: str
     environment: str
     execution_mode: str
@@ -95,9 +114,13 @@ class DeploymentRollbackExecutionReport:
 
 @dataclass(frozen=True)
 class RollbackIncidentDispatchReport:
+    contract_version: str
+    correlation_id: str
     release_id: str
     environment: str
     incident_webhook_configured: bool
+    webhook_endpoint_alias: str
+    webhook_endpoint_fingerprint: str
     dispatch_status: str
     http_status_code: int | None
     source_payload_path: str
@@ -113,10 +136,14 @@ class RollbackIncidentDispatchReport:
 
 @dataclass(frozen=True)
 class RollbackDeadLetterEscalationReport:
+    contract_version: str
+    correlation_id: str
     release_id: str
     environment: str
     dead_letter_found: bool
     escalation_webhook_configured: bool
+    escalation_endpoint_alias: str
+    escalation_endpoint_fingerprint: str
     escalation_status: str
     source_dead_letter_path: str
     source_dead_letter_sha256: str
@@ -309,6 +336,58 @@ def _sha256_file(path: Path) -> str:
     return hasher.hexdigest()
 
 
+def _compute_correlation_id(release_id: str, environment: str, seed: str = "") -> str:
+    base = f"{release_id}|{environment}|{seed}"
+    return str(uuid5(NAMESPACE_DNS, base))
+
+
+def _endpoint_fingerprint(endpoint: str) -> str:
+    normalized = endpoint.strip()
+    if not normalized:
+        return ""
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:16]
+
+
+def _validate_required_keys(
+    payload: dict[str, object],
+    required_keys: list[str],
+    context: str,
+    strict: bool,
+) -> None:
+    missing = [key for key in required_keys if key not in payload]
+    if not missing:
+        return
+
+    message = f"{context} payload missing required keys: {', '.join(missing)}"
+    if strict:
+        raise RuntimeError(message)
+    warnings.warn(message, RuntimeWarning, stacklevel=2)
+
+
+def _compute_retry_delay_seconds(
+    attempt: int,
+    base_backoff_seconds: float,
+    max_backoff_seconds: float,
+) -> float:
+    if base_backoff_seconds <= 0:
+        return 0.0
+    exponential = base_backoff_seconds * (2 ** max(0, attempt - 1))
+    jitter = random.uniform(0.0, base_backoff_seconds)
+    return float(min(max_backoff_seconds, exponential + jitter))
+
+
+def parse_actor_allowlist(allowed_actors_raw: str) -> list[str]:
+    parsed: list[str] = []
+    seen: set[str] = set()
+    for token in allowed_actors_raw.split(","):
+        normalized = token.strip().lower()
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        parsed.append(normalized)
+    return parsed
+
+
 def create_deployment_promotion_report(
     release_id: str,
     selector: str,
@@ -328,14 +407,29 @@ def create_deployment_promotion_report(
         raise FileNotFoundError(f"Cache refresh report not found: {cache_path}")
 
     parity_payload = _load_json_payload(parity_path)
+    _validate_required_keys(parity_payload, ["status"], "parity_report", strict=False)
     if parity_payload.get("status") != "passed":
         raise RuntimeError("Deployment promotion blocked because metric parity did not pass.")
 
     cache_payload = _load_json_payload(cache_path)
+    _validate_required_keys(
+        cache_payload,
+        ["refreshed_paths"],
+        "cache_refresh_report",
+        strict=False,
+    )
     if cache_payload.get("refreshed_paths") is None:
         raise RuntimeError("Deployment promotion blocked because cache refresh report is invalid.")
 
+    correlation_id = _compute_correlation_id(
+        release_id=release_id,
+        environment=environment,
+        seed=workflow_run_id,
+    )
+
     report = DeploymentPromotionReport(
+        contract_version=CONTRACT_VERSION,
+        correlation_id=correlation_id,
         release_id=release_id,
         environment=environment,
         selector=selector,
@@ -362,13 +456,29 @@ def create_deployment_rollback_report(
     promotion_report_path: str | Path,
     environment: str = "production",
     output_path: str | Path = DEFAULT_ROLLBACK_OUTPUT,
+    strict_validation: bool = False,
 ) -> DeploymentRollbackReport:
     promotion_path = Path(promotion_report_path)
     if not promotion_path.exists():
         raise FileNotFoundError(f"Promotion report not found: {promotion_path}")
 
     promotion_payload = _load_json_payload(promotion_path)
+    _validate_required_keys(
+        promotion_payload,
+        ["source_base_ref", "git_commit_sha", "workflow_run_id"],
+        "promotion_report",
+        strict=strict_validation,
+    )
+    correlation_id = str(
+        promotion_payload.get(
+            "correlation_id",
+            _compute_correlation_id(release_id=release_id, environment=environment),
+        )
+    )
+
     report = DeploymentRollbackReport(
+        contract_version=CONTRACT_VERSION,
+        correlation_id=correlation_id,
         release_id=release_id,
         environment=environment,
         rollback_trigger=rollback_trigger,
@@ -395,13 +505,26 @@ def execute_deployment_rollback_playbook(
     execution_enabled: bool,
     environment: str = "production",
     output_path: str | Path = DEFAULT_ROLLBACK_EXECUTION_OUTPUT,
+    strict_validation: bool = False,
 ) -> DeploymentRollbackExecutionReport:
     rollback_path = Path(rollback_report_path)
     if not rollback_path.exists():
         raise FileNotFoundError(f"Rollback report not found: {rollback_path}")
 
     payload = _load_json_payload(rollback_path)
+    _validate_required_keys(
+        payload,
+        ["release_id", "rollback_actions"],
+        "rollback_report",
+        strict=strict_validation,
+    )
     release_id = str(payload.get("release_id", "unknown-release"))
+    correlation_id = str(
+        payload.get(
+            "correlation_id",
+            _compute_correlation_id(release_id=release_id, environment=environment),
+        )
+    )
     actions_raw = payload.get("rollback_actions", [])
     actions = [str(item) for item in actions_raw] if isinstance(actions_raw, list) else []
 
@@ -436,6 +559,8 @@ def execute_deployment_rollback_playbook(
             write_json_artifact(
                 str(incident_path),
                 {
+                    "contract_version": CONTRACT_VERSION,
+                    "correlation_id": correlation_id,
                     "release_id": release_id,
                     "environment": environment,
                     "rollback_report_path": str(rollback_path),
@@ -448,6 +573,8 @@ def execute_deployment_rollback_playbook(
             deferred_actions.append(action)
 
     report = DeploymentRollbackExecutionReport(
+        contract_version=CONTRACT_VERSION,
+        correlation_id=correlation_id,
         release_id=release_id,
         environment=environment,
         execution_mode=mode,
@@ -467,10 +594,11 @@ def validate_release_actor_access(
     allowed_actors_raw: str,
     actor: str,
 ) -> tuple[bool, list[str]]:
-    allowed = [item.strip() for item in allowed_actors_raw.split(",") if item.strip()]
+    allowed = parse_actor_allowlist(allowed_actors_raw)
+    normalized_actor = actor.strip().lower()
     if not allowed:
         return True, []
-    return actor in allowed, allowed
+    return normalized_actor in allowed, allowed
 
 
 def dispatch_rollback_incident_payload(
@@ -480,24 +608,44 @@ def dispatch_rollback_incident_payload(
     timeout_seconds: int = 10,
     max_attempts: int = 1,
     backoff_seconds: float = 0.0,
+    max_backoff_seconds: float = 30.0,
     dead_letter_output_path: str | Path = DEFAULT_ROLLBACK_INCIDENT_DEAD_LETTER_OUTPUT,
     output_path: str | Path = DEFAULT_ROLLBACK_INCIDENT_DISPATCH_OUTPUT,
+    strict_validation: bool = False,
 ) -> RollbackIncidentDispatchReport:
     payload_path = Path(incident_payload_path)
     if not payload_path.exists():
         raise FileNotFoundError(f"Incident payload not found: {payload_path}")
 
     payload = _load_json_payload(payload_path)
+    _validate_required_keys(
+        payload,
+        ["release_id", "environment"],
+        "incident_payload",
+        strict=strict_validation,
+    )
     release_id = str(payload.get("release_id", "unknown-release"))
     environment = str(payload.get("environment", "unknown"))
+    correlation_id = str(
+        payload.get(
+            "correlation_id",
+            _compute_correlation_id(release_id=release_id, environment=environment),
+        )
+    )
     payload_hash = _sha256_file(payload_path)
+    endpoint_alias = "configured" if incident_webhook_url.strip() else "not-configured"
+    endpoint_fingerprint = _endpoint_fingerprint(incident_webhook_url)
 
     if not incident_webhook_url.strip():
         report = RollbackIncidentDispatchReport(
+            contract_version=CONTRACT_VERSION,
+            correlation_id=correlation_id,
             release_id=release_id,
             environment=environment,
             incident_webhook_configured=False,
-            dispatch_status="skipped",
+            webhook_endpoint_alias=endpoint_alias,
+            webhook_endpoint_fingerprint=endpoint_fingerprint,
+            dispatch_status=DISPATCH_STATUS_SKIPPED,
             http_status_code=None,
             source_payload_path=str(payload_path),
             source_payload_sha256=payload_hash,
@@ -522,7 +670,7 @@ def dispatch_rollback_incident_payload(
     last_status: int | None = None
     last_response_excerpt = ""
     last_error = ""
-    dispatch_status = "failed"
+    dispatch_status = DISPATCH_STATUS_FAILED
 
     for attempt in range(1, max_tries + 1):
         attempt_count = attempt
@@ -536,29 +684,35 @@ def dispatch_rollback_incident_payload(
         except requests.RequestException as error:
             last_error = str(error)
             if attempt < max_tries and backoff > 0:
-                time.sleep(backoff)
+                delay = _compute_retry_delay_seconds(attempt, backoff, max_backoff_seconds)
+                time.sleep(delay)
             continue
 
         last_status = response.status_code
         last_response_excerpt = response.text[:500]
         if 200 <= response.status_code < 300:
-            dispatch_status = "sent"
+            dispatch_status = DISPATCH_STATUS_SENT
             last_error = ""
             break
 
         last_error = "non-2xx response"
         if attempt < max_tries and backoff > 0:
-            time.sleep(backoff)
+            delay = _compute_retry_delay_seconds(attempt, backoff, max_backoff_seconds)
+            time.sleep(delay)
 
     dead_letter_created = False
     dead_letter_path = ""
-    if dispatch_status != "sent":
+    if dispatch_status != DISPATCH_STATUS_SENT:
         dead_letter = {
+            "contract_version": CONTRACT_VERSION,
+            "correlation_id": correlation_id,
             "release_id": release_id,
             "environment": environment,
             "incident_payload_path": str(payload_path),
             "incident_payload_sha256": payload_hash,
-            "incident_webhook_url": incident_webhook_url,
+            "incident_webhook_url": "redacted",
+            "incident_webhook_endpoint_alias": endpoint_alias,
+            "incident_webhook_endpoint_fingerprint": endpoint_fingerprint,
             "attempt_count": attempt_count,
             "max_attempts": max_tries,
             "last_http_status_code": last_status,
@@ -572,9 +726,13 @@ def dispatch_rollback_incident_payload(
         dead_letter_created = True
 
     report = RollbackIncidentDispatchReport(
+        contract_version=CONTRACT_VERSION,
+        correlation_id=correlation_id,
         release_id=release_id,
         environment=environment,
         incident_webhook_configured=True,
+        webhook_endpoint_alias=endpoint_alias,
+        webhook_endpoint_fingerprint=endpoint_fingerprint,
         dispatch_status=dispatch_status,
         http_status_code=last_status,
         source_payload_path=str(payload_path),
@@ -598,16 +756,24 @@ def escalate_rollback_dead_letter(
     timeout_seconds: int = 10,
     max_attempts: int = 1,
     backoff_seconds: float = 0.0,
+    max_backoff_seconds: float = 30.0,
     output_path: str | Path = DEFAULT_ROLLBACK_ESCALATION_OUTPUT,
+    strict_validation: bool = False,
 ) -> RollbackDeadLetterEscalationReport:
+    endpoint_alias = "configured" if escalation_webhook_url.strip() else "not-configured"
+    endpoint_fingerprint = _endpoint_fingerprint(escalation_webhook_url)
     dead_letter_file = Path(dead_letter_path)
     if not dead_letter_file.exists():
         report = RollbackDeadLetterEscalationReport(
+            contract_version=CONTRACT_VERSION,
+            correlation_id=_compute_correlation_id("unknown-release", "unknown"),
             release_id="unknown-release",
             environment="unknown",
             dead_letter_found=False,
             escalation_webhook_configured=bool(escalation_webhook_url.strip()),
-            escalation_status="skipped-no-dead-letter",
+            escalation_endpoint_alias=endpoint_alias,
+            escalation_endpoint_fingerprint=endpoint_fingerprint,
+            escalation_status=ESCALATION_STATUS_SKIPPED_NO_DEAD_LETTER,
             source_dead_letter_path=str(dead_letter_file),
             source_dead_letter_sha256="",
             max_attempts=max(1, int(max_attempts)),
@@ -621,17 +787,33 @@ def escalate_rollback_dead_letter(
         return report
 
     dead_letter_payload = _load_json_payload(dead_letter_file)
+    _validate_required_keys(
+        dead_letter_payload,
+        ["release_id", "environment"],
+        "dead_letter",
+        strict=strict_validation,
+    )
     release_id = str(dead_letter_payload.get("release_id", "unknown-release"))
     environment = str(dead_letter_payload.get("environment", "unknown"))
+    correlation_id = str(
+        dead_letter_payload.get(
+            "correlation_id",
+            _compute_correlation_id(release_id=release_id, environment=environment),
+        )
+    )
     dead_letter_hash = _sha256_file(dead_letter_file)
 
     if not escalation_webhook_url.strip():
         report = RollbackDeadLetterEscalationReport(
+            contract_version=CONTRACT_VERSION,
+            correlation_id=correlation_id,
             release_id=release_id,
             environment=environment,
             dead_letter_found=True,
             escalation_webhook_configured=False,
-            escalation_status="skipped-no-webhook",
+            escalation_endpoint_alias=endpoint_alias,
+            escalation_endpoint_fingerprint=endpoint_fingerprint,
+            escalation_status=ESCALATION_STATUS_SKIPPED_NO_WEBHOOK,
             source_dead_letter_path=str(dead_letter_file),
             source_dead_letter_sha256=dead_letter_hash,
             max_attempts=max(1, int(max_attempts)),
@@ -663,7 +845,7 @@ def escalate_rollback_dead_letter(
     last_status: int | None = None
     last_response_excerpt = ""
     last_error = ""
-    escalation_status = "failed"
+    escalation_status = ESCALATION_STATUS_FAILED
 
     for attempt in range(1, max_tries + 1):
         attempt_count = attempt
@@ -677,25 +859,31 @@ def escalate_rollback_dead_letter(
         except requests.RequestException as error:
             last_error = str(error)
             if attempt < max_tries and backoff > 0:
-                time.sleep(backoff)
+                delay = _compute_retry_delay_seconds(attempt, backoff, max_backoff_seconds)
+                time.sleep(delay)
             continue
 
         last_status = response.status_code
         last_response_excerpt = response.text[:500]
         if 200 <= response.status_code < 300:
-            escalation_status = "sent"
+            escalation_status = ESCALATION_STATUS_SENT
             last_error = ""
             break
 
         last_error = "non-2xx response"
         if attempt < max_tries and backoff > 0:
-            time.sleep(backoff)
+            delay = _compute_retry_delay_seconds(attempt, backoff, max_backoff_seconds)
+            time.sleep(delay)
 
     report = RollbackDeadLetterEscalationReport(
+        contract_version=CONTRACT_VERSION,
+        correlation_id=correlation_id,
         release_id=release_id,
         environment=environment,
         dead_letter_found=True,
         escalation_webhook_configured=True,
+        escalation_endpoint_alias=endpoint_alias,
+        escalation_endpoint_fingerprint=endpoint_fingerprint,
         escalation_status=escalation_status,
         source_dead_letter_path=str(dead_letter_file),
         source_dead_letter_sha256=dead_letter_hash,

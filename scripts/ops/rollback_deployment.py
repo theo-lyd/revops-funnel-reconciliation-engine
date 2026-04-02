@@ -6,7 +6,10 @@ from __future__ import annotations
 import argparse
 import os
 
-from revops_funnel.deployment_ops import create_deployment_rollback_report
+from revops_funnel.deployment_ops import (
+    create_deployment_rollback_report,
+    validate_release_actor_access,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -58,10 +61,10 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     if args.require_release_access:
-        actors = [actor.strip() for actor in os.getenv("RELEASE_ALLOWED_ACTORS", "").split(",")]
-        allowed = [actor for actor in actors if actor]
+        raw_allowed = os.getenv("RELEASE_ALLOWED_ACTORS", "")
         actor = os.getenv("GITHUB_ACTOR", "")
-        if allowed and actor not in allowed:
+        is_allowed, allowed = validate_release_actor_access(raw_allowed, actor)
+        if not is_allowed:
             allowed_display = ", ".join(allowed)
             raise SystemExit(
                 "Rollback report generation blocked for actor "
@@ -75,6 +78,7 @@ def main() -> int:
         promotion_report_path=args.promotion_report,
         environment=args.environment,
         output_path=args.output,
+        strict_validation=args.require_release_access,
     )
     print(
         "Rollback manifest recorded for "
