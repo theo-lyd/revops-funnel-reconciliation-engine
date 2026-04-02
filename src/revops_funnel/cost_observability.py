@@ -192,6 +192,7 @@ def aggregate_query_cost_attribution(entries: list[QueryCostEntry]) -> dict[str,
 class CostRegressionThresholds:
     max_credits_regression_pct: float
     max_elapsed_regression_pct: float
+    max_new_query_tags: int = 0
 
 
 @dataclass(frozen=True)
@@ -438,6 +439,49 @@ def _query_tag_totals(report: dict[str, object]) -> dict[str, dict[str, float]]:
     return totals
 
 
+def _query_layer_totals(report: dict[str, object]) -> dict[str, dict[str, float]]:
+    rows = report.get("attribution_by_transformation_layer")
+    if not isinstance(rows, list):
+        return {}
+
+    totals: dict[str, dict[str, float]] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        layer = str(row.get("layer", "unknown"))
+        totals[layer] = {
+            "credits_used": _safe_float(row.get("credits_used")),
+            "elapsed_seconds": _safe_float(row.get("elapsed_seconds")),
+            "query_count": _safe_float(row.get("query_count")),
+        }
+    return totals
+
+
+def _query_warehouse_totals(report: dict[str, object]) -> dict[str, dict[str, float]]:
+    rows = report.get("attribution_by_warehouse")
+    if not isinstance(rows, list):
+        return {}
+
+    totals: dict[str, dict[str, float]] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        warehouse = str(row.get("warehouse_name", "unknown"))
+        totals[warehouse] = {
+            "credits_used": _safe_float(row.get("credits_used")),
+            "elapsed_seconds": _safe_float(row.get("elapsed_seconds")),
+            "query_count": _safe_float(row.get("query_count")),
+        }
+    return totals
+
+
+def _percentile_of_regression(change_pct: float, threshold_pct: float) -> float:
+    if threshold_pct <= 0:
+        return 100.0 if change_pct > 0 else 0.0
+    ratio = change_pct / threshold_pct
+    return max(0.0, min(100.0, ratio * 100.0))
+
+
 def detect_query_cost_regressions(
     current_report: dict[str, object],
     baseline_report: dict[str, object],
@@ -454,8 +498,20 @@ def detect_query_cost_regressions(
             "thresholds": asdict(thresholds),
             "overall_regressions": [],
             "query_tag_regressions": [],
+            "transformation_layer_regressions": [],
+            "warehouse_regressions": [],
             "new_query_tags": [],
+            "summary": {
+                "regression_count": 0,
+                "new_query_tag_count": 0,
+                "blocked": False,
+            },
         }
+
+    current_metadata_obj = current_report.get("metadata")
+    current_metadata = current_metadata_obj if isinstance(current_metadata_obj, dict) else {}
+    baseline_metadata_obj = baseline_report.get("metadata")
+    baseline_metadata = baseline_metadata_obj if isinstance(baseline_metadata_obj, dict) else {}
 
     metrics = [
         ("credits_used", thresholds.max_credits_regression_pct),
@@ -483,9 +539,15 @@ def detect_query_cost_regressions(
 
     current_tags = _query_tag_totals(current_report)
     baseline_tags = _query_tag_totals(baseline_report)
+    current_layers = _query_layer_totals(current_report)
+    baseline_layers = _query_layer_totals(baseline_report)
+    current_warehouses = _query_warehouse_totals(current_report)
+    baseline_warehouses = _query_warehouse_totals(baseline_report)
 
     query_tag_regressions: list[dict[str, object]] = []
     new_query_tags: list[str] = []
+    transformation_layer_regressions: list[dict[str, object]] = []
+    warehouse_regressions: list[dict[str, object]] = []
 
     for tag, current_values in current_tags.items():
         baseline_values = baseline_tags.get(tag)
@@ -509,19 +571,100 @@ def detect_query_cost_regressions(
                         "current_value": current_value,
                         "change_pct": change_pct,
                         "threshold_pct": threshold_pct,
+                        "severity_pct": _percentile_of_regression(change_pct, threshold_pct),
                     }
                 )
 
+    for layer, current_values in current_layers.items():
+        baseline_values = baseline_layers.get(layer)
+        if baseline_values is None:
+            continue
+
+        for metric, threshold_pct in metrics:
+            current_value = _safe_float(current_values.get(metric))
+            baseline_value = _safe_float(baseline_values.get(metric))
+            change_pct = _percent_change(current_value, baseline_value)
+            if change_pct is None:
+                continue
+            if change_pct > threshold_pct:
+                transformation_layer_regressions.append(
+                    {
+                        "scope": "transformation_layer",
+                        "layer": layer,
+                        "metric": metric,
+                        "baseline_value": baseline_value,
+                        "current_value": current_value,
+                        "change_pct": change_pct,
+                        "threshold_pct": threshold_pct,
+                        "severity_pct": _percentile_of_regression(change_pct, threshold_pct),
+                    }
+                )
+
+    for warehouse, current_values in current_warehouses.items():
+        baseline_values = baseline_warehouses.get(warehouse)
+        if baseline_values is None:
+            continue
+
+        for metric, threshold_pct in metrics:
+            current_value = _safe_float(current_values.get(metric))
+            baseline_value = _safe_float(baseline_values.get(metric))
+            change_pct = _percent_change(current_value, baseline_value)
+            if change_pct is None:
+                continue
+            if change_pct > threshold_pct:
+                warehouse_regressions.append(
+                    {
+                        "scope": "warehouse",
+                        "warehouse_name": warehouse,
+                        "metric": metric,
+                        "baseline_value": baseline_value,
+                        "current_value": current_value,
+                        "change_pct": change_pct,
+                        "threshold_pct": threshold_pct,
+                        "severity_pct": _percentile_of_regression(change_pct, threshold_pct),
+                    }
+                )
+
+    baseline_release_id = str(baseline_metadata.get("release_id", "")) if baseline_metadata else ""
+    current_release_id = str(current_metadata.get("release_id", "")) if current_metadata else ""
+
+    new_query_tag_count = len(new_query_tags)
+    new_query_tag_blocked = new_query_tag_count > thresholds.max_new_query_tags
+
     status = "ok"
-    if overall_regressions or query_tag_regressions:
+    if (
+        overall_regressions
+        or query_tag_regressions
+        or transformation_layer_regressions
+        or warehouse_regressions
+    ):
         status = "regression-detected"
+
+    blocked = status == "regression-detected" or new_query_tag_blocked
 
     return {
         "status": status,
         "detail": "",
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "thresholds": asdict(thresholds),
+        "current_metadata": {
+            "release_id": current_release_id,
+        },
+        "baseline_metadata": {
+            "release_id": baseline_release_id,
+        },
         "overall_regressions": overall_regressions,
         "query_tag_regressions": query_tag_regressions,
+        "transformation_layer_regressions": transformation_layer_regressions,
+        "warehouse_regressions": warehouse_regressions,
         "new_query_tags": sorted(new_query_tags),
+        "summary": {
+            "regression_count": len(overall_regressions)
+            + len(query_tag_regressions)
+            + len(transformation_layer_regressions)
+            + len(warehouse_regressions),
+            "new_query_tag_count": new_query_tag_count,
+            "blocked": blocked,
+            "new_query_tag_blocked": new_query_tag_blocked,
+        },
     }

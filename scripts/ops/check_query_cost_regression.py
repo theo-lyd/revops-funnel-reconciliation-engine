@@ -58,6 +58,17 @@ def parse_args() -> argparse.Namespace:
         help="Fail when baseline report is missing or unusable.",
     )
     parser.add_argument(
+        "--max-new-query-tags",
+        type=int,
+        default=int(os.getenv("COST_MAX_NEW_QUERY_TAGS", "0")),
+        help="Allowed number of new query tags before blocking.",
+    )
+    parser.add_argument(
+        "--ignore-new-query-tags",
+        action="store_true",
+        help="Do not treat new query tags as a blocking condition.",
+    )
+    parser.add_argument(
         "--output",
         default=DEFAULT_OUTPUT,
         help="Output path for query-cost regression report.",
@@ -139,20 +150,29 @@ def main() -> int:
     thresholds = CostRegressionThresholds(
         max_credits_regression_pct=max(0.0, args.max_credits_regression_pct),
         max_elapsed_regression_pct=max(0.0, args.max_elapsed_regression_pct),
+        max_new_query_tags=max(0, args.max_new_query_tags),
     )
 
     comparison = detect_query_cost_regressions(current_report, baseline_report, thresholds)
+    summary_obj = comparison.get("summary", {})
+    summary = summary_obj if isinstance(summary_obj, dict) else {}
+    if args.ignore_new_query_tags:
+        summary["new_query_tag_blocked"] = False
+        summary["blocked"] = bool(summary.get("regression_count", 0)) > 0
+
     payload = {
         "status": comparison.get("status", "error"),
         "detail": comparison.get("detail", ""),
         "strict_baseline": bool(args.strict_baseline),
+        "ignore_new_query_tags": bool(args.ignore_new_query_tags),
         "current_report": str(current_path),
         "baseline_report": str(baseline_path),
         "comparison": comparison,
+        "summary": summary,
     }
 
     status = str(payload["status"])
-    code = 1 if status in {"error", "regression-detected"} else 0
+    code = 1 if status in {"error", "regression-detected"} or bool(summary.get("blocked")) else 0
     return _emit_and_exit(args.output, payload, code)
 
 

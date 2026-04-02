@@ -167,12 +167,15 @@ jobs:
             --output artifacts/performance/query_cost_attribution_report.json
 
       - name: Check query-cost regression (safe skip mode)
+        env:
+          COST_MAX_NEW_QUERY_TAGS: ${{ vars.COST_MAX_NEW_QUERY_TAGS || '0' }}
         run: |
           python scripts/ops/check_query_cost_regression.py \
             --current-report artifacts/performance/query_cost_attribution_report.json \
             --baseline-report artifacts/performance/query_cost_attribution_baseline.json \
             --max-credits-regression-pct 20 \
             --max-elapsed-regression-pct 25 \
+            --max-new-query-tags "$COST_MAX_NEW_QUERY_TAGS" \
             --output artifacts/performance/query_cost_regression_report.json
 
       - name: Run Phase 8.2 enhanced cost signals (safe mode)

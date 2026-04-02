@@ -170,6 +170,7 @@ jobs:
         env:
           COST_MAX_CREDITS_REGRESSION_PCT: ${{ vars.COST_MAX_CREDITS_REGRESSION_PCT || '20' }}
           COST_MAX_ELAPSED_REGRESSION_PCT: ${{ vars.COST_MAX_ELAPSED_REGRESSION_PCT || '25' }}
+          COST_MAX_NEW_QUERY_TAGS: ${{ vars.COST_MAX_NEW_QUERY_TAGS || '0' }}
           COST_REGRESSION_STRICT: ${{ vars.COST_REGRESSION_STRICT || 'false' }}
         run: |
           STRICT_FLAG=""
@@ -182,6 +183,7 @@ jobs:
             --baseline-report "$QUERY_COST_BASELINE_REPORT_PATH" \
             --max-credits-regression-pct "$COST_MAX_CREDITS_REGRESSION_PCT" \
             --max-elapsed-regression-pct "$COST_MAX_ELAPSED_REGRESSION_PCT" \
+            --max-new-query-tags "$COST_MAX_NEW_QUERY_TAGS" \
             --output "$QUERY_COST_REGRESSION_REPORT_PATH" \
             $STRICT_FLAG
 

@@ -17,6 +17,7 @@ COST_BASELINE_REPORT_PATH ?= artifacts/performance/query_cost_attribution_baseli
 COST_REGRESSION_REPORT_PATH ?= artifacts/performance/query_cost_regression_report.json
 COST_MAX_CREDITS_REGRESSION_PCT ?= 20
 COST_MAX_ELAPSED_REGRESSION_PCT ?= 25
+COST_MAX_NEW_QUERY_TAGS ?= 0
 PHASE82_ENABLE ?= false
 PHASE82_TEAM_TAG_MAPPING ?=
 PHASE82_BUDGET_THRESHOLD_PCT ?= 80
@@ -154,10 +155,10 @@ query-cost-attribution-strict:
 	$(PYTHON) scripts/ops/generate_query_cost_attribution.py --strict-snowflake --lookback-hours $(COST_LOOKBACK_HOURS) --max-queries $(COST_MAX_QUERIES) --query-tag-prefix "$(COST_QUERY_TAG_PREFIX)" --output artifacts/performance/query_cost_attribution_report.json
 
 query-cost-regression:
-	$(PYTHON) scripts/ops/check_query_cost_regression.py --current-report artifacts/performance/query_cost_attribution_report.json --baseline-report $(COST_BASELINE_REPORT_PATH) --max-credits-regression-pct $(COST_MAX_CREDITS_REGRESSION_PCT) --max-elapsed-regression-pct $(COST_MAX_ELAPSED_REGRESSION_PCT) --output $(COST_REGRESSION_REPORT_PATH)
+	$(PYTHON) scripts/ops/check_query_cost_regression.py --current-report artifacts/performance/query_cost_attribution_report.json --baseline-report $(COST_BASELINE_REPORT_PATH) --max-credits-regression-pct $(COST_MAX_CREDITS_REGRESSION_PCT) --max-elapsed-regression-pct $(COST_MAX_ELAPSED_REGRESSION_PCT) --max-new-query-tags $(COST_MAX_NEW_QUERY_TAGS) --output $(COST_REGRESSION_REPORT_PATH)
 
 query-cost-regression-strict:
-	$(PYTHON) scripts/ops/check_query_cost_regression.py --strict-baseline --current-report artifacts/performance/query_cost_attribution_report.json --baseline-report $(COST_BASELINE_REPORT_PATH) --max-credits-regression-pct $(COST_MAX_CREDITS_REGRESSION_PCT) --max-elapsed-regression-pct $(COST_MAX_ELAPSED_REGRESSION_PCT) --output $(COST_REGRESSION_REPORT_PATH)
+	$(PYTHON) scripts/ops/check_query_cost_regression.py --strict-baseline --current-report artifacts/performance/query_cost_attribution_report.json --baseline-report $(COST_BASELINE_REPORT_PATH) --max-credits-regression-pct $(COST_MAX_CREDITS_REGRESSION_PCT) --max-elapsed-regression-pct $(COST_MAX_ELAPSED_REGRESSION_PCT) --max-new-query-tags $(COST_MAX_NEW_QUERY_TAGS) --output $(COST_REGRESSION_REPORT_PATH)
 
 phase82-cost-forecast:
 	$(PYTHON) scripts/ops/forecast_query_cost_budget.py --attribution-report artifacts/performance/query_cost_attribution_report.json --team-owner-tag-mapping '$(PHASE82_TEAM_TAG_MAPPING)' --budget-threshold-pct $(PHASE82_BUDGET_THRESHOLD_PCT) --staging-to-prod-multiplier $(PHASE82_STAGING_TO_PROD_MULTIPLIER) --output artifacts/performance/query_cost_forecast_report.json
