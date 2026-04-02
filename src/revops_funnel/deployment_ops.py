@@ -49,6 +49,19 @@ class DeploymentPromotionReport:
     promoted_at_utc: str
 
 
+@dataclass(frozen=True)
+class SelectorDecisionReport:
+    base_ref: str
+    selector: str
+    changed_file_count: int
+    changed_files: list[str]
+    git_diff_exit_code: int
+    fallback_used: bool
+    fallback_reason: str
+    strict_mode: bool
+    generated_at_utc: str
+
+
 def collect_changed_files(base_ref: str, repo_root: Path | None = None) -> list[Path]:
     repo_path = repo_root or Path.cwd()
     if not base_ref:
@@ -72,6 +85,84 @@ def collect_changed_files(base_ref: str, repo_root: Path | None = None) -> list[
         return []
 
     return [Path(line.strip()) for line in completed.stdout.splitlines() if line.strip()]
+
+
+def resolve_selector_decision(
+    base_ref: str,
+    repo_root: Path | None = None,
+    strict_mode: bool = False,
+) -> SelectorDecisionReport:
+    repo_path = repo_root or Path.cwd()
+    if not base_ref:
+        if strict_mode:
+            raise RuntimeError("Selector resolution failed: base ref is required in strict mode.")
+        selector = DEFAULT_DBT_SELECTOR
+        return SelectorDecisionReport(
+            base_ref="",
+            selector=selector,
+            changed_file_count=0,
+            changed_files=[],
+            git_diff_exit_code=2,
+            fallback_used=True,
+            fallback_reason="missing-base-ref",
+            strict_mode=False,
+            generated_at_utc=datetime.now(timezone.utc).isoformat(),
+        )
+
+    completed = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(repo_path),
+            "diff",
+            "--name-only",
+            "--diff-filter=ACMRT",
+            f"{base_ref}...HEAD",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    if completed.returncode != 0:
+        if strict_mode:
+            raise RuntimeError(
+                "Selector resolution failed: git diff returned "
+                f"exit code {completed.returncode} for base ref {base_ref}."
+            )
+        selector = DEFAULT_DBT_SELECTOR
+        return SelectorDecisionReport(
+            base_ref=base_ref,
+            selector=selector,
+            changed_file_count=0,
+            changed_files=[],
+            git_diff_exit_code=completed.returncode,
+            fallback_used=True,
+            fallback_reason="git-diff-failed",
+            strict_mode=False,
+            generated_at_utc=datetime.now(timezone.utc).isoformat(),
+        )
+
+    changed_files = [Path(line.strip()) for line in completed.stdout.splitlines() if line.strip()]
+    selector = build_dbt_selector(changed_files)
+    return SelectorDecisionReport(
+        base_ref=base_ref,
+        selector=selector,
+        changed_file_count=len(changed_files),
+        changed_files=[path.as_posix() for path in changed_files],
+        git_diff_exit_code=0,
+        fallback_used=False,
+        fallback_reason="none",
+        strict_mode=strict_mode,
+        generated_at_utc=datetime.now(timezone.utc).isoformat(),
+    )
+
+
+def write_selector_decision_report(
+    report: SelectorDecisionReport,
+    output_path: str | Path,
+) -> None:
+    write_json_artifact(str(output_path), asdict(report))
 
 
 def build_dbt_selector(changed_files: Sequence[Path]) -> str:

@@ -137,7 +137,8 @@ Phase 6 extends monitoring and delivery into operational automation:
 2. **Batch 6.1**: [Monitoring email delivery](docs/reports/phase-6/batch-6.1-monitoring-email-delivery.md)
 3. **Batch 6.2**: [CI/CD and operations automation](docs/reports/phase-6/batch-6.2-ci-cd-and-operations-automation.md)
 4. **Batch 6.3**: [Release gate integrity and artifact auditability](docs/reports/phase-6/batch-6.3-release-gate-integrity-and-artifact-auditability.md)
-5. **End Report**: [Phase 6 end report](docs/reports/phase-6/phase-6-end-report.md)
+5. **Batch 6.4**: [CI slimming and selector determinism](docs/reports/phase-6/batch-6.4-ci-slimming-and-selector-determinism.md)
+6. **End Report**: [Phase 6 end report](docs/reports/phase-6/phase-6-end-report.md)
 
 ### Project Governance
 - [Standing instructions and process documentation](docs/project-governance/standing-instructions.md)

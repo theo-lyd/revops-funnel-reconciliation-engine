@@ -312,3 +312,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: run `ruff check` immediately after adding new imports in shared helpers
 - Alternative resolution options: use `ruff check --fix` for import normalization before full gate
 - Verification evidence: `make lint` and `make test` passed after import-order correction
+
+### Issue ID: ISS-028
+- Phase and batch: Phase 6 Batch 6.4 - CI slimming and selector determinism
+- Date observed: 2026-04-02
+- Where it occurred: `tests/test_deployment_ops.py` during lint validation
+- Symptom: Ruff rejected import ordering after adding selector determinism test cases
+- Root cause: imported helper names were not sorted in tool-expected order
+- Resolution: reordered imports and reran full lint/test suite
+- How to avoid: run local Ruff check immediately after extending test import blocks
+- Alternative resolution options: apply `ruff check --fix` to changed test files before full gates
+- Verification evidence: `make lint` and `make test` passed with 26 tests

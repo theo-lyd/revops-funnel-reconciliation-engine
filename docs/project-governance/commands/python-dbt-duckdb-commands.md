@@ -370,3 +370,27 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: promotion enabled, strict parity report present and passed, cache refresh report present
   - Expected output: promotion manifest with release metadata (`git_commit_sha`, `workflow_run_id`, `source_base_ref`) and artifact checksums
   - Recovery: execute missing gate steps or fix invalid reports, then rerun promotion step
+
+## Phase 6 Batch 6.4 execution entries
+
+### PDD-032
+- What: python scripts/ops/run_changed_model_dbt.py build --base-ref <ref> --strict-selector --selector-report artifacts/ci/selector_decision.json
+- Why: run deterministic changed-model build in PR CI with strict selector resolution and machine-readable decision output
+- Who: project maintainer
+- When: 2026-04-02, Phase 6 Batch 6.4 implementation
+- Where: CI quality job
+- How:
+  - Preconditions: checkout uses full history and base ref is available
+  - Expected output: scoped dbt build and selector decision artifact written to `artifacts/ci/selector_decision.json`
+  - Recovery: fix base ref resolution or use non-strict mode only in local fallback contexts
+
+### PDD-033
+- What: python scripts/ops/run_changed_model_dbt.py test --base-ref <ref> --strict-selector --selector-report artifacts/ci/selector_decision.json
+- Why: run deterministic changed-model tests in PR CI while preserving auditable selector decisions
+- Who: project maintainer
+- When: 2026-04-02, Phase 6 Batch 6.4 implementation
+- Where: CI quality job
+- How:
+  - Preconditions: build path is available and selector decision resolved
+  - Expected output: scoped dbt test execution plus selector artifact update
+  - Recovery: resolve selector strict-mode failures before rerunning CI

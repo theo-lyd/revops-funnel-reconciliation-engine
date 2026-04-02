@@ -546,3 +546,27 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: pytest dependencies available
   - Expected output: full test suite passes including deployment contract tests
   - Recovery: isolate failing tests and remediate before release
+
+## Phase 6 Batch 6.4 execution entries
+
+### MK-045
+- What: make lint
+- Why: validate CI workflow slimming and selector determinism codepaths after implementation
+- Who: project maintainer
+- When: 2026-04-02, Phase 6 Batch 6.4 validation
+- Where: repository root
+- How:
+  - Preconditions: dependencies installed and Phase 6.4 files updated
+  - Expected output: Ruff and mypy success across repo modules
+  - Recovery: fix style/type issues and rerun gates
+
+### MK-046
+- What: make test
+- Why: verify selector determinism and CI helper tests while preserving prior phase behavior
+- Who: project maintainer
+- When: 2026-04-02, Phase 6 Batch 6.4 validation
+- Where: repository root
+- How:
+  - Preconditions: pytest dependencies installed
+  - Expected output: full suite passes including new selector tests
+  - Recovery: isolate and remediate failing test paths before release

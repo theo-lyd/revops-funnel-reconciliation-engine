@@ -4,10 +4,11 @@
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 from pathlib import Path
 
-from revops_funnel.deployment_ops import build_dbt_selector, collect_changed_files
+from revops_funnel.deployment_ops import resolve_selector_decision, write_selector_decision_report
 
 
 def parse_args() -> argparse.Namespace:
@@ -32,6 +33,16 @@ def parse_args() -> argparse.Namespace:
         default="profiles",
         help="dbt profiles directory relative to the dbt project.",
     )
+    parser.add_argument(
+        "--strict-selector",
+        action="store_true",
+        help="Fail when changed-file selector resolution cannot be determined.",
+    )
+    parser.add_argument(
+        "--selector-report",
+        default=os.getenv("SELECTOR_REPORT_PATH", "artifacts/ci/selector_decision.json"),
+        help="Path to write selector decision metadata.",
+    )
     return parser.parse_args()
 
 
@@ -45,13 +56,17 @@ def run_command(command: list[str], cwd: Path) -> None:
 def main() -> int:
     args = parse_args()
     dbt_root = Path(args.dbt_dir)
-    changed_files = collect_changed_files(args.base_ref)
-    selector = build_dbt_selector(changed_files)
+    decision = resolve_selector_decision(
+        base_ref=args.base_ref,
+        strict_mode=args.strict_selector,
+    )
+    write_selector_decision_report(decision, args.selector_report)
 
-    print(f"Changed-model selector: {selector}")
+    print(f"Changed-model selector: {decision.selector}")
+    print(f"Selector report written to {args.selector_report}")
     run_command(["dbt", "deps"], dbt_root)
     run_command(
-        ["dbt", args.action, "--profiles-dir", args.profiles_dir, "--select", selector],
+        ["dbt", args.action, "--profiles-dir", args.profiles_dir, "--select", decision.selector],
         dbt_root,
     )
     return 0

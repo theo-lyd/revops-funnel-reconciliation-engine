@@ -7,6 +7,7 @@ Operationalize the monitoring workflow and the broader delivery pipeline by addi
 - Batch 6.1: Monitoring email delivery.
 - Batch 6.2: CI/CD and operations automation.
 - Batch 6.3: Release gate integrity and artifact auditability.
+- Batch 6.4: CI slimming and selector determinism.
 
 ## What Was Done
 1. Added `src/revops_funnel/notifications.py` for shared email composition and SMTP delivery.
@@ -15,18 +16,21 @@ Operationalize the monitoring workflow and the broader delivery pipeline by addi
 4. Added changed-model dbt selection, cache refresh, and deployment promotion helpers for operational workflows.
 5. Added an Airflow end-to-end pipeline DAG and a release workflow for unattended promotion.
 6. Added strict parity release gating and published promotion evidence artifacts for auditability.
+7. Slimmed CI event paths and added deterministic selector-decision artifacts with strict PR resolution mode.
 
 ## Validation Outcomes
 - Email composition and SMTP delivery are covered by fixture-based tests.
 - The CLI remains safe to run without SMTP configuration.
 - Selector and promotion helpers are unit-testable and deterministic.
 - Release manifest metadata and checksum contract are unit-tested and artifact-backed in CI.
+- Selector fallback and strict-mode behavior are unit-tested and exposed as CI artifacts.
 
 ## Risks and Assumptions
 - SMTP transport is environment-driven and intentionally optional.
 - The batch sends email only when anomalies are present; clean runs remain artifact-only.
 - Deployment promotion remains guarded by a passed parity report and an explicit enablement flag.
 - Release workflow depends on Snowflake credentials for strict parity validation.
+- Strict selector mode can fail PR CI if base-ref diff resolution is unavailable, by design.
 
 ## Readiness
 Phase 6 now covers the original operations brief in a pragmatic local-dev-plus-CI implementation with stricter release evidence controls and remains ready for further hardening if needed.

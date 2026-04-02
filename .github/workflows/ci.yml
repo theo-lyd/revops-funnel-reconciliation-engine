@@ -31,37 +31,44 @@ jobs:
           ruff check .
           mypy src scripts dags
 
-      - name: Load bronze sources
+      - name: Unit tests
         run: pytest -q
 
-      - name: dbt parse validation
+      - name: Prepare dbt workspace
         run: |
           mkdir -p data/warehouse
           python scripts/ingest/load_leads_jsonl_to_duckdb.py
-
-      - name: dbt changed-model build and test
-        env:
-          GITHUB_BASE_REF: ${{ github.base_ref }}
-          GITHUB_EVENT_BEFORE: ${{ github.event.before }}
-        run: |
-          BASE_REF="${GITHUB_BASE_REF:-${GITHUB_EVENT_BEFORE:-origin/master}}"
-          python scripts/ops/run_changed_model_dbt.py build --base-ref "$BASE_REF"
-          python scripts/ops/run_changed_model_dbt.py test --base-ref "$BASE_REF"
-          cp dbt/profiles/profiles.yml.example dbt/profiles/profiles.yml
-          cd dbt
-          dbt deps
-          dbt parse --profiles-dir profiles
-
-      - name: dbt tests
-        run: |
-          mkdir -p data/warehouse
           cp dbt/profiles/profiles.yml.example dbt/profiles/profiles.yml
           python scripts/init_warehouse.py
           python scripts/ingest/load_crm_csv_to_duckdb.py
           cd dbt
           dbt deps
-          dbt build --profiles-dir profiles --select path:models/staging path:models/intermediate
+          dbt parse --profiles-dir profiles
+
+      - name: dbt changed-model build and test (pull requests)
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+          GITHUB_EVENT_BEFORE: ${{ github.event.before }}
+        run: |
+          BASE_REF="${GITHUB_BASE_REF:-${GITHUB_EVENT_BEFORE:-origin/master}}"
+          python scripts/ops/run_changed_model_dbt.py build --base-ref "$BASE_REF" --strict-selector
+          python scripts/ops/run_changed_model_dbt.py test --base-ref "$BASE_REF" --strict-selector
+
+      - name: dbt full build and test (master pushes)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        run: |
+          cd dbt
+          dbt build --profiles-dir profiles --select path:models/staging path:models/intermediate path:models/marts
           dbt test --profiles-dir profiles
+
+      - name: Upload selector decision artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: selector-decision-${{ github.run_id }}
+          path: artifacts/ci/selector_decision.json
+          if-no-files-found: ignore
 
       - name: Great Expectations validation
         run: python scripts/quality/run_great_expectations.py

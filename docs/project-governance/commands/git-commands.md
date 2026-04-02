@@ -768,3 +768,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful commit and remote connectivity
   - Expected output: remote master updated with Phase 6.3 changes
   - Recovery: resolve conflicts and retry push
+
+## Phase 6: CI slimming and selector determinism entries
+
+### GIT-066
+- What: git add .github/workflows/ci.yml src/revops_funnel/deployment_ops.py scripts/ops/run_changed_model_dbt.py tests/test_deployment_ops.py docs/reports/phase-6/batch-6.4-ci-slimming-and-selector-determinism.md docs/reports/phase-6/PHASE-6-PLAN.md docs/reports/phase-6/phase-6-end-report.md README.md docs/project-governance/issues-log.md docs/project-governance/commands/make-commands.md docs/project-governance/commands/git-commands.md docs/project-governance/commands/python-dbt-duckdb-commands.md
+- Why: stage the Phase 6.4 hardening batch and governance trail as one auditable scope
+- Who: data engineer or analytics lead
+- When: 2026-04-02, Phase 6 Batch 6.4 completion
+- Where: repository root
+- How:
+  - Preconditions: lint and tests pass for Phase 6.4 changes
+  - Expected output: only intended Phase 6.4 files staged
+  - Recovery: unstage unrelated files and restage explicit batch scope
+
+### GIT-067
+- What: git commit -m "refactor(phase-6): slim ci and enforce selector determinism"
+- Why: persist deterministic selector reporting and event-scoped CI dbt execution model
+- Who: data engineer or analytics lead
+- When: 2026-04-02, after staging review
+- Where: repository root
+- How:
+  - Preconditions: staged files reviewed; pre-commit hooks pass
+  - Expected output: commit hash for Phase 6.4 batch
+  - Recovery: resolve hook findings and recommit
+
+### GIT-068
+- What: git push origin master
+- Why: publish Phase 6.4 CI hardening improvements to remote
+- Who: data engineer or analytics lead
+- When: 2026-04-02, immediately after commit
+- Where: repository root
+- How:
+  - Preconditions: successful commit and remote connectivity
+  - Expected output: remote master updated with Phase 6.4 changes
+  - Recovery: resolve conflicts and retry push

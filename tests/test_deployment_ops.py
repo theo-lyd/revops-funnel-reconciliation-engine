@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 from revops_funnel.deployment_ops import (
     build_dbt_selector,
     create_deployment_promotion_report,
     refresh_runtime_caches,
+    resolve_selector_decision,
     write_cache_refresh_report,
+    write_selector_decision_report,
 )
 
 
@@ -75,5 +79,39 @@ def test_write_cache_refresh_report_creates_json(tmp_path: Path) -> None:
     output = tmp_path / "cache-refresh.json"
 
     write_cache_refresh_report(report, output)
+
+    assert output.exists()
+
+
+def test_resolve_selector_decision_marks_fallback_on_git_error() -> None:
+    with patch(
+        "revops_funnel.deployment_ops.subprocess.run",
+        return_value=SimpleNamespace(returncode=128, stdout=""),
+    ):
+        report = resolve_selector_decision("origin/master")
+
+    assert report.fallback_used is True
+    assert report.fallback_reason == "git-diff-failed"
+    assert report.selector == "path:models/staging path:models/intermediate path:models/marts"
+
+
+def test_resolve_selector_decision_strict_raises_on_git_error() -> None:
+    with patch(
+        "revops_funnel.deployment_ops.subprocess.run",
+        return_value=SimpleNamespace(returncode=128, stdout=""),
+    ):
+        try:
+            resolve_selector_decision("origin/master", strict_mode=True)
+        except RuntimeError as error:
+            assert "Selector resolution failed" in str(error)
+        else:  # pragma: no cover
+            raise AssertionError("Expected strict selector mode to raise RuntimeError")
+
+
+def test_write_selector_decision_report_creates_json(tmp_path: Path) -> None:
+    report = resolve_selector_decision(base_ref="", strict_mode=False)
+    output = tmp_path / "selector.json"
+
+    write_selector_decision_report(report, output)
 
     assert output.exists()
