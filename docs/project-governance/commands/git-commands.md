@@ -838,3 +838,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful commit and remote connectivity
   - Expected output: remote master updated with Phase 6.5 changes
   - Recovery: resolve conflicts and retry push
+
+## Phase 6: Release concurrency and rollback automation entries
+
+### GIT-072
+- What: git add .github/workflows/ci.yml .github/workflows/release.yml Makefile src/revops_funnel/deployment_ops.py scripts/ops/rollback_deployment.py tests/test_deployment_ops.py docs/reports/phase-6/batch-6.6-release-concurrency-and-rollback-automation.md docs/reports/phase-6/PHASE-6-PLAN.md docs/reports/phase-6/phase-6-end-report.md README.md docs/project-governance/issues-log.md docs/project-governance/commands/make-commands.md docs/project-governance/commands/git-commands.md docs/project-governance/commands/python-dbt-duckdb-commands.md
+- Why: stage Phase 6.6 concurrency/rollback implementation, tests, docs, and governance in one auditable unit
+- Who: data engineer or analytics lead
+- When: 2026-04-02, Phase 6 Batch 6.6 completion
+- Where: repository root
+- How:
+  - Preconditions: lint and tests pass for the full Phase 6.6 scope
+  - Expected output: only intended Phase 6.6 files staged
+  - Recovery: unstage unrelated files and restage explicit scope
+
+### GIT-073
+- What: git commit -m "feat(phase-6): add workflow concurrency and rollback automation"
+- Why: persist release/CI concurrency controls and automated rollback manifest generation
+- Who: data engineer or analytics lead
+- When: 2026-04-02, after staging review
+- Where: repository root
+- How:
+  - Preconditions: staged files reviewed and hooks passing
+  - Expected output: commit hash for Phase 6.6 batch
+  - Recovery: resolve hook findings and recommit
+
+### GIT-074
+- What: git push origin master
+- Why: publish Phase 6.6 controls to remote for operational use
+- Who: data engineer or analytics lead
+- When: 2026-04-02, immediately after commit
+- Where: repository root
+- How:
+  - Preconditions: successful commit and remote connectivity
+  - Expected output: remote master updated with Phase 6.6 changes
+  - Recovery: resolve conflicts and retry push

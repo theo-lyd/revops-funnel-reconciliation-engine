@@ -594,3 +594,27 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: pytest dependencies installed
   - Expected output: full test suite pass, with DAG test running when Airflow is available and skipping otherwise
   - Recovery: remediate failing tests; if skip occurs due missing Airflow, confirm environment constraints and continue with local-safe behavior
+
+## Phase 6 Batch 6.6 execution entries
+
+### MK-049
+- What: make lint
+- Why: validate concurrency and rollback automation updates across workflows and deployment helpers
+- Who: project maintainer
+- When: 2026-04-02, Phase 6 Batch 6.6 validation
+- Where: repository root
+- How:
+  - Preconditions: dependencies installed and Phase 6.6 files updated
+  - Expected output: Ruff and mypy pass across 30 source files
+  - Recovery: fix style/type findings and rerun
+
+### MK-050
+- What: make test
+- Why: validate rollback helper behavior and preserve prior phase reliability coverage
+- Who: project maintainer
+- When: 2026-04-02, Phase 6 Batch 6.6 validation
+- Where: repository root
+- How:
+  - Preconditions: pytest dependencies installed
+  - Expected output: full test suite pass with expected optional-Airflow skip behavior
+  - Recovery: remediate failing tests and rerun gates

@@ -139,7 +139,8 @@ Phase 6 extends monitoring and delivery into operational automation:
 4. **Batch 6.3**: [Release gate integrity and artifact auditability](docs/reports/phase-6/batch-6.3-release-gate-integrity-and-artifact-auditability.md)
 5. **Batch 6.4**: [CI slimming and selector determinism](docs/reports/phase-6/batch-6.4-ci-slimming-and-selector-determinism.md)
 6. **Batch 6.5**: [Airflow operational reliability hardening](docs/reports/phase-6/batch-6.5-airflow-operational-reliability-hardening.md)
-7. **End Report**: [Phase 6 end report](docs/reports/phase-6/phase-6-end-report.md)
+7. **Batch 6.6**: [Release concurrency and rollback automation](docs/reports/phase-6/batch-6.6-release-concurrency-and-rollback-automation.md)
+8. **End Report**: [Phase 6 end report](docs/reports/phase-6/phase-6-end-report.md)
 
 ### Project Governance
 - [Standing instructions and process documentation](docs/project-governance/standing-instructions.md)

@@ -7,6 +7,7 @@ from unittest.mock import patch
 from revops_funnel.deployment_ops import (
     build_dbt_selector,
     create_deployment_promotion_report,
+    create_deployment_rollback_report,
     refresh_runtime_caches,
     resolve_selector_decision,
     write_cache_refresh_report,
@@ -115,3 +116,30 @@ def test_write_selector_decision_report_creates_json(tmp_path: Path) -> None:
     write_selector_decision_report(report, output)
 
     assert output.exists()
+
+
+def test_create_deployment_rollback_report_uses_promotion_context(tmp_path: Path) -> None:
+    promotion_report = tmp_path / "promotion.json"
+    rollback_report = tmp_path / "rollback.json"
+    promotion_report.write_text(
+        (
+            '{"source_base_ref": "origin/master", '
+            '"git_commit_sha": "deadbeef", '
+            '"workflow_run_id": "12345"}'
+        ),
+        encoding="utf-8",
+    )
+
+    report = create_deployment_rollback_report(
+        release_id="release-007",
+        rollback_reason="parity-failed",
+        rollback_trigger="github-actions",
+        promotion_report_path=promotion_report,
+        output_path=rollback_report,
+    )
+
+    assert rollback_report.exists()
+    assert report.release_id == "release-007"
+    assert report.git_commit_sha == "deadbeef"
+    assert report.workflow_run_id == "12345"
+    assert report.rollback_actions

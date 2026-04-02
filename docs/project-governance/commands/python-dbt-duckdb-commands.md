@@ -394,3 +394,16 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: build path is available and selector decision resolved
   - Expected output: scoped dbt test execution plus selector artifact update
   - Recovery: resolve selector strict-mode failures before rerunning CI
+
+## Phase 6 Batch 6.6 execution entries
+
+### PDD-034
+- What: python scripts/ops/rollback_deployment.py --promotion-report artifacts/promotions/deployment_promotion.json --output artifacts/promotions/deployment_rollback.json
+- Why: generate machine-readable rollback context when release workflow fails
+- Who: project maintainer
+- When: 2026-04-02, Phase 6 Batch 6.6 implementation
+- Where: CI release workflow failure path
+- How:
+  - Preconditions: promotion report exists; rollback reason/trigger context provided via environment or arguments
+  - Expected output: rollback manifest JSON with source release metadata and recommended rollback actions
+  - Recovery: ensure promotion artifact exists and rerun rollback step

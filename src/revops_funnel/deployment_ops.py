@@ -23,6 +23,7 @@ DEFAULT_CACHE_PATHS = (
 )
 DEFAULT_CACHE_REFRESH_OUTPUT = Path("artifacts/cache/cache_refresh.json")
 DEFAULT_PROMOTION_OUTPUT = Path("artifacts/promotions/deployment_promotion.json")
+DEFAULT_ROLLBACK_OUTPUT = Path("artifacts/promotions/deployment_rollback.json")
 
 
 @dataclass(frozen=True)
@@ -47,6 +48,21 @@ class DeploymentPromotionReport:
     cache_refresh_report_sha256: str
     release_gate_status: str
     promoted_at_utc: str
+
+
+@dataclass(frozen=True)
+class DeploymentRollbackReport:
+    release_id: str
+    environment: str
+    rollback_trigger: str
+    rollback_reason: str
+    promotion_report_path: str
+    promotion_report_sha256: str
+    source_base_ref: str
+    git_commit_sha: str
+    workflow_run_id: str
+    rollback_actions: list[str]
+    rolled_back_at_utc: str
 
 
 @dataclass(frozen=True)
@@ -271,6 +287,41 @@ def create_deployment_promotion_report(
         cache_refresh_report_sha256=_sha256_file(cache_path),
         release_gate_status="passed",
         promoted_at_utc=datetime.now(timezone.utc).isoformat(),
+    )
+    write_json_artifact(str(output_path), asdict(report))
+    return report
+
+
+def create_deployment_rollback_report(
+    release_id: str,
+    rollback_reason: str,
+    rollback_trigger: str,
+    promotion_report_path: str | Path,
+    environment: str = "production",
+    output_path: str | Path = DEFAULT_ROLLBACK_OUTPUT,
+) -> DeploymentRollbackReport:
+    promotion_path = Path(promotion_report_path)
+    if not promotion_path.exists():
+        raise FileNotFoundError(f"Promotion report not found: {promotion_path}")
+
+    promotion_payload = _load_json_payload(promotion_path)
+    report = DeploymentRollbackReport(
+        release_id=release_id,
+        environment=environment,
+        rollback_trigger=rollback_trigger,
+        rollback_reason=rollback_reason,
+        promotion_report_path=str(promotion_path),
+        promotion_report_sha256=_sha256_file(promotion_path),
+        source_base_ref=str(promotion_payload.get("source_base_ref", "unknown")),
+        git_commit_sha=str(promotion_payload.get("git_commit_sha", "unknown")),
+        workflow_run_id=str(promotion_payload.get("workflow_run_id", "unknown")),
+        rollback_actions=[
+            "Disable promotion flag for subsequent runs",
+            "Re-run release-readiness and strict parity checks",
+            "Redeploy last known good release artifact",
+            "Attach rollback report to incident ticket and notify stakeholders",
+        ],
+        rolled_back_at_utc=datetime.now(timezone.utc).isoformat(),
     )
     write_json_artifact(str(output_path), asdict(report))
     return report

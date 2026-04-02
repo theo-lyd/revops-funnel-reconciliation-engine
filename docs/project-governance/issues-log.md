@@ -334,3 +334,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: install Airflow dev dependencies in CI/runtime environments where DAG execution tests are required
 - Alternative resolution options: add static text-based DAG checks only, but that would reduce behavioral confidence
 - Verification evidence: `make lint` passed; `make test` passed with 26 tests and 1 expected skip
+
+### Issue ID: ISS-030
+- Phase and batch: Phase 6 Batch 6.6 - Release concurrency and rollback automation
+- Date observed: 2026-04-02
+- Where it occurred: `tests/test_deployment_ops.py` during lint validation
+- Symptom: Ruff flagged import-order drift after rollback test additions
+- Root cause: helper import list order did not match tool expectations
+- Resolution: reordered imports and reran lint/test gates
+- How to avoid: run `ruff check` immediately after extending test imports
+- Alternative resolution options: use `ruff check --fix` on changed test files pre-gate
+- Verification evidence: `make lint` and `make test` passed with 27 tests and 1 expected skip

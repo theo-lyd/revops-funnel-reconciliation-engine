@@ -8,13 +8,19 @@ on:
         required: false
         default: manual-release
 
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
 jobs:
   promote:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     env:
       PARITY_REPORT_PATH: artifacts/parity/metric_parity_report.json
       CACHE_REFRESH_REPORT_PATH: artifacts/cache/cache_refresh.json
       DEPLOYMENT_PROMOTION_REPORT_PATH: artifacts/promotions/deployment_promotion.json
+      DEPLOYMENT_ROLLBACK_REPORT_PATH: artifacts/promotions/deployment_rollback.json
 
     steps:
       - name: Checkout
@@ -86,6 +92,17 @@ jobs:
             --cache-refresh-report "$CACHE_REFRESH_REPORT_PATH" \
             --output "$DEPLOYMENT_PROMOTION_REPORT_PATH"
 
+      - name: Create rollback manifest on failure
+        if: failure()
+        env:
+          RELEASE_ID: ${{ inputs.release_id }}
+          ROLLBACK_REASON: release-workflow-failure
+          ROLLBACK_TRIGGER: github-actions
+        run: |
+          python scripts/ops/rollback_deployment.py \
+            --promotion-report "$DEPLOYMENT_PROMOTION_REPORT_PATH" \
+            --output "$DEPLOYMENT_ROLLBACK_REPORT_PATH"
+
       - name: Upload release gate artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -95,3 +112,5 @@ jobs:
             artifacts/parity/metric_parity_report.json
             artifacts/cache/cache_refresh.json
             artifacts/promotions/deployment_promotion.json
+            artifacts/promotions/deployment_rollback.json
+          if-no-files-found: ignore

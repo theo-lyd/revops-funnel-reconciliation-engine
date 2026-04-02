@@ -6,7 +6,7 @@ DBT_THREADS_LOCAL ?= 1
 DBT_THREADS_PROD ?= 4
 DBT_BASE_REF ?= origin/master
 
-.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-build-changed dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-test-changed dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle refresh-caches promote-deployment production-stop-gate production-stop-gate-strict query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness metabase-setup streamlit-dev anomaly-check insights-generate
+.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-build-changed dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-test-changed dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle refresh-caches promote-deployment rollback-deployment production-stop-gate production-stop-gate-strict query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness metabase-setup streamlit-dev anomaly-check insights-generate
 
 setup:
 	$(PIP) install "apache-airflow==$(AIRFLOW_VERSION)" --constraint "$(AIRFLOW_CONSTRAINTS)"
@@ -95,6 +95,9 @@ refresh-caches:
 
 promote-deployment:
 	$(PYTHON) scripts/ops/promote_deployment.py
+
+rollback-deployment:
+	$(PYTHON) scripts/ops/rollback_deployment.py
 
 production-stop-gate:
 	$(MAKE) quality-gate
