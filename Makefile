@@ -17,6 +17,13 @@ COST_BASELINE_REPORT_PATH ?= artifacts/performance/query_cost_attribution_baseli
 COST_REGRESSION_REPORT_PATH ?= artifacts/performance/query_cost_regression_report.json
 COST_MAX_CREDITS_REGRESSION_PCT ?= 20
 COST_MAX_ELAPSED_REGRESSION_PCT ?= 25
+PHASE82_ENABLE ?= false
+PHASE82_TEAM_TAG_MAPPING ?=
+PHASE82_BUDGET_THRESHOLD_PCT ?= 80
+PHASE82_STAGING_TO_PROD_MULTIPLIER ?= 5.0
+PHASE82_WAREHOUSE_DAILY_BUDGET_CREDITS ?= 100
+PHASE82_WAREHOUSE_CURRENT_DAILY_BURN ?= 45.6
+PHASE82_PROD_CURRENT_MONTHLY_COST ?= 0
 HEALTH_MAX_FRESHNESS_HOURS ?= 24
 HEALTH_MAX_JOB_DURATION_MINUTES ?= 120
 HEALTH_REPORT_PATH ?= artifacts/monitoring/health_report.json
@@ -35,7 +42,7 @@ ONCALL_PRIMARY_ENDPOINT ?= pagerduty-primary
 ONCALL_SECONDARY_ENDPOINT ?= pagerduty-secondary
 ONCALL_TICKET_QUEUE ?= revops-platform
 
-.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-build-changed dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-test-changed dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle refresh-caches promote-deployment rollback-deployment production-stop-gate production-stop-gate-strict query-cost-attribution query-cost-attribution-strict query-cost-regression query-cost-regression-strict health-checks health-checks-strict dashboards dashboards-strict oncall-runbooks oncall-runbooks-strict query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness metabase-setup streamlit-dev anomaly-check insights-generate reporting-pack
+.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-build-changed dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-test-changed dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle refresh-caches promote-deployment rollback-deployment production-stop-gate production-stop-gate-strict query-cost-attribution query-cost-attribution-strict query-cost-regression query-cost-regression-strict phase82-cost-forecast phase82-pattern-analysis phase82-phase-attribution phase82-cross-env-impact phase82-pr-impact phase82-warehouse-preflight phase82-runbook-gen phase82-suite health-checks health-checks-strict dashboards dashboards-strict oncall-runbooks oncall-runbooks-strict query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness metabase-setup streamlit-dev anomaly-check insights-generate reporting-pack
 
 setup:
 	$(PIP) install "apache-airflow==$(AIRFLOW_VERSION)" --constraint "$(AIRFLOW_CONSTRAINTS)"
@@ -151,6 +158,36 @@ query-cost-regression:
 
 query-cost-regression-strict:
 	$(PYTHON) scripts/ops/check_query_cost_regression.py --strict-baseline --current-report artifacts/performance/query_cost_attribution_report.json --baseline-report $(COST_BASELINE_REPORT_PATH) --max-credits-regression-pct $(COST_MAX_CREDITS_REGRESSION_PCT) --max-elapsed-regression-pct $(COST_MAX_ELAPSED_REGRESSION_PCT) --output $(COST_REGRESSION_REPORT_PATH)
+
+phase82-cost-forecast:
+	$(PYTHON) scripts/ops/forecast_query_cost_budget.py --attribution-report artifacts/performance/query_cost_attribution_report.json --team-owner-tag-mapping '$(PHASE82_TEAM_TAG_MAPPING)' --budget-threshold-pct $(PHASE82_BUDGET_THRESHOLD_PCT) --staging-to-prod-multiplier $(PHASE82_STAGING_TO_PROD_MULTIPLIER) --output artifacts/performance/query_cost_forecast_report.json
+
+phase82-pattern-analysis:
+	$(PYTHON) scripts/ops/analyze_query_patterns.py --attribution-report artifacts/performance/query_cost_attribution_report.json --output artifacts/performance/query_pattern_analysis.json
+
+phase82-phase-attribution:
+	$(PYTHON) scripts/ops/generate_execution_phase_attribution.py --dbt-budget-report artifacts/performance/dbt_build_prod_report.json --output artifacts/performance/execution_phase_attribution.json
+
+phase82-cross-env-impact:
+	$(PYTHON) scripts/ops/estimate_cross_environment_impact.py --staging-report artifacts/performance/query_cost_attribution_report.json --prod-current $(PHASE82_PROD_CURRENT_MONTHLY_COST) --staging-to-prod-multiplier $(PHASE82_STAGING_TO_PROD_MULTIPLIER) --output artifacts/performance/cross_environment_forecast.json
+
+phase82-pr-impact:
+	$(PYTHON) scripts/ops/analyze_pr_cost_impact.py --baseline-monthly-cost $${BASELINE_MONTHLY_COST:-500} --output artifacts/performance/pr_cost_impact_score.json
+
+phase82-warehouse-preflight:
+	$(PYTHON) scripts/ops/emit_warehouse_cost_estimate.py --daily-budget-credits $(PHASE82_WAREHOUSE_DAILY_BUDGET_CREDITS) --current-daily-burn $(PHASE82_WAREHOUSE_CURRENT_DAILY_BURN) --output artifacts/performance/warehouse_cost_estimate.json
+
+phase82-runbook-gen:
+	$(PYTHON) scripts/ops/generate_cost_optimization_runbooks.py --pattern-analysis artifacts/performance/query_pattern_analysis.json --runbook-approval-required --output artifacts/performance/optimization_runbooks.json
+
+phase82-suite:
+	$(MAKE) phase82-cost-forecast
+	$(MAKE) phase82-pattern-analysis
+	$(MAKE) phase82-phase-attribution
+	$(MAKE) phase82-cross-env-impact
+	$(MAKE) phase82-pr-impact
+	$(MAKE) phase82-warehouse-preflight
+	$(MAKE) phase82-runbook-gen
 
 health-checks:
 	$(PYTHON) scripts/ops/run_health_checks.py --max-freshness-hours $(HEALTH_MAX_FRESHNESS_HOURS) --max-job-duration-minutes $(HEALTH_MAX_JOB_DURATION_MINUTES) --output $(HEALTH_REPORT_PATH)

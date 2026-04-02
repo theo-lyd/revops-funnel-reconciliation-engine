@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+from typing import Any
 
 from revops_funnel.artifacts import write_json_artifact
 from revops_funnel.cost_observability import _estimate_prod_cost_from_staging
@@ -46,7 +47,10 @@ def parse_args() -> argparse.Namespace:
 
 def _read_json(path: Path) -> dict[str, object]:
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(payload, dict):
+            return payload
+        return {}
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
 
@@ -56,16 +60,17 @@ def main() -> int:
 
     report_path = Path(args.staging_report)
     if not report_path.exists():
-        forecast = {
+        skipped_forecast: dict[str, Any] = {
             "status": "skipped",
             "reason": f"Staging report not found: {report_path}",
         }
-        write_json_artifact(args.output, forecast)
-        print(json.dumps(forecast, indent=2, sort_keys=True))
+        write_json_artifact(args.output, skipped_forecast)
+        print(json.dumps(skipped_forecast, indent=2, sort_keys=True))
         return 0
 
     staging_report = _read_json(report_path)
-    totals = staging_report.get("totals", {})
+    totals_obj = staging_report.get("totals", {})
+    totals = totals_obj if isinstance(totals_obj, dict) else {}
 
     staging_monthly = float(totals.get("credits_used", 0.0))
     staging_trend = 0.5  # Placeholder: would compute from historical
@@ -82,7 +87,7 @@ def main() -> int:
     else:
         forecast_delta_pct = 0.0
 
-    forecast = {
+    forecast_payload: dict[str, Any] = {
         "status": "ok",
         "staging_current_monthly": round(staging_monthly, 2),
         "staging_to_prod_multiplier": args.staging_to_prod_multiplier,
@@ -94,8 +99,8 @@ def main() -> int:
         "confidence": round(confidence, 2),
     }
 
-    write_json_artifact(args.output, forecast)
-    print(json.dumps(forecast, indent=2, sort_keys=True))
+    write_json_artifact(args.output, forecast_payload)
+    print(json.dumps(forecast_payload, indent=2, sort_keys=True))
     return 0
 
 

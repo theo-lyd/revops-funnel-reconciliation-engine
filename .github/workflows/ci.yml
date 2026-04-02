@@ -80,6 +80,14 @@ jobs:
   deployment-integration:
     needs: quality
     runs-on: ubuntu-latest
+    env:
+      PHASE82_ENABLE: ${{ vars.PHASE82_ENABLE || 'false' }}
+      PHASE82_TEAM_TAG_MAPPING: ${{ vars.PHASE82_TEAM_TAG_MAPPING || '' }}
+      PHASE82_BUDGET_THRESHOLD_PCT: ${{ vars.PHASE82_BUDGET_THRESHOLD_PCT || '80' }}
+      PHASE82_STAGING_TO_PROD_MULTIPLIER: ${{ vars.PHASE82_STAGING_TO_PROD_MULTIPLIER || '5.0' }}
+      PHASE82_WAREHOUSE_DAILY_BUDGET_CREDITS: ${{ vars.PHASE82_WAREHOUSE_DAILY_BUDGET_CREDITS || '100' }}
+      PHASE82_WAREHOUSE_CURRENT_DAILY_BURN: ${{ vars.PHASE82_WAREHOUSE_CURRENT_DAILY_BURN || '45.6' }}
+      PHASE82_PROD_CURRENT_MONTHLY_COST: ${{ vars.PHASE82_PROD_CURRENT_MONTHLY_COST || '0' }}
 
     steps:
       - name: Checkout
@@ -167,6 +175,43 @@ jobs:
             --max-elapsed-regression-pct 25 \
             --output artifacts/performance/query_cost_regression_report.json
 
+      - name: Run Phase 8.2 enhanced cost signals (safe mode)
+        if: env.PHASE82_ENABLE == 'true'
+        run: |
+          python scripts/ops/forecast_query_cost_budget.py \
+            --attribution-report artifacts/performance/query_cost_attribution_report.json \
+            --team-owner-tag-mapping "$PHASE82_TEAM_TAG_MAPPING" \
+            --budget-threshold-pct "$PHASE82_BUDGET_THRESHOLD_PCT" \
+            --staging-to-prod-multiplier "$PHASE82_STAGING_TO_PROD_MULTIPLIER" \
+            --output artifacts/performance/query_cost_forecast_report.json
+
+          python scripts/ops/analyze_query_patterns.py \
+            --attribution-report artifacts/performance/query_cost_attribution_report.json \
+            --output artifacts/performance/query_pattern_analysis.json
+
+          python scripts/ops/generate_execution_phase_attribution.py \
+            --dbt-budget-report artifacts/performance/dbt_build_prod_report.json \
+            --output artifacts/performance/execution_phase_attribution.json
+
+          python scripts/ops/estimate_cross_environment_impact.py \
+            --staging-report artifacts/performance/query_cost_attribution_report.json \
+            --prod-current "$PHASE82_PROD_CURRENT_MONTHLY_COST" \
+            --staging-to-prod-multiplier "$PHASE82_STAGING_TO_PROD_MULTIPLIER" \
+            --output artifacts/performance/cross_environment_forecast.json
+
+          python scripts/ops/emit_warehouse_cost_estimate.py \
+            --daily-budget-credits "$PHASE82_WAREHOUSE_DAILY_BUDGET_CREDITS" \
+            --current-daily-burn "$PHASE82_WAREHOUSE_CURRENT_DAILY_BURN" \
+            --output artifacts/performance/warehouse_cost_estimate.json
+
+          python scripts/ops/analyze_pr_cost_impact.py \
+            --baseline-monthly-cost 500 \
+            --output artifacts/performance/pr_cost_impact_score.json
+
+          python scripts/ops/generate_cost_optimization_runbooks.py \
+            --pattern-analysis artifacts/performance/query_pattern_analysis.json \
+            --output artifacts/performance/optimization_runbooks.json
+
       - name: Run production health checks (safe skip mode)
         run: |
           python scripts/ops/run_health_checks.py \
@@ -232,6 +277,13 @@ jobs:
             artifacts/promotions/rollback_dead_letter_escalation.json
             artifacts/performance/query_cost_attribution_report.json
             artifacts/performance/query_cost_regression_report.json
+            artifacts/performance/query_cost_forecast_report.json
+            artifacts/performance/query_pattern_analysis.json
+            artifacts/performance/execution_phase_attribution.json
+            artifacts/performance/cross_environment_forecast.json
+            artifacts/performance/warehouse_cost_estimate.json
+            artifacts/performance/pr_cost_impact_score.json
+            artifacts/performance/optimization_runbooks.json
             artifacts/monitoring/health_report.json
             artifacts/monitoring/operational_dashboard.json
             artifacts/runbooks/oncall_runbook_report.json

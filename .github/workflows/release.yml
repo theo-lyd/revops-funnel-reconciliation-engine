@@ -30,6 +30,13 @@ jobs:
       QUERY_COST_ATTRIBUTION_REPORT_PATH: artifacts/performance/query_cost_attribution_report.json
       QUERY_COST_BASELINE_REPORT_PATH: artifacts/performance/query_cost_attribution_baseline.json
       QUERY_COST_REGRESSION_REPORT_PATH: artifacts/performance/query_cost_regression_report.json
+      PHASE82_ENABLE: ${{ vars.PHASE82_ENABLE || 'false' }}
+      PHASE82_TEAM_TAG_MAPPING: ${{ vars.PHASE82_TEAM_TAG_MAPPING || '' }}
+      PHASE82_BUDGET_THRESHOLD_PCT: ${{ vars.PHASE82_BUDGET_THRESHOLD_PCT || '80' }}
+      PHASE82_STAGING_TO_PROD_MULTIPLIER: ${{ vars.PHASE82_STAGING_TO_PROD_MULTIPLIER || '5.0' }}
+      PHASE82_WAREHOUSE_DAILY_BUDGET_CREDITS: ${{ vars.PHASE82_WAREHOUSE_DAILY_BUDGET_CREDITS || '100' }}
+      PHASE82_WAREHOUSE_CURRENT_DAILY_BURN: ${{ vars.PHASE82_WAREHOUSE_CURRENT_DAILY_BURN || '45.6' }}
+      PHASE82_PROD_CURRENT_MONTHLY_COST: ${{ vars.PHASE82_PROD_CURRENT_MONTHLY_COST || '0' }}
       HEALTH_REPORT_PATH: artifacts/monitoring/health_report.json
       DASHBOARD_OUTPUT_PATH: artifacts/monitoring/operational_dashboard.json
       ONCALL_RUNBOOK_REPORT_PATH: artifacts/runbooks/oncall_runbook_report.json
@@ -187,6 +194,43 @@ jobs:
             --max-freshness-hours "$HEALTH_MAX_FRESHNESS_HOURS" \
             --max-job-duration-minutes "$HEALTH_MAX_JOB_DURATION_MINUTES" \
             --output "$HEALTH_REPORT_PATH"
+
+      - name: Run Phase 8.2 enhanced cost signals (opt-in)
+        if: env.PHASE82_ENABLE == 'true'
+        run: |
+          python scripts/ops/forecast_query_cost_budget.py \
+            --attribution-report "$QUERY_COST_ATTRIBUTION_REPORT_PATH" \
+            --team-owner-tag-mapping "$PHASE82_TEAM_TAG_MAPPING" \
+            --budget-threshold-pct "$PHASE82_BUDGET_THRESHOLD_PCT" \
+            --staging-to-prod-multiplier "$PHASE82_STAGING_TO_PROD_MULTIPLIER" \
+            --output artifacts/performance/query_cost_forecast_report.json
+
+          python scripts/ops/analyze_query_patterns.py \
+            --attribution-report "$QUERY_COST_ATTRIBUTION_REPORT_PATH" \
+            --output artifacts/performance/query_pattern_analysis.json
+
+          python scripts/ops/generate_execution_phase_attribution.py \
+            --dbt-budget-report artifacts/performance/dbt_build_prod_report.json \
+            --output artifacts/performance/execution_phase_attribution.json
+
+          python scripts/ops/estimate_cross_environment_impact.py \
+            --staging-report "$QUERY_COST_ATTRIBUTION_REPORT_PATH" \
+            --prod-current "$PHASE82_PROD_CURRENT_MONTHLY_COST" \
+            --staging-to-prod-multiplier "$PHASE82_STAGING_TO_PROD_MULTIPLIER" \
+            --output artifacts/performance/cross_environment_forecast.json
+
+          python scripts/ops/emit_warehouse_cost_estimate.py \
+            --daily-budget-credits "$PHASE82_WAREHOUSE_DAILY_BUDGET_CREDITS" \
+            --current-daily-burn "$PHASE82_WAREHOUSE_CURRENT_DAILY_BURN" \
+            --output artifacts/performance/warehouse_cost_estimate.json
+
+          python scripts/ops/analyze_pr_cost_impact.py \
+            --baseline-monthly-cost 500 \
+            --output artifacts/performance/pr_cost_impact_score.json
+
+          python scripts/ops/generate_cost_optimization_runbooks.py \
+            --pattern-analysis artifacts/performance/query_pattern_analysis.json \
+            --output artifacts/performance/optimization_runbooks.json
 
       - name: Generate operational dashboards
         run: |

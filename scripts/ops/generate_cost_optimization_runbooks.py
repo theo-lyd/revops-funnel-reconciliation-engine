@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+from typing import Any
 
 from revops_funnel.artifacts import write_json_artifact
 
@@ -38,9 +39,23 @@ def parse_args() -> argparse.Namespace:
 
 def _read_json(path: Path) -> dict[str, object]:
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(payload, dict):
+            return payload
+        return {}
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
+
+
+def _coerce_float(value: object, default: float = 0.0) -> float:
+    if isinstance(value, int | float):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return default
+    return default
 
 
 def main() -> int:
@@ -58,7 +73,8 @@ def main() -> int:
         return 0
 
     analysis = _read_json(analysis_path)
-    patterns = analysis.get("query_patterns", [])
+    raw_patterns = analysis.get("query_patterns", [])
+    patterns = raw_patterns if isinstance(raw_patterns, list) else []
 
     runbooks_list: list[dict[str, object]] = []
 
@@ -68,15 +84,16 @@ def main() -> int:
 
         query_id = str(pattern.get("query_id", ""))
         query_tag = str(pattern.get("query_tag", ""))
-        hints = pattern.get("optimization_hints", [])
+        raw_hints = pattern.get("optimization_hints", [])
+        hints = raw_hints if isinstance(raw_hints, list) else []
 
         for hint in hints:
             if not isinstance(hint, dict):
                 continue
 
             hint_text = str(hint.get("hint", ""))
-            estimated_savings = float(hint.get("estimated_credits_saved_monthly", 0.0))
-            effort_hours = float(hint.get("effort_hours", 1.0))
+            estimated_savings = _coerce_float(hint.get("estimated_credits_saved_monthly", 0.0), 0.0)
+            effort_hours = _coerce_float(hint.get("effort_hours", 1.0), 1.0)
 
             runbook: dict[str, object] = {
                 "query_id": query_id,
@@ -96,18 +113,20 @@ def main() -> int:
 
             runbooks_list.append(runbook)
 
-    sorted_runbooks = sorted(
+    sorted_runbooks: list[dict[str, object]] = sorted(
         runbooks_list,
-        key=lambda x: float(x.get("roi", 0)),
+        key=lambda x: _coerce_float(x.get("roi", 0.0), 0.0),
         reverse=True,
     )
 
-    runbooks_output = {
+    total_savings = sum(
+        _coerce_float(item.get("expected_savings_monthly", 0.0), 0.0) for item in sorted_runbooks
+    )
+
+    runbooks_output: dict[str, Any] = {
         "status": "ok",
         "generated_count": len(sorted_runbooks),
-        "total_potential_savings_monthly": round(
-            sum(float(r.get("expected_savings_monthly", 0)) for r in sorted_runbooks), 2
-        ),
+        "total_potential_savings_monthly": round(total_savings, 2),
         "runbooks": sorted_runbooks,
     }
 

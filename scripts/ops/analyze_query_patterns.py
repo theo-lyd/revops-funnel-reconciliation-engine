@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+from typing import Any
 
 from revops_funnel.artifacts import write_json_artifact
 from revops_funnel.cost_observability import _bytes_per_result_row
@@ -44,9 +45,23 @@ def parse_args() -> argparse.Namespace:
 
 def _read_json(path: Path) -> dict[str, object]:
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(payload, dict):
+            return payload
+        return {}
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
+
+
+def _coerce_float(value: object, default: float = 0.0) -> float:
+    if isinstance(value, int | float):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return default
+    return default
 
 
 def main() -> int:
@@ -54,18 +69,19 @@ def main() -> int:
 
     report_path = Path(args.attribution_report)
     if not report_path.exists():
-        analysis = {
+        skipped_analysis: dict[str, Any] = {
             "status": "skipped",
             "reason": f"Attribution report not found: {report_path}",
             "query_patterns": [],
             "optimization_opportunities_by_roi": [],
         }
-        write_json_artifact(args.output, analysis)
-        print(json.dumps(analysis, indent=2, sort_keys=True))
+        write_json_artifact(args.output, skipped_analysis)
+        print(json.dumps(skipped_analysis, indent=2, sort_keys=True))
         return 0
 
     attribution = _read_json(report_path)
-    top_queries = attribution.get("top_expensive_queries", [])
+    raw_top_queries = attribution.get("top_expensive_queries", [])
+    top_queries = raw_top_queries if isinstance(raw_top_queries, list) else []
 
     query_patterns: list[dict[str, object]] = []
     opportunities: list[dict[str, object]] = []
@@ -77,13 +93,14 @@ def main() -> int:
         query_id = str(query.get("query_id", ""))
         query_tag = str(query.get("query_tag", ""))
         bytes_scanned = int(query.get("bytes_scanned", 0))
-        elapsed_seconds = float(query.get("elapsed_seconds", 0.0))
-        credits_used = float(query.get("credits_used", 0.0))
+        elapsed_seconds = _coerce_float(query.get("elapsed_seconds", 0.0), 0.0)
+        credits_used = _coerce_float(query.get("credits_used", 0.0), 0.0)
 
         # Estimate result rows (simple heuristic: assume 100 bytes per result row on average)
         estimated_result_rows = max(1, bytes_scanned // 100)
         bytes_per_row = _bytes_per_result_row(bytes_scanned, estimated_result_rows)
 
+        hints: list[dict[str, object]] = []
         pattern: dict[str, object] = {
             "query_id": query_id,
             "query_tag": query_tag,
@@ -92,15 +109,15 @@ def main() -> int:
             "bytes_per_row": round(bytes_per_row, 2),
             "elapsed_seconds": round(elapsed_seconds, 2),
             "credits_used": round(credits_used, 2),
-            "optimization_hints": [],
+            "optimization_hints": hints,
         }
 
-        # High bytes per row suggests data explosion (potential full scan)
-        if bytes_per_row > 1_000_000:
+        # High bytes per row or high absolute cost suggests data explosion (potential full scan)
+        if bytes_per_row > 1_000_000 or (credits_used >= 15.0 and bytes_scanned >= 100_000):
             hint_msg = (
                 "Extremely high bytes-per-row ratio; likely full table scan or data explosion"
             )
-            pattern["optimization_hints"].append(
+            hints.append(
                 {
                     "hint": hint_msg,
                     "confidence": "high",
@@ -119,19 +136,21 @@ def main() -> int:
 
         query_patterns.append(pattern)
 
-    analysis = {
+    ranked_opportunities: list[dict[str, object]] = sorted(
+        opportunities,
+        key=lambda x: _coerce_float(x.get("roi_credits_per_effort_hour", 0.0), 0.0),
+        reverse=True,
+    )
+
+    analysis_payload: dict[str, Any] = {
         "status": "ok",
         "threshold_sigma": args.peer_deviation_threshold_sigma,
         "query_patterns": query_patterns,
-        "optimization_opportunities_by_roi": sorted(
-            opportunities,
-            key=lambda x: float(x.get("roi_credits_per_effort_hour", 0)),
-            reverse=True,
-        ),
+        "optimization_opportunities_by_roi": ranked_opportunities,
     }
 
-    write_json_artifact(args.output, analysis)
-    print(json.dumps(analysis, indent=2, sort_keys=True))
+    write_json_artifact(args.output, analysis_payload)
+    print(json.dumps(analysis_payload, indent=2, sort_keys=True))
     return 0
 
 

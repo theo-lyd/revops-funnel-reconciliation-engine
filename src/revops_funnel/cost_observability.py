@@ -325,7 +325,7 @@ def _forecast_end_of_period_cost(
         daily_rate = current_monthly_burn / days_elapsed if days_elapsed > 0 else 0.0
         remaining_days = days_in_period - days_elapsed
         forecast = current_monthly_burn + (daily_rate * remaining_days)
-        return (forecast, current_monthly_burn)
+        return (forecast, 0.75)
 
     slope, intercept = _compute_trend_line(daily_costs)
     remaining_days = days_in_period - days_elapsed
