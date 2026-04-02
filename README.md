@@ -148,6 +148,7 @@ Phase 7 continues with authentication hardening, access controls, and controlled
 1. **Plan**: [Phase 7 implementation plan](docs/reports/phase-7/PHASE-7-PLAN.md)
 2. **Batch 7.1**: [Snowflake key-pair auth and release access controls](docs/reports/phase-7/batch-7.1-keypair-auth-and-release-access-controls.md)
 3. **Batch 7.2**: [Controlled rollback execution and deployment integration validation](docs/reports/phase-7/batch-7.2-controlled-rollback-execution-and-integration-validation.md)
+4. **Batch 7.3**: [Rollback incident dispatch and execution access enforcement](docs/reports/phase-7/batch-7.3-rollback-incident-dispatch-and-access-enforcement.md)
 
 ### Project Governance
 - [Standing instructions and process documentation](docs/project-governance/standing-instructions.md)

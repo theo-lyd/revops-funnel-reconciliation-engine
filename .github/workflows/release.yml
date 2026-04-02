@@ -23,6 +23,8 @@ jobs:
       DEPLOYMENT_PROMOTION_REPORT_PATH: artifacts/promotions/deployment_promotion.json
       DEPLOYMENT_ROLLBACK_REPORT_PATH: artifacts/promotions/deployment_rollback.json
       DEPLOYMENT_ROLLBACK_EXECUTION_REPORT_PATH: artifacts/promotions/deployment_rollback_execution.json
+      DEPLOYMENT_ROLLBACK_INCIDENT_PAYLOAD_PATH: artifacts/promotions/rollback_incident_payload.json
+      DEPLOYMENT_ROLLBACK_INCIDENT_DISPATCH_REPORT_PATH: artifacts/promotions/rollback_incident_dispatch.json
 
     permissions:
       contents: read
@@ -156,6 +158,7 @@ jobs:
         if: failure()
         env:
           ROLLBACK_EXECUTION_ENABLED: ${{ vars.ROLLBACK_EXECUTION_ENABLED || 'false' }}
+          RELEASE_ALLOWED_ACTORS: ${{ secrets.RELEASE_ALLOWED_ACTORS }}
         run: |
           MODE_FLAG=""
           if [[ "$ROLLBACK_EXECUTION_ENABLED" == "true" ]]; then
@@ -168,8 +171,26 @@ jobs:
           python scripts/ops/execute_rollback_playbook.py \
             --rollback-report "$DEPLOYMENT_ROLLBACK_REPORT_PATH" \
             --environment production \
+            --require-release-access \
             --output "$DEPLOYMENT_ROLLBACK_EXECUTION_REPORT_PATH" \
             $MODE_FLAG
+
+      - name: Dispatch rollback incident notification on failure
+        if: failure()
+        env:
+          ROLLBACK_INCIDENT_WEBHOOK_URL: ${{ secrets.ROLLBACK_INCIDENT_WEBHOOK_URL }}
+          ROLLBACK_INCIDENT_WEBHOOK_TOKEN: ${{ secrets.ROLLBACK_INCIDENT_WEBHOOK_TOKEN }}
+          ROLLBACK_INCIDENT_STRICT: ${{ vars.ROLLBACK_INCIDENT_STRICT || 'false' }}
+        run: |
+          STRICT_FLAG=""
+          if [[ "$ROLLBACK_INCIDENT_STRICT" == "true" ]]; then
+            STRICT_FLAG="--strict"
+          fi
+
+          python scripts/ops/dispatch_rollback_incident.py \
+            --incident-payload "$DEPLOYMENT_ROLLBACK_INCIDENT_PAYLOAD_PATH" \
+            --output "$DEPLOYMENT_ROLLBACK_INCIDENT_DISPATCH_REPORT_PATH" \
+            $STRICT_FLAG
 
       - name: Upload release gate artifacts
         if: always()
@@ -184,4 +205,5 @@ jobs:
             artifacts/promotions/deployment_rollback_execution.json
             artifacts/promotions/release_lock.json
             artifacts/promotions/rollback_incident_payload.json
+            artifacts/promotions/rollback_incident_dispatch.json
           if-no-files-found: ignore

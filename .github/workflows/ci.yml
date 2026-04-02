@@ -129,6 +129,12 @@ jobs:
             --execute \
             --output artifacts/promotions/deployment_rollback_execution_controlled.json
 
+      - name: Dispatch rollback incident (safe skip mode)
+        run: |
+          python scripts/ops/dispatch_rollback_incident.py \
+            --incident-payload artifacts/promotions/rollback_incident_payload.json \
+            --output artifacts/promotions/rollback_incident_dispatch.json
+
       - name: Upload deployment integration artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -140,6 +146,7 @@ jobs:
             artifacts/promotions/deployment_rollback_execution_controlled.json
             artifacts/promotions/release_lock.json
             artifacts/promotions/rollback_incident_payload.json
+            artifacts/promotions/rollback_incident_dispatch.json
           if-no-files-found: ignore
 
   production-parity-check:

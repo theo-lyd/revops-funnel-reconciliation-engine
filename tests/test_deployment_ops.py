@@ -1,15 +1,20 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
+
+import requests
 
 from revops_funnel.deployment_ops import (
     build_dbt_selector,
     create_deployment_promotion_report,
     create_deployment_rollback_report,
+    dispatch_rollback_incident_payload,
     refresh_runtime_caches,
     resolve_selector_decision,
+    validate_release_actor_access,
     write_cache_refresh_report,
     write_selector_decision_report,
 )
@@ -143,3 +148,79 @@ def test_create_deployment_rollback_report_uses_promotion_context(tmp_path: Path
     assert report.git_commit_sha == "deadbeef"
     assert report.workflow_run_id == "12345"
     assert report.rollback_actions
+
+
+def test_validate_release_actor_access() -> None:
+    allowed, allowlist = validate_release_actor_access("alice,bob", "alice")
+    assert allowed is True
+    assert allowlist == ["alice", "bob"]
+
+    blocked, allowlist_blocked = validate_release_actor_access("alice,bob", "charlie")
+    assert blocked is False
+    assert allowlist_blocked == ["alice", "bob"]
+
+
+def test_dispatch_rollback_incident_payload_skips_without_webhook(tmp_path: Path) -> None:
+    payload = tmp_path / "rollback_incident_payload.json"
+    output = tmp_path / "rollback_incident_dispatch.json"
+    payload.write_text(
+        json.dumps({"release_id": "release-123", "environment": "production"}),
+        encoding="utf-8",
+    )
+
+    report = dispatch_rollback_incident_payload(
+        incident_payload_path=payload,
+        incident_webhook_url="",
+        output_path=output,
+    )
+
+    assert report.dispatch_status == "skipped"
+    assert report.incident_webhook_configured is False
+    assert output.exists()
+
+
+def test_dispatch_rollback_incident_payload_sends_webhook(tmp_path: Path) -> None:
+    payload = tmp_path / "rollback_incident_payload.json"
+    output = tmp_path / "rollback_incident_dispatch.json"
+    payload.write_text(
+        json.dumps({"release_id": "release-123", "environment": "production"}),
+        encoding="utf-8",
+    )
+
+    class _Response:
+        status_code = 202
+        text = "accepted"
+
+    with patch("revops_funnel.deployment_ops.requests.post", return_value=_Response()):
+        report = dispatch_rollback_incident_payload(
+            incident_payload_path=payload,
+            incident_webhook_url="https://example.com/webhook",
+            output_path=output,
+        )
+
+    assert report.dispatch_status == "sent"
+    assert report.http_status_code == 202
+    assert output.exists()
+
+
+def test_dispatch_rollback_incident_payload_handles_request_error(tmp_path: Path) -> None:
+    payload = tmp_path / "rollback_incident_payload.json"
+    output = tmp_path / "rollback_incident_dispatch.json"
+    payload.write_text(
+        json.dumps({"release_id": "release-123", "environment": "production"}),
+        encoding="utf-8",
+    )
+
+    with patch(
+        "revops_funnel.deployment_ops.requests.post",
+        side_effect=requests.RequestException("network down"),
+    ):
+        report = dispatch_rollback_incident_payload(
+            incident_payload_path=payload,
+            incident_webhook_url="https://example.com/webhook",
+            output_path=output,
+        )
+
+    assert report.dispatch_status == "failed"
+    assert "network down" in report.error_message
+    assert output.exists()

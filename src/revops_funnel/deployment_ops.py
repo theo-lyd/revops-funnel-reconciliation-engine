@@ -13,6 +13,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import cast
 
+import requests
+
 from revops_funnel.artifacts import write_json_artifact
 
 DEFAULT_DBT_SELECTOR = "path:models/staging path:models/intermediate path:models/marts"
@@ -25,6 +27,10 @@ DEFAULT_CACHE_REFRESH_OUTPUT = Path("artifacts/cache/cache_refresh.json")
 DEFAULT_PROMOTION_OUTPUT = Path("artifacts/promotions/deployment_promotion.json")
 DEFAULT_ROLLBACK_OUTPUT = Path("artifacts/promotions/deployment_rollback.json")
 DEFAULT_ROLLBACK_EXECUTION_OUTPUT = Path("artifacts/promotions/deployment_rollback_execution.json")
+DEFAULT_ROLLBACK_INCIDENT_PAYLOAD = Path("artifacts/promotions/rollback_incident_payload.json")
+DEFAULT_ROLLBACK_INCIDENT_DISPATCH_OUTPUT = Path(
+    "artifacts/promotions/rollback_incident_dispatch.json"
+)
 
 
 @dataclass(frozen=True)
@@ -78,6 +84,20 @@ class DeploymentRollbackExecutionReport:
     deferred_actions: list[str]
     generated_artifacts: list[str]
     executed_at_utc: str
+
+
+@dataclass(frozen=True)
+class RollbackIncidentDispatchReport:
+    release_id: str
+    environment: str
+    incident_webhook_configured: bool
+    dispatch_status: str
+    http_status_code: int | None
+    source_payload_path: str
+    source_payload_sha256: str
+    response_excerpt: str
+    error_message: str
+    dispatched_at_utc: str
 
 
 @dataclass(frozen=True)
@@ -410,6 +430,91 @@ def execute_deployment_rollback_playbook(
         deferred_actions=deferred_actions,
         generated_artifacts=generated_artifacts,
         executed_at_utc=datetime.now(timezone.utc).isoformat(),
+    )
+    write_json_artifact(str(output_path), asdict(report))
+    return report
+
+
+def validate_release_actor_access(
+    allowed_actors_raw: str,
+    actor: str,
+) -> tuple[bool, list[str]]:
+    allowed = [item.strip() for item in allowed_actors_raw.split(",") if item.strip()]
+    if not allowed:
+        return True, []
+    return actor in allowed, allowed
+
+
+def dispatch_rollback_incident_payload(
+    incident_payload_path: str | Path,
+    incident_webhook_url: str,
+    incident_webhook_token: str = "",
+    timeout_seconds: int = 10,
+    output_path: str | Path = DEFAULT_ROLLBACK_INCIDENT_DISPATCH_OUTPUT,
+) -> RollbackIncidentDispatchReport:
+    payload_path = Path(incident_payload_path)
+    if not payload_path.exists():
+        raise FileNotFoundError(f"Incident payload not found: {payload_path}")
+
+    payload = _load_json_payload(payload_path)
+    release_id = str(payload.get("release_id", "unknown-release"))
+    environment = str(payload.get("environment", "unknown"))
+    payload_hash = _sha256_file(payload_path)
+
+    if not incident_webhook_url.strip():
+        report = RollbackIncidentDispatchReport(
+            release_id=release_id,
+            environment=environment,
+            incident_webhook_configured=False,
+            dispatch_status="skipped",
+            http_status_code=None,
+            source_payload_path=str(payload_path),
+            source_payload_sha256=payload_hash,
+            response_excerpt="",
+            error_message="",
+            dispatched_at_utc=datetime.now(timezone.utc).isoformat(),
+        )
+        write_json_artifact(str(output_path), asdict(report))
+        return report
+
+    headers = {"Content-Type": "application/json"}
+    if incident_webhook_token.strip():
+        headers["Authorization"] = f"Bearer {incident_webhook_token.strip()}"
+
+    try:
+        response = requests.post(
+            incident_webhook_url,
+            json=payload,
+            headers=headers,
+            timeout=timeout_seconds,
+        )
+    except requests.RequestException as error:
+        report = RollbackIncidentDispatchReport(
+            release_id=release_id,
+            environment=environment,
+            incident_webhook_configured=True,
+            dispatch_status="failed",
+            http_status_code=None,
+            source_payload_path=str(payload_path),
+            source_payload_sha256=payload_hash,
+            response_excerpt="",
+            error_message=str(error),
+            dispatched_at_utc=datetime.now(timezone.utc).isoformat(),
+        )
+        write_json_artifact(str(output_path), asdict(report))
+        return report
+
+    report = RollbackIncidentDispatchReport(
+        release_id=release_id,
+        environment=environment,
+        incident_webhook_configured=True,
+        dispatch_status="sent" if 200 <= response.status_code < 300 else "failed",
+        http_status_code=response.status_code,
+        source_payload_path=str(payload_path),
+        source_payload_sha256=payload_hash,
+        response_excerpt=response.text[:500],
+        error_message="" if 200 <= response.status_code < 300 else "non-2xx response",
+        dispatched_at_utc=datetime.now(timezone.utc).isoformat(),
     )
     write_json_artifact(str(output_path), asdict(report))
     return report

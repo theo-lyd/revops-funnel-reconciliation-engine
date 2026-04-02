@@ -367,3 +367,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: continue shipping rollback controls behind explicit execution flags and validate with dedicated integration coverage
 - Alternative resolution options: Not applicable
 - Verification evidence: `make lint` passed and `make test` passed with 34 tests and 1 expected skip
+
+### Issue ID: ISS-033
+- Phase and batch: Phase 7 Batch 7.3 - Rollback incident dispatch and execution access enforcement
+- Date observed: 2026-04-02
+- Where it occurred: Batch 7.3 implementation and validation
+- Symptom: No blocking defects encountered
+- Root cause: Not applicable
+- Resolution: Not applicable
+- How to avoid: keep release-time incident dispatch strictness environment-controlled while preserving local-safe defaults
+- Alternative resolution options: Not applicable
+- Verification evidence: `make lint` and `make test` passed after webhook dispatch and access-control additions

@@ -102,6 +102,9 @@ rollback-deployment:
 execute-rollback-playbook:
 	$(PYTHON) scripts/ops/execute_rollback_playbook.py --rollback-report artifacts/promotions/deployment_rollback.json
 
+dispatch-rollback-incident:
+	$(PYTHON) scripts/ops/dispatch_rollback_incident.py --incident-payload artifacts/promotions/rollback_incident_payload.json
+
 production-stop-gate:
 	$(MAKE) quality-gate
 	$(MAKE) metric-parity-check-report

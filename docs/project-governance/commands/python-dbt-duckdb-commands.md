@@ -455,3 +455,27 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: rollback report exists; execution toggle is explicitly enabled
   - Expected output: execution report with applied actions plus generated lock/incident payload artifacts
   - Recovery: disable execute mode for dry-run fallback or fix malformed rollback action payloads
+
+## Phase 7 Batch 7.3 execution entries
+
+### PDD-039
+- What: python scripts/ops/execute_rollback_playbook.py --rollback-report artifacts/promotions/deployment_rollback.json --require-release-access --output artifacts/promotions/deployment_rollback_execution.json
+- Why: enforce actor allowlist checks for rollback playbook execution in release contexts
+- Who: project maintainer
+- When: 2026-04-02, Phase 7 Batch 7.3 implementation
+- Where: release workflow failure path and local access-control validation
+- How:
+  - Preconditions: `GITHUB_ACTOR` is available and `ROLLBACK_ALLOWED_ACTORS` or `RELEASE_ALLOWED_ACTORS` configured when enforcement is desired
+  - Expected output: execution proceeds for authorized actors and exits early for unauthorized actors
+  - Recovery: update allowlist secrets/vars or disable enforcement for local-safe mode
+
+### PDD-040
+- What: python scripts/ops/dispatch_rollback_incident.py --incident-payload artifacts/promotions/rollback_incident_payload.json --output artifacts/promotions/rollback_incident_dispatch.json
+- Why: send rollback incident payloads to webhook endpoints and record dispatch outcomes as auditable artifacts
+- Who: project maintainer
+- When: 2026-04-02, Phase 7 Batch 7.3 implementation
+- Where: release workflow failure path and CI deployment integration job
+- How:
+  - Preconditions: incident payload exists; optional webhook URL/token provided via environment or arguments
+  - Expected output: dispatch report with status `sent`, `failed`, or `skipped`
+  - Recovery: configure webhook secrets, adjust strictness mode, and rerun dispatch command

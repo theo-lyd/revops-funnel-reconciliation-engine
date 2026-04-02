@@ -39,6 +39,9 @@ The CI/CD pipeline enforces code quality, data model correctness, and production
   - `SNOWFLAKE_DATABASE`
   - `SNOWFLAKE_WAREHOUSE`
   - `SNOWFLAKE_SCHEMA`
+  - `ROLLBACK_INCIDENT_WEBHOOK_URL` (optional; required only when incident dispatch is enabled)
+  - `ROLLBACK_INCIDENT_WEBHOOK_TOKEN` (optional bearer token for incident webhook)
+  - `RELEASE_ALLOWED_ACTORS` / `ROLLBACK_ALLOWED_ACTORS` (optional actor allowlists for release/rollback enforcement)
 
 **Steps**:
 - Checkout code
@@ -166,4 +169,4 @@ if: |
 
 1. **Conditional Secret Handling**: Extend logic to handle other environment-specific deployments.
 2. **Artifact Retention**: Tune retention windows and centralized indexing for CI evidence artifacts.
-3. **Rollback Integrations**: Integrate controlled rollback playbook outputs with incident/ticketing APIs.
+3. **Webhook Delivery Robustness**: Add retry/backoff and optional dead-letter queue for incident dispatch failures.
