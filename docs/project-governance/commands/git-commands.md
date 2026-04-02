@@ -698,3 +698,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful local commit and remote connectivity
   - Expected output: remote master updated with Phase 6 changes
   - Recovery: resolve remote conflicts and retry push
+
+## Phase 6: CI/CD and operations automation entries
+
+### GIT-060
+- What: git add .github/workflows/ci.yml .github/workflows/release.yml Makefile dags/revops_end_to_end_pipeline.py scripts/ops/run_changed_model_dbt.py scripts/ops/refresh_runtime_caches.py scripts/ops/promote_deployment.py src/revops_funnel/deployment_ops.py tests/test_deployment_ops.py docs/reports/phase-6/PHASE-6-PLAN.md docs/reports/phase-6/batch-6.2-ci-cd-and-operations-automation.md docs/reports/phase-6/phase-6-end-report.md README.md docs/project-governance/issues-log.md docs/project-governance/commands/make-commands.md docs/project-governance/commands/git-commands.md docs/project-governance/commands/python-dbt-duckdb-commands.md docs/project-governance/phase-completion-checklist.md
+- Why: stage the Phase 6.2 operational automation implementation and governance updates as one auditable batch
+- Who: data engineer or analytics lead
+- When: 2026-04-02, Phase 6 Batch 6.2 completion
+- Where: repository root
+- How:
+  - Preconditions: lint and tests pass on working tree
+  - Expected output: intended Phase 6.2 files staged with no generated artifacts
+  - Recovery: unstage unrelated files and restage explicit scope
+
+### GIT-061
+- What: git commit -m "feat(phase-6): automate CI selection and deployment operations"
+- Why: persist changed-model CI execution, release workflow, cache refresh, deployment promotion, and DAG orchestration
+- Who: data engineer or analytics lead
+- When: 2026-04-02, after staging review
+- Where: repository root
+- How:
+  - Preconditions: staged files reviewed and hooks passing
+  - Expected output: commit hash recording the Phase 6.2 batch
+  - Recovery: resolve hook feedback and recommit
+
+### GIT-062
+- What: git push origin master
+- Why: publish the expanded Phase 6 implementation to remote for CI/CD and operations adoption
+- Who: data engineer or analytics lead
+- When: 2026-04-02, immediately after Phase 6.2 commit
+- Where: repository root
+- How:
+  - Preconditions: successful commit and remote connectivity
+  - Expected output: remote master updated with Phase 6.2 batch
+  - Recovery: resolve conflicts and retry push

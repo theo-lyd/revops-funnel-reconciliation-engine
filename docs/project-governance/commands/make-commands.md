@@ -498,3 +498,27 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: test dependencies installed
   - Expected output: pytest success summary with analytics tests passing
   - Recovery: inspect failing assertions or fixture data and rerun
+
+## Phase 6 Batch 6.2 execution entries
+
+### MK-041
+- What: make lint
+- Why: validate the expanded Phase 6 operations automation batch across CI, DAG, and deployment helper updates
+- Who: project maintainer
+- When: 2026-04-02, Phase 6 Batch 6.2 validation
+- Where: repository root
+- How:
+  - Preconditions: dependencies installed and Phase 6.2 files present
+  - Expected output: Ruff and mypy success across repo modules
+  - Recovery: fix style/type defects and rerun until clean
+
+### MK-042
+- What: make test
+- Why: execute full regression tests after adding deployment helper module and operations scripts
+- Who: project maintainer
+- When: 2026-04-02, Phase 6 Batch 6.2 validation
+- Where: repository root
+- How:
+  - Preconditions: pytest dependencies available
+  - Expected output: all tests pass including new deployment helper tests
+  - Recovery: isolate failing tests, remediate code path, rerun full suite

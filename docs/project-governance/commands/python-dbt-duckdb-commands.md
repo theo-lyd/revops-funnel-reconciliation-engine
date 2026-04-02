@@ -300,3 +300,49 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: DuckDB warehouse initialized; monitoring environment variables configured; output directories writable
   - Expected output: JSON anomaly report and Markdown summary written to artifact paths; exit code 2 if severe anomalies are detected
   - Recovery: check monitoring thresholds and source data cadence; rerun after restoring access or adjusting configuration
+
+## Phase 6 Batch 6.2 execution entries
+
+### PDD-026
+- What: python scripts/ops/run_changed_model_dbt.py build --base-ref <ref>
+- Why: execute dbt build against the selector inferred from changed files for slim CI behavior
+- Who: project maintainer
+- When: 2026-04-02, Phase 6 Batch 6.2 implementation
+- Where: repository root
+- How:
+  - Preconditions: git history available (`fetch-depth: 0` in CI), dbt profile configured
+  - Expected output: dbt deps plus build run scoped to inferred selector
+  - Recovery: set a valid base ref or fall back to default selector
+
+### PDD-027
+- What: python scripts/ops/run_changed_model_dbt.py test --base-ref <ref>
+- Why: execute dbt tests against impacted layers only in CI
+- Who: project maintainer
+- When: 2026-04-02, Phase 6 Batch 6.2 implementation
+- Where: repository root
+- How:
+  - Preconditions: dbt build path available and selector resolution successful
+  - Expected output: dbt tests run for selected model paths
+  - Recovery: verify selector input and run full `dbt test` as fallback
+
+### PDD-028
+- What: python scripts/ops/refresh_runtime_caches.py --output artifacts/cache/cache_refresh.json
+- Why: clear runtime caches and write a reproducible cache refresh artifact before promotion
+- Who: project maintainer
+- When: 2026-04-02, Phase 6 Batch 6.2 implementation
+- Where: repository root
+- How:
+  - Preconditions: filesystem write permissions for cache and artifact paths
+  - Expected output: cache directories recreated and JSON refresh report written
+  - Recovery: correct path permissions and rerun
+
+### PDD-029
+- What: python scripts/ops/promote_deployment.py --release-id <id>
+- Why: generate a promotion manifest after release gates, parity, and cache refresh are satisfied
+- Who: project maintainer
+- When: 2026-04-02, Phase 6 Batch 6.2 implementation
+- Where: repository root
+- How:
+  - Preconditions: `DEPLOYMENT_PROMOTION_ENABLED=true`, parity report exists with status passed, cache refresh report exists
+  - Expected output: deployment promotion JSON artifact with selector and release metadata
+  - Recovery: run missing gate steps and rerun promotion command

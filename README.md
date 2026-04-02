@@ -130,12 +130,13 @@ Phase 5 delivery currently includes planning and first two batches:
 7. **Hardening Summary**: [Final hardening summary](docs/reports/phase-5/PHASE-5-HARDENING-FINAL-SUMMARY.md)
 8. **End Report**: [Phase 5 end report](docs/reports/phase-5/phase-5-end-report.md)
 
-### Phase 6: Monitoring Delivery and Alert Transport
-Phase 6 extends monitoring from artifact generation into optional notification delivery:
+### Phase 6: Monitoring Delivery and Operations Automation
+Phase 6 extends monitoring and delivery into operational automation:
 
 1. **Plan**: [Phase 6 implementation plan](docs/reports/phase-6/PHASE-6-PLAN.md)
 2. **Batch 6.1**: [Monitoring email delivery](docs/reports/phase-6/batch-6.1-monitoring-email-delivery.md)
-3. **End Report**: [Phase 6 end report](docs/reports/phase-6/phase-6-end-report.md)
+3. **Batch 6.2**: [CI/CD and operations automation](docs/reports/phase-6/batch-6.2-ci-cd-and-operations-automation.md)
+4. **End Report**: [Phase 6 end report](docs/reports/phase-6/phase-6-end-report.md)
 
 ### Project Governance
 - [Standing instructions and process documentation](docs/project-governance/standing-instructions.md)

@@ -290,3 +290,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: keep message header ownership in one place; validate email composition with focused unit tests before wiring transport
 - Alternative resolution options: pass the sender into the message builder directly and remove the override step
 - Verification evidence: focused notification tests and full `make lint` / `pytest -q` passed after the fix
+
+### Issue ID: ISS-026
+- Phase and batch: Phase 6 Batch 6.2 - CI/CD and operations automation
+- Date observed: 2026-04-02
+- Where it occurred: `src/revops_funnel/deployment_ops.py` during lint/type validation
+- Symptom: mypy rejected the JSON helper return type after an in-progress edit introduced unreachable duplicate return logic
+- Root cause: partially applied refactor left conflicting lines in `_load_json_payload`
+- Resolution: normalized the helper to validate dict payloads and return a typed cast path
+- How to avoid: run targeted mypy after editing helper return signatures and avoid partial patch states
+- Alternative resolution options: replace helper with pydantic/TypedDict validation in future hardening
+- Verification evidence: `make lint` passed with mypy success across 29 source files; `make test` passed with 23 tests

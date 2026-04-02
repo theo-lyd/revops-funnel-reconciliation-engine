@@ -4,8 +4,9 @@ AIRFLOW_VERSION ?= 2.10.5
 AIRFLOW_CONSTRAINTS ?= https://raw.githubusercontent.com/apache/airflow/constraints-$(AIRFLOW_VERSION)/constraints-3.10.txt
 DBT_THREADS_LOCAL ?= 1
 DBT_THREADS_PROD ?= 4
+DBT_BASE_REF ?= origin/master
 
-.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle production-stop-gate production-stop-gate-strict query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness metabase-setup streamlit-dev anomaly-check insights-generate
+.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-build-changed dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-test-changed dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle refresh-caches promote-deployment production-stop-gate production-stop-gate-strict query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness metabase-setup streamlit-dev anomaly-check insights-generate
 
 setup:
 	$(PIP) install "apache-airflow==$(AIRFLOW_VERSION)" --constraint "$(AIRFLOW_CONSTRAINTS)"
@@ -45,6 +46,9 @@ dbt-build:
 dbt-build-prod:
 	cd dbt && dbt build --profiles-dir profiles --target prod --threads $(DBT_THREADS_PROD)
 
+dbt-build-changed:
+	$(PYTHON) scripts/ops/run_changed_model_dbt.py build --base-ref $(DBT_BASE_REF)
+
 dbt-source-freshness:
 	cd dbt && dbt source freshness --profiles-dir profiles --threads $(DBT_THREADS_LOCAL)
 
@@ -59,6 +63,9 @@ dbt-test:
 
 dbt-test-prod:
 	cd dbt && dbt test --profiles-dir profiles --target prod --threads $(DBT_THREADS_PROD)
+
+dbt-test-changed:
+	$(PYTHON) scripts/ops/run_changed_model_dbt.py test --base-ref $(DBT_BASE_REF)
 
 dbt-deploy-prod:
 	$(MAKE) dbt-build-prod
@@ -82,6 +89,12 @@ release-readiness-gate-strict:
 release-evidence-bundle:
 	@test -n "$$RELEASE_ID" || (echo "RELEASE_ID is required" && exit 1)
 	$(PYTHON) scripts/governance/generate_release_evidence_bundle.py --release-id "$$RELEASE_ID"
+
+refresh-caches:
+	$(PYTHON) scripts/ops/refresh_runtime_caches.py
+
+promote-deployment:
+	$(PYTHON) scripts/ops/promote_deployment.py
 
 production-stop-gate:
 	$(MAKE) quality-gate

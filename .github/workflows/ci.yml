@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -29,12 +31,22 @@ jobs:
           ruff check .
           mypy src scripts dags
 
-      - name: Unit tests
+      - name: Load bronze sources
         run: pytest -q
 
       - name: dbt parse validation
         run: |
           mkdir -p data/warehouse
+          python scripts/ingest/load_leads_jsonl_to_duckdb.py
+
+      - name: dbt changed-model build and test
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+          GITHUB_EVENT_BEFORE: ${{ github.event.before }}
+        run: |
+          BASE_REF="${GITHUB_BASE_REF:-${GITHUB_EVENT_BEFORE:-origin/master}}"
+          python scripts/ops/run_changed_model_dbt.py build --base-ref "$BASE_REF"
+          python scripts/ops/run_changed_model_dbt.py test --base-ref "$BASE_REF"
           cp dbt/profiles/profiles.yml.example dbt/profiles/profiles.yml
           cd dbt
           dbt deps
@@ -66,6 +78,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
