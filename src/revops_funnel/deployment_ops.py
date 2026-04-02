@@ -35,6 +35,9 @@ DEFAULT_ROLLBACK_INCIDENT_DISPATCH_OUTPUT = Path(
 DEFAULT_ROLLBACK_INCIDENT_DEAD_LETTER_OUTPUT = Path(
     "artifacts/promotions/rollback_incident_dead_letter.json"
 )
+DEFAULT_ROLLBACK_ESCALATION_OUTPUT = Path(
+    "artifacts/promotions/rollback_dead_letter_escalation.json"
+)
 
 
 @dataclass(frozen=True)
@@ -106,6 +109,23 @@ class RollbackIncidentDispatchReport:
     dead_letter_created: bool
     dead_letter_path: str
     dispatched_at_utc: str
+
+
+@dataclass(frozen=True)
+class RollbackDeadLetterEscalationReport:
+    release_id: str
+    environment: str
+    dead_letter_found: bool
+    escalation_webhook_configured: bool
+    escalation_status: str
+    source_dead_letter_path: str
+    source_dead_letter_sha256: str
+    max_attempts: int
+    attempt_count: int
+    http_status_code: int | None
+    response_excerpt: str
+    error_message: str
+    escalated_at_utc: str
 
 
 @dataclass(frozen=True)
@@ -566,6 +586,125 @@ def dispatch_rollback_incident_payload(
         dead_letter_created=dead_letter_created,
         dead_letter_path=dead_letter_path,
         dispatched_at_utc=datetime.now(timezone.utc).isoformat(),
+    )
+    write_json_artifact(str(output_path), asdict(report))
+    return report
+
+
+def escalate_rollback_dead_letter(
+    dead_letter_path: str | Path,
+    escalation_webhook_url: str,
+    escalation_webhook_token: str = "",
+    timeout_seconds: int = 10,
+    max_attempts: int = 1,
+    backoff_seconds: float = 0.0,
+    output_path: str | Path = DEFAULT_ROLLBACK_ESCALATION_OUTPUT,
+) -> RollbackDeadLetterEscalationReport:
+    dead_letter_file = Path(dead_letter_path)
+    if not dead_letter_file.exists():
+        report = RollbackDeadLetterEscalationReport(
+            release_id="unknown-release",
+            environment="unknown",
+            dead_letter_found=False,
+            escalation_webhook_configured=bool(escalation_webhook_url.strip()),
+            escalation_status="skipped-no-dead-letter",
+            source_dead_letter_path=str(dead_letter_file),
+            source_dead_letter_sha256="",
+            max_attempts=max(1, int(max_attempts)),
+            attempt_count=0,
+            http_status_code=None,
+            response_excerpt="",
+            error_message="",
+            escalated_at_utc=datetime.now(timezone.utc).isoformat(),
+        )
+        write_json_artifact(str(output_path), asdict(report))
+        return report
+
+    dead_letter_payload = _load_json_payload(dead_letter_file)
+    release_id = str(dead_letter_payload.get("release_id", "unknown-release"))
+    environment = str(dead_letter_payload.get("environment", "unknown"))
+    dead_letter_hash = _sha256_file(dead_letter_file)
+
+    if not escalation_webhook_url.strip():
+        report = RollbackDeadLetterEscalationReport(
+            release_id=release_id,
+            environment=environment,
+            dead_letter_found=True,
+            escalation_webhook_configured=False,
+            escalation_status="skipped-no-webhook",
+            source_dead_letter_path=str(dead_letter_file),
+            source_dead_letter_sha256=dead_letter_hash,
+            max_attempts=max(1, int(max_attempts)),
+            attempt_count=0,
+            http_status_code=None,
+            response_excerpt="",
+            error_message="",
+            escalated_at_utc=datetime.now(timezone.utc).isoformat(),
+        )
+        write_json_artifact(str(output_path), asdict(report))
+        return report
+
+    headers = {"Content-Type": "application/json"}
+    if escalation_webhook_token.strip():
+        headers["Authorization"] = f"Bearer {escalation_webhook_token.strip()}"
+
+    escalation_payload = {
+        "event_type": "rollback-incident-dead-letter",
+        "release_id": release_id,
+        "environment": environment,
+        "dead_letter_path": str(dead_letter_file),
+        "dead_letter_sha256": dead_letter_hash,
+        "dead_letter": dead_letter_payload,
+    }
+
+    max_tries = max(1, int(max_attempts))
+    backoff = max(0.0, float(backoff_seconds))
+    attempt_count = 0
+    last_status: int | None = None
+    last_response_excerpt = ""
+    last_error = ""
+    escalation_status = "failed"
+
+    for attempt in range(1, max_tries + 1):
+        attempt_count = attempt
+        try:
+            response = requests.post(
+                escalation_webhook_url,
+                json=escalation_payload,
+                headers=headers,
+                timeout=timeout_seconds,
+            )
+        except requests.RequestException as error:
+            last_error = str(error)
+            if attempt < max_tries and backoff > 0:
+                time.sleep(backoff)
+            continue
+
+        last_status = response.status_code
+        last_response_excerpt = response.text[:500]
+        if 200 <= response.status_code < 300:
+            escalation_status = "sent"
+            last_error = ""
+            break
+
+        last_error = "non-2xx response"
+        if attempt < max_tries and backoff > 0:
+            time.sleep(backoff)
+
+    report = RollbackDeadLetterEscalationReport(
+        release_id=release_id,
+        environment=environment,
+        dead_letter_found=True,
+        escalation_webhook_configured=True,
+        escalation_status=escalation_status,
+        source_dead_letter_path=str(dead_letter_file),
+        source_dead_letter_sha256=dead_letter_hash,
+        max_attempts=max_tries,
+        attempt_count=attempt_count,
+        http_status_code=last_status,
+        response_excerpt=last_response_excerpt,
+        error_message=last_error,
+        escalated_at_utc=datetime.now(timezone.utc).isoformat(),
     )
     write_json_artifact(str(output_path), asdict(report))
     return report

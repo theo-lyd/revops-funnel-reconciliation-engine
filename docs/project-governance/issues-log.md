@@ -389,3 +389,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: keep retry/backoff defaults conservative and capture terminal failures in dead-letter artifacts for escalation
 - Alternative resolution options: Not applicable
 - Verification evidence: `make lint` and `make test` passed with retry/dead-letter coverage
+
+### Issue ID: ISS-035
+- Phase and batch: Phase 7 Batch 7.5 - Dead-letter escalation automation
+- Date observed: 2026-04-02
+- Where it occurred: Batch 7.5 implementation and validation
+- Symptom: No blocking defects encountered
+- Root cause: Not applicable
+- Resolution: Not applicable
+- How to avoid: keep escalation strictness optional and default-safe while ensuring escalation report artifacts are always generated
+- Alternative resolution options: Not applicable
+- Verification evidence: `make lint` and `make test` passed with escalation automation tests

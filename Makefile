@@ -105,6 +105,9 @@ execute-rollback-playbook:
 dispatch-rollback-incident:
 	$(PYTHON) scripts/ops/dispatch_rollback_incident.py --incident-payload artifacts/promotions/rollback_incident_payload.json --max-attempts $${ROLLBACK_INCIDENT_MAX_ATTEMPTS:-3} --backoff-seconds $${ROLLBACK_INCIDENT_BACKOFF_SECONDS:-2} --dead-letter-output artifacts/promotions/rollback_incident_dead_letter.json
 
+escalate-rollback-dead-letter:
+	$(PYTHON) scripts/ops/escalate_rollback_dead_letter.py --dead-letter artifacts/promotions/rollback_incident_dead_letter.json --max-attempts $${ROLLBACK_ESCALATION_MAX_ATTEMPTS:-2} --backoff-seconds $${ROLLBACK_ESCALATION_BACKOFF_SECONDS:-3}
+
 production-stop-gate:
 	$(MAKE) quality-gate
 	$(MAKE) metric-parity-check-report

@@ -135,6 +135,22 @@ jobs:
             --incident-payload artifacts/promotions/rollback_incident_payload.json \
             --output artifacts/promotions/rollback_incident_dispatch.json
 
+      - name: Create synthetic dead-letter artifact
+        run: |
+          cat <<'JSON' > artifacts/promotions/rollback_incident_dead_letter.json
+          {
+            "release_id": "ci-integration",
+            "environment": "production",
+            "last_error": "synthetic-ci-dead-letter"
+          }
+          JSON
+
+      - name: Escalate dead-letter (safe skip mode)
+        run: |
+          python scripts/ops/escalate_rollback_dead_letter.py \
+            --dead-letter artifacts/promotions/rollback_incident_dead_letter.json \
+            --output artifacts/promotions/rollback_dead_letter_escalation.json
+
       - name: Upload deployment integration artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -148,6 +164,7 @@ jobs:
             artifacts/promotions/rollback_incident_payload.json
             artifacts/promotions/rollback_incident_dispatch.json
             artifacts/promotions/rollback_incident_dead_letter.json
+            artifacts/promotions/rollback_dead_letter_escalation.json
           if-no-files-found: ignore
 
   production-parity-check:

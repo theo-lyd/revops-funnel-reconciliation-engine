@@ -503,3 +503,27 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: webhook configuration is expected to be present and healthy
   - Expected output: command exits non-zero when dispatch status is `skipped` or `failed`
   - Recovery: restore webhook configuration or switch strict mode off for controlled fallback
+
+## Phase 7 Batch 7.5 execution entries
+
+### PDD-043
+- What: python scripts/ops/escalate_rollback_dead_letter.py --dead-letter artifacts/promotions/rollback_incident_dead_letter.json --max-attempts 2 --backoff-seconds 3 --output artifacts/promotions/rollback_dead_letter_escalation.json
+- Why: automate escalation of rollback dead-letter incidents to paging/ticketing endpoints with retry controls
+- Who: project maintainer
+- When: 2026-04-02, Phase 7 Batch 7.5 implementation
+- Where: release workflow failure path and CI integration validation
+- How:
+  - Preconditions: dead-letter artifact exists; optional escalation webhook URL/token configured for external delivery
+  - Expected output: escalation report artifact with status `sent`, `failed`, `skipped-no-webhook`, or `skipped-no-dead-letter`
+  - Recovery: review escalation report, configure webhook credentials, and rerun workflow
+
+### PDD-044
+- What: python scripts/ops/escalate_rollback_dead_letter.py --dead-letter artifacts/promotions/rollback_incident_dead_letter.json --strict
+- Why: enforce escalation guarantees when dead-letter artifacts exist in high-control deployment contexts
+- Who: project maintainer
+- When: 2026-04-02, Phase 7 Batch 7.5 implementation
+- Where: release workflow with `ROLLBACK_ESCALATION_STRICT=true`
+- How:
+  - Preconditions: escalation webhook configuration is expected and reachable
+  - Expected output: non-zero exit when dead-letter exists and escalation is not sent
+  - Recovery: fix escalation endpoint/configuration or disable strict mode in fallback environments

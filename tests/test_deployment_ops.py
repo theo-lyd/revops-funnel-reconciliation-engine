@@ -12,6 +12,7 @@ from revops_funnel.deployment_ops import (
     create_deployment_promotion_report,
     create_deployment_rollback_report,
     dispatch_rollback_incident_payload,
+    escalate_rollback_dead_letter,
     refresh_runtime_caches,
     resolve_selector_decision,
     validate_release_actor_access,
@@ -296,3 +297,87 @@ def test_dispatch_rollback_incident_payload_writes_dead_letter_on_non_2xx(tmp_pa
     assert report.attempt_count == 2
     assert report.dead_letter_created is True
     assert dead_letter.exists()
+
+
+def test_escalate_rollback_dead_letter_skips_when_missing(tmp_path: Path) -> None:
+    missing_dead_letter = tmp_path / "missing_dead_letter.json"
+    output = tmp_path / "rollback_dead_letter_escalation.json"
+
+    report = escalate_rollback_dead_letter(
+        dead_letter_path=missing_dead_letter,
+        escalation_webhook_url="https://example.com/escalation",
+        output_path=output,
+    )
+
+    assert report.dead_letter_found is False
+    assert report.escalation_status == "skipped-no-dead-letter"
+    assert output.exists()
+
+
+def test_escalate_rollback_dead_letter_skips_without_webhook(tmp_path: Path) -> None:
+    dead_letter = tmp_path / "rollback_incident_dead_letter.json"
+    output = tmp_path / "rollback_dead_letter_escalation.json"
+    dead_letter.write_text(
+        json.dumps({"release_id": "release-123", "environment": "production"}),
+        encoding="utf-8",
+    )
+
+    report = escalate_rollback_dead_letter(
+        dead_letter_path=dead_letter,
+        escalation_webhook_url="",
+        output_path=output,
+    )
+
+    assert report.dead_letter_found is True
+    assert report.escalation_status == "skipped-no-webhook"
+    assert output.exists()
+
+
+def test_escalate_rollback_dead_letter_sends_webhook(tmp_path: Path) -> None:
+    dead_letter = tmp_path / "rollback_incident_dead_letter.json"
+    output = tmp_path / "rollback_dead_letter_escalation.json"
+    dead_letter.write_text(
+        json.dumps({"release_id": "release-123", "environment": "production"}),
+        encoding="utf-8",
+    )
+
+    class _Response:
+        status_code = 202
+        text = "accepted"
+
+    with patch("revops_funnel.deployment_ops.requests.post", return_value=_Response()):
+        report = escalate_rollback_dead_letter(
+            dead_letter_path=dead_letter,
+            escalation_webhook_url="https://example.com/escalation",
+            output_path=output,
+        )
+
+    assert report.escalation_status == "sent"
+    assert report.http_status_code == 202
+    assert output.exists()
+
+
+def test_escalate_rollback_dead_letter_retries_and_fails(tmp_path: Path) -> None:
+    dead_letter = tmp_path / "rollback_incident_dead_letter.json"
+    output = tmp_path / "rollback_dead_letter_escalation.json"
+    dead_letter.write_text(
+        json.dumps({"release_id": "release-123", "environment": "production"}),
+        encoding="utf-8",
+    )
+
+    with patch(
+        "revops_funnel.deployment_ops.requests.post",
+        side_effect=requests.RequestException("endpoint down"),
+    ):
+        report = escalate_rollback_dead_letter(
+            dead_letter_path=dead_letter,
+            escalation_webhook_url="https://example.com/escalation",
+            max_attempts=2,
+            backoff_seconds=0,
+            output_path=output,
+        )
+
+    assert report.escalation_status == "failed"
+    assert report.attempt_count == 2
+    assert "endpoint down" in report.error_message
+    assert output.exists()

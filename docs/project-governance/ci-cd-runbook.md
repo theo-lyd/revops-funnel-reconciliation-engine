@@ -170,4 +170,4 @@ if: |
 
 1. **Conditional Secret Handling**: Extend logic to handle other environment-specific deployments.
 2. **Artifact Retention**: Tune retention windows and centralized indexing for CI evidence artifacts.
-3. **Escalation Integrations**: Route dead-letter incidents to paging/ticketing systems for automated follow-up.
+3. **Escalation Routing Policies**: Add severity-based routing and ownership metadata for escalated dead-letter incidents.

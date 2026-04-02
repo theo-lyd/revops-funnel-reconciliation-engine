@@ -26,6 +26,7 @@ jobs:
       DEPLOYMENT_ROLLBACK_INCIDENT_PAYLOAD_PATH: artifacts/promotions/rollback_incident_payload.json
       DEPLOYMENT_ROLLBACK_INCIDENT_DISPATCH_REPORT_PATH: artifacts/promotions/rollback_incident_dispatch.json
       DEPLOYMENT_ROLLBACK_INCIDENT_DEAD_LETTER_PATH: artifacts/promotions/rollback_incident_dead_letter.json
+      DEPLOYMENT_ROLLBACK_ESCALATION_REPORT_PATH: artifacts/promotions/rollback_dead_letter_escalation.json
 
     permissions:
       contents: read
@@ -198,6 +199,27 @@ jobs:
             --output "$DEPLOYMENT_ROLLBACK_INCIDENT_DISPATCH_REPORT_PATH" \
             $STRICT_FLAG
 
+      - name: Escalate rollback dead-letter on failure
+        if: failure()
+        env:
+          ROLLBACK_ESCALATION_WEBHOOK_URL: ${{ secrets.ROLLBACK_ESCALATION_WEBHOOK_URL }}
+          ROLLBACK_ESCALATION_WEBHOOK_TOKEN: ${{ secrets.ROLLBACK_ESCALATION_WEBHOOK_TOKEN }}
+          ROLLBACK_ESCALATION_STRICT: ${{ vars.ROLLBACK_ESCALATION_STRICT || 'false' }}
+          ROLLBACK_ESCALATION_MAX_ATTEMPTS: ${{ vars.ROLLBACK_ESCALATION_MAX_ATTEMPTS || '2' }}
+          ROLLBACK_ESCALATION_BACKOFF_SECONDS: ${{ vars.ROLLBACK_ESCALATION_BACKOFF_SECONDS || '3' }}
+        run: |
+          STRICT_FLAG=""
+          if [[ "$ROLLBACK_ESCALATION_STRICT" == "true" ]]; then
+            STRICT_FLAG="--strict"
+          fi
+
+          python scripts/ops/escalate_rollback_dead_letter.py \
+            --dead-letter "$DEPLOYMENT_ROLLBACK_INCIDENT_DEAD_LETTER_PATH" \
+            --max-attempts "$ROLLBACK_ESCALATION_MAX_ATTEMPTS" \
+            --backoff-seconds "$ROLLBACK_ESCALATION_BACKOFF_SECONDS" \
+            --output "$DEPLOYMENT_ROLLBACK_ESCALATION_REPORT_PATH" \
+            $STRICT_FLAG
+
       - name: Upload release gate artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -213,4 +235,5 @@ jobs:
             artifacts/promotions/rollback_incident_payload.json
             artifacts/promotions/rollback_incident_dispatch.json
             artifacts/promotions/rollback_incident_dead_letter.json
+            artifacts/promotions/rollback_dead_letter_escalation.json
           if-no-files-found: ignore

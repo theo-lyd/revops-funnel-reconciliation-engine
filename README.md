@@ -150,6 +150,7 @@ Phase 7 continues with authentication hardening, access controls, and controlled
 3. **Batch 7.2**: [Controlled rollback execution and deployment integration validation](docs/reports/phase-7/batch-7.2-controlled-rollback-execution-and-integration-validation.md)
 4. **Batch 7.3**: [Rollback incident dispatch and execution access enforcement](docs/reports/phase-7/batch-7.3-rollback-incident-dispatch-and-access-enforcement.md)
 5. **Batch 7.4**: [Webhook retry/backoff and dead-letter hardening](docs/reports/phase-7/batch-7.4-webhook-retry-backoff-and-dead-letter-hardening.md)
+6. **Batch 7.5**: [Dead-letter escalation automation](docs/reports/phase-7/batch-7.5-dead-letter-escalation-automation.md)
 
 ### Project Governance
 - [Standing instructions and process documentation](docs/project-governance/standing-instructions.md)
