@@ -422,3 +422,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: preserve strict/non-strict telemetry collection paths and validate no-data/skip behavior in automated tests
 - Alternative resolution options: Not applicable
 - Verification evidence: `make lint` and `make test` passed with query-cost attribution coverage
+
+### Issue ID: ISS-038
+- Phase and batch: Phase 8 Batch 8.3 - Query-cost regression guardrails
+- Date observed: 2026-04-02
+- Where it occurred: Batch 8.3 implementation and validation
+- Symptom: Baseline attribution artifacts are often absent in local and CI-safe contexts
+- Root cause: Baseline artifacts are release-history outputs and not guaranteed in fresh/local checkouts
+- Resolution: added strict and non-strict baseline modes; non-strict mode emits a `skipped` regression artifact instead of failing
+- How to avoid: publish baseline artifacts per release and enable strict mode only where baseline availability is enforced
+- Alternative resolution options: fetch baseline from artifact storage/object store before executing regression checks
+- Verification evidence: targeted CLI tests cover missing-baseline skip behavior and regression-failure behavior

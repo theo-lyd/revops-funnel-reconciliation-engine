@@ -211,6 +211,7 @@ artifacts/release-evidence/
 artifacts/dashboards/
 artifacts/ai/
 artifacts/monitoring/
+artifacts/promotions/
 .streamlit/
 .cursorignore
 .cursorindexingignore

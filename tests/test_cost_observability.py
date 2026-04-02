@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from revops_funnel.cost_observability import QueryCostEntry, aggregate_query_cost_attribution
+from revops_funnel.cost_observability import (
+    CostRegressionThresholds,
+    QueryCostEntry,
+    aggregate_query_cost_attribution,
+    detect_query_cost_regressions,
+)
 
 
 def test_aggregate_query_cost_attribution_totals_and_grouping() -> None:
@@ -57,3 +62,41 @@ def test_aggregate_query_cost_attribution_handles_empty_entries() -> None:
     assert payload["attribution_by_query_tag"] == []
     assert payload["attribution_by_warehouse"] == []
     assert payload["top_expensive_queries"] == []
+
+
+def test_detect_query_cost_regressions_flags_threshold_breaches() -> None:
+    current = {
+        "status": "ok",
+        "totals": {
+            "credits_used": 12.0,
+            "elapsed_seconds": 100.0,
+        },
+        "attribution_by_query_tag": [
+            {"query_tag": "dbt-build", "credits_used": 9.0, "elapsed_seconds": 70.0},
+            {"query_tag": "dbt-test", "credits_used": 3.0, "elapsed_seconds": 30.0},
+        ],
+    }
+    baseline = {
+        "status": "ok",
+        "totals": {
+            "credits_used": 9.0,
+            "elapsed_seconds": 85.0,
+        },
+        "attribution_by_query_tag": [
+            {"query_tag": "dbt-build", "credits_used": 6.0, "elapsed_seconds": 55.0},
+            {"query_tag": "dbt-test", "credits_used": 3.0, "elapsed_seconds": 30.0},
+        ],
+    }
+
+    result = detect_query_cost_regressions(
+        current,
+        baseline,
+        CostRegressionThresholds(
+            max_credits_regression_pct=20.0,
+            max_elapsed_regression_pct=20.0,
+        ),
+    )
+
+    assert result["status"] == "regression-detected"
+    assert len(result["overall_regressions"]) == 1
+    assert len(result["query_tag_regressions"]) == 2

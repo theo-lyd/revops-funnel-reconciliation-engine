@@ -13,8 +13,12 @@ DBT_PROD_SELECTOR ?= path:models/staging path:models/intermediate path:models/ma
 COST_LOOKBACK_HOURS ?= 24
 COST_MAX_QUERIES ?= 2000
 COST_QUERY_TAG_PREFIX ?=
+COST_BASELINE_REPORT_PATH ?= artifacts/performance/query_cost_attribution_baseline.json
+COST_REGRESSION_REPORT_PATH ?= artifacts/performance/query_cost_regression_report.json
+COST_MAX_CREDITS_REGRESSION_PCT ?= 20
+COST_MAX_ELAPSED_REGRESSION_PCT ?= 25
 
-.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-build-changed dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-test-changed dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle refresh-caches promote-deployment rollback-deployment production-stop-gate production-stop-gate-strict query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness metabase-setup streamlit-dev anomaly-check insights-generate
+.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-build-changed dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-test-changed dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle refresh-caches promote-deployment rollback-deployment production-stop-gate production-stop-gate-strict query-cost-attribution query-cost-attribution-strict query-cost-regression query-cost-regression-strict query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness metabase-setup streamlit-dev anomaly-check insights-generate
 
 setup:
 	$(PIP) install "apache-airflow==$(AIRFLOW_VERSION)" --constraint "$(AIRFLOW_CONSTRAINTS)"
@@ -124,6 +128,12 @@ query-cost-attribution:
 
 query-cost-attribution-strict:
 	$(PYTHON) scripts/ops/generate_query_cost_attribution.py --strict-snowflake --lookback-hours $(COST_LOOKBACK_HOURS) --max-queries $(COST_MAX_QUERIES) --query-tag-prefix "$(COST_QUERY_TAG_PREFIX)" --output artifacts/performance/query_cost_attribution_report.json
+
+query-cost-regression:
+	$(PYTHON) scripts/ops/check_query_cost_regression.py --current-report artifacts/performance/query_cost_attribution_report.json --baseline-report $(COST_BASELINE_REPORT_PATH) --max-credits-regression-pct $(COST_MAX_CREDITS_REGRESSION_PCT) --max-elapsed-regression-pct $(COST_MAX_ELAPSED_REGRESSION_PCT) --output $(COST_REGRESSION_REPORT_PATH)
+
+query-cost-regression-strict:
+	$(PYTHON) scripts/ops/check_query_cost_regression.py --strict-baseline --current-report artifacts/performance/query_cost_attribution_report.json --baseline-report $(COST_BASELINE_REPORT_PATH) --max-credits-regression-pct $(COST_MAX_CREDITS_REGRESSION_PCT) --max-elapsed-regression-pct $(COST_MAX_ELAPSED_REGRESSION_PCT) --output $(COST_REGRESSION_REPORT_PATH)
 
 production-stop-gate:
 	$(MAKE) quality-gate

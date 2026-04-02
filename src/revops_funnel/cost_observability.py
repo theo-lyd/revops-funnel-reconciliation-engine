@@ -115,3 +115,134 @@ def aggregate_query_cost_attribution(entries: list[QueryCostEntry]) -> dict[str,
         "attribution_by_warehouse": warehouse_rows,
         "top_expensive_queries": [asdict(item) for item in top_queries],
     }
+
+
+@dataclass(frozen=True)
+class CostRegressionThresholds:
+    max_credits_regression_pct: float
+    max_elapsed_regression_pct: float
+
+
+def _safe_float(value: object) -> float:
+    if isinstance(value, int | float):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return 0.0
+    return 0.0
+
+
+def _percent_change(current: float, baseline: float) -> float | None:
+    if baseline <= 0:
+        return None
+    return ((current - baseline) / baseline) * 100.0
+
+
+def _query_tag_totals(report: dict[str, object]) -> dict[str, dict[str, float]]:
+    rows = report.get("attribution_by_query_tag")
+    if not isinstance(rows, list):
+        return {}
+
+    totals: dict[str, dict[str, float]] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        raw_tag = str(row.get("query_tag", ""))
+        tag = normalize_query_tag(raw_tag)
+        totals[tag] = {
+            "credits_used": _safe_float(row.get("credits_used")),
+            "elapsed_seconds": _safe_float(row.get("elapsed_seconds")),
+            "query_count": _safe_float(row.get("query_count")),
+        }
+    return totals
+
+
+def detect_query_cost_regressions(
+    current_report: dict[str, object],
+    baseline_report: dict[str, object],
+    thresholds: CostRegressionThresholds,
+) -> dict[str, object]:
+    current_totals = current_report.get("totals")
+    baseline_totals = baseline_report.get("totals")
+
+    if not isinstance(current_totals, dict) or not isinstance(baseline_totals, dict):
+        return {
+            "status": "error",
+            "detail": "current and baseline reports must include totals",
+            "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+            "thresholds": asdict(thresholds),
+            "overall_regressions": [],
+            "query_tag_regressions": [],
+            "new_query_tags": [],
+        }
+
+    metrics = [
+        ("credits_used", thresholds.max_credits_regression_pct),
+        ("elapsed_seconds", thresholds.max_elapsed_regression_pct),
+    ]
+
+    overall_regressions: list[dict[str, object]] = []
+    for metric, threshold_pct in metrics:
+        current_value = _safe_float(current_totals.get(metric))
+        baseline_value = _safe_float(baseline_totals.get(metric))
+        change_pct = _percent_change(current_value, baseline_value)
+        if change_pct is None:
+            continue
+        if change_pct > threshold_pct:
+            overall_regressions.append(
+                {
+                    "scope": "totals",
+                    "metric": metric,
+                    "baseline_value": baseline_value,
+                    "current_value": current_value,
+                    "change_pct": change_pct,
+                    "threshold_pct": threshold_pct,
+                }
+            )
+
+    current_tags = _query_tag_totals(current_report)
+    baseline_tags = _query_tag_totals(baseline_report)
+
+    query_tag_regressions: list[dict[str, object]] = []
+    new_query_tags: list[str] = []
+
+    for tag, current_values in current_tags.items():
+        baseline_values = baseline_tags.get(tag)
+        if baseline_values is None:
+            new_query_tags.append(tag)
+            continue
+
+        for metric, threshold_pct in metrics:
+            current_value = _safe_float(current_values.get(metric))
+            baseline_value = _safe_float(baseline_values.get(metric))
+            change_pct = _percent_change(current_value, baseline_value)
+            if change_pct is None:
+                continue
+            if change_pct > threshold_pct:
+                query_tag_regressions.append(
+                    {
+                        "scope": "query_tag",
+                        "query_tag": tag,
+                        "metric": metric,
+                        "baseline_value": baseline_value,
+                        "current_value": current_value,
+                        "change_pct": change_pct,
+                        "threshold_pct": threshold_pct,
+                    }
+                )
+
+    status = "ok"
+    if overall_regressions or query_tag_regressions:
+        status = "regression-detected"
+
+    return {
+        "status": status,
+        "detail": "",
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "thresholds": asdict(thresholds),
+        "overall_regressions": overall_regressions,
+        "query_tag_regressions": query_tag_regressions,
+        "new_query_tags": sorted(new_query_tags),
+    }

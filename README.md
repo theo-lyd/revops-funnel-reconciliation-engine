@@ -159,6 +159,7 @@ Phase 8 adds performance and cost guardrails for production transformation paths
 1. **Plan**: [Phase 8 implementation plan](docs/reports/phase-8/PHASE-8-PLAN.md)
 2. **Batch 8.1**: [Budgeted dbt execution for production build/test](docs/reports/phase-8/batch-8.1-budgeted-dbt-execution.md)
 3. **Batch 8.2**: [Query-cost observability and spend attribution artifacts](docs/reports/phase-8/batch-8.2-query-cost-observability-and-spend-attribution.md)
+4. **Batch 8.3**: [Query-cost regression guardrails](docs/reports/phase-8/batch-8.3-query-cost-regression-guardrails.md)
 
 ### Project Governance
 - [Standing instructions and process documentation](docs/project-governance/standing-instructions.md)

@@ -575,3 +575,27 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: Snowflake telemetry access is available and credentials are configured
   - Expected output: successful attribution artifact generation; non-zero exit when telemetry prerequisites are missing
   - Recovery: restore telemetry access/credentials or disable strict mode for fallback operation
+
+## Phase 8 Batch 8.3 execution entries
+
+### PDD-049
+- What: python scripts/ops/check_query_cost_regression.py --current-report artifacts/performance/query_cost_attribution_report.json --baseline-report artifacts/performance/query_cost_attribution_baseline.json --max-credits-regression-pct <pct> --max-elapsed-regression-pct <pct> --output artifacts/performance/query_cost_regression_report.json
+- Why: evaluate cost and runtime growth against baseline attribution artifacts with local-safe fallback behavior
+- Who: project maintainer
+- When: 2026-04-02, Phase 8 Batch 8.3 implementation
+- Where: CI deployment integration and release workflow performance checks
+- How:
+  - Preconditions: current attribution artifact exists; baseline artifact optional in non-strict mode
+  - Expected output: regression report with status `ok`, `regression-detected`, `skipped`, or `error`
+  - Recovery: provide/refresh baseline artifacts or tune thresholds before enabling strict enforcement
+
+### PDD-050
+- What: python scripts/ops/check_query_cost_regression.py --strict-baseline --current-report artifacts/performance/query_cost_attribution_report.json --baseline-report artifacts/performance/query_cost_attribution_baseline.json --output artifacts/performance/query_cost_regression_report.json
+- Why: require baseline availability and fail deployment paths when regression controls cannot be evaluated
+- Who: project maintainer
+- When: 2026-04-02, Phase 8 Batch 8.3 implementation
+- Where: release workflows with `COST_REGRESSION_STRICT=true`
+- How:
+  - Preconditions: baseline attribution artifact is available and current attribution report status is usable
+  - Expected output: non-zero exit on missing baseline/unusable reports or detected regressions
+  - Recovery: restore baseline artifact pipeline or disable strict mode for controlled fallback

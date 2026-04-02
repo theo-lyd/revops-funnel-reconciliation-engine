@@ -786,3 +786,27 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: pytest dependencies installed
   - Expected output: full suite pass including query-cost observability tests
   - Recovery: remediate failing tests and rerun
+
+## Phase 8 Batch 8.3 execution entries
+
+### MK-065
+- What: make lint
+- Why: validate query-cost regression guardrail logic and CLI integration for style/type safety
+- Who: project maintainer
+- When: 2026-04-02, Phase 8 Batch 8.3 validation
+- Where: repository root
+- How:
+  - Preconditions: dependencies installed and Phase 8.3 files updated
+  - Expected output: Ruff and mypy pass across updated source and scripts
+  - Recovery: resolve lint/type findings and rerun
+
+### MK-066
+- What: make test
+- Why: verify regression detection behavior and CLI skip/fail semantics without regressions
+- Who: project maintainer
+- When: 2026-04-02, Phase 8 Batch 8.3 validation
+- Where: repository root
+- How:
+  - Preconditions: pytest dependencies installed
+  - Expected output: targeted and full test suites pass with new regression guardrail coverage
+  - Recovery: remediate failing tests and rerun
