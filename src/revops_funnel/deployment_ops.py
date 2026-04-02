@@ -7,6 +7,7 @@ import json
 import os
 import shutil
 import subprocess
+import time
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -30,6 +31,9 @@ DEFAULT_ROLLBACK_EXECUTION_OUTPUT = Path("artifacts/promotions/deployment_rollba
 DEFAULT_ROLLBACK_INCIDENT_PAYLOAD = Path("artifacts/promotions/rollback_incident_payload.json")
 DEFAULT_ROLLBACK_INCIDENT_DISPATCH_OUTPUT = Path(
     "artifacts/promotions/rollback_incident_dispatch.json"
+)
+DEFAULT_ROLLBACK_INCIDENT_DEAD_LETTER_OUTPUT = Path(
+    "artifacts/promotions/rollback_incident_dead_letter.json"
 )
 
 
@@ -95,8 +99,12 @@ class RollbackIncidentDispatchReport:
     http_status_code: int | None
     source_payload_path: str
     source_payload_sha256: str
+    max_attempts: int
+    attempt_count: int
     response_excerpt: str
     error_message: str
+    dead_letter_created: bool
+    dead_letter_path: str
     dispatched_at_utc: str
 
 
@@ -450,6 +458,9 @@ def dispatch_rollback_incident_payload(
     incident_webhook_url: str,
     incident_webhook_token: str = "",
     timeout_seconds: int = 10,
+    max_attempts: int = 1,
+    backoff_seconds: float = 0.0,
+    dead_letter_output_path: str | Path = DEFAULT_ROLLBACK_INCIDENT_DEAD_LETTER_OUTPUT,
     output_path: str | Path = DEFAULT_ROLLBACK_INCIDENT_DISPATCH_OUTPUT,
 ) -> RollbackIncidentDispatchReport:
     payload_path = Path(incident_payload_path)
@@ -470,8 +481,12 @@ def dispatch_rollback_incident_payload(
             http_status_code=None,
             source_payload_path=str(payload_path),
             source_payload_sha256=payload_hash,
+            max_attempts=max(1, max_attempts),
+            attempt_count=0,
             response_excerpt="",
             error_message="",
+            dead_letter_created=False,
+            dead_letter_path="",
             dispatched_at_utc=datetime.now(timezone.utc).isoformat(),
         )
         write_json_artifact(str(output_path), asdict(report))
@@ -481,39 +496,75 @@ def dispatch_rollback_incident_payload(
     if incident_webhook_token.strip():
         headers["Authorization"] = f"Bearer {incident_webhook_token.strip()}"
 
-    try:
-        response = requests.post(
-            incident_webhook_url,
-            json=payload,
-            headers=headers,
-            timeout=timeout_seconds,
-        )
-    except requests.RequestException as error:
-        report = RollbackIncidentDispatchReport(
-            release_id=release_id,
-            environment=environment,
-            incident_webhook_configured=True,
-            dispatch_status="failed",
-            http_status_code=None,
-            source_payload_path=str(payload_path),
-            source_payload_sha256=payload_hash,
-            response_excerpt="",
-            error_message=str(error),
-            dispatched_at_utc=datetime.now(timezone.utc).isoformat(),
-        )
-        write_json_artifact(str(output_path), asdict(report))
-        return report
+    max_tries = max(1, int(max_attempts))
+    backoff = max(0.0, float(backoff_seconds))
+    attempt_count = 0
+    last_status: int | None = None
+    last_response_excerpt = ""
+    last_error = ""
+    dispatch_status = "failed"
+
+    for attempt in range(1, max_tries + 1):
+        attempt_count = attempt
+        try:
+            response = requests.post(
+                incident_webhook_url,
+                json=payload,
+                headers=headers,
+                timeout=timeout_seconds,
+            )
+        except requests.RequestException as error:
+            last_error = str(error)
+            if attempt < max_tries and backoff > 0:
+                time.sleep(backoff)
+            continue
+
+        last_status = response.status_code
+        last_response_excerpt = response.text[:500]
+        if 200 <= response.status_code < 300:
+            dispatch_status = "sent"
+            last_error = ""
+            break
+
+        last_error = "non-2xx response"
+        if attempt < max_tries and backoff > 0:
+            time.sleep(backoff)
+
+    dead_letter_created = False
+    dead_letter_path = ""
+    if dispatch_status != "sent":
+        dead_letter = {
+            "release_id": release_id,
+            "environment": environment,
+            "incident_payload_path": str(payload_path),
+            "incident_payload_sha256": payload_hash,
+            "incident_webhook_url": incident_webhook_url,
+            "attempt_count": attempt_count,
+            "max_attempts": max_tries,
+            "last_http_status_code": last_status,
+            "last_response_excerpt": last_response_excerpt,
+            "last_error": last_error,
+            "created_at_utc": datetime.now(timezone.utc).isoformat(),
+            "payload": payload,
+        }
+        dead_letter_path = str(dead_letter_output_path)
+        write_json_artifact(dead_letter_path, dead_letter)
+        dead_letter_created = True
 
     report = RollbackIncidentDispatchReport(
         release_id=release_id,
         environment=environment,
         incident_webhook_configured=True,
-        dispatch_status="sent" if 200 <= response.status_code < 300 else "failed",
-        http_status_code=response.status_code,
+        dispatch_status=dispatch_status,
+        http_status_code=last_status,
         source_payload_path=str(payload_path),
         source_payload_sha256=payload_hash,
-        response_excerpt=response.text[:500],
-        error_message="" if 200 <= response.status_code < 300 else "non-2xx response",
+        max_attempts=max_tries,
+        attempt_count=attempt_count,
+        response_excerpt=last_response_excerpt,
+        error_message=last_error,
+        dead_letter_created=dead_letter_created,
+        dead_letter_path=dead_letter_path,
         dispatched_at_utc=datetime.now(timezone.utc).isoformat(),
     )
     write_json_artifact(str(output_path), asdict(report))

@@ -147,6 +147,7 @@ jobs:
             artifacts/promotions/release_lock.json
             artifacts/promotions/rollback_incident_payload.json
             artifacts/promotions/rollback_incident_dispatch.json
+            artifacts/promotions/rollback_incident_dead_letter.json
           if-no-files-found: ignore
 
   production-parity-check:

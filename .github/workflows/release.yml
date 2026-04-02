@@ -25,6 +25,7 @@ jobs:
       DEPLOYMENT_ROLLBACK_EXECUTION_REPORT_PATH: artifacts/promotions/deployment_rollback_execution.json
       DEPLOYMENT_ROLLBACK_INCIDENT_PAYLOAD_PATH: artifacts/promotions/rollback_incident_payload.json
       DEPLOYMENT_ROLLBACK_INCIDENT_DISPATCH_REPORT_PATH: artifacts/promotions/rollback_incident_dispatch.json
+      DEPLOYMENT_ROLLBACK_INCIDENT_DEAD_LETTER_PATH: artifacts/promotions/rollback_incident_dead_letter.json
 
     permissions:
       contents: read
@@ -181,6 +182,8 @@ jobs:
           ROLLBACK_INCIDENT_WEBHOOK_URL: ${{ secrets.ROLLBACK_INCIDENT_WEBHOOK_URL }}
           ROLLBACK_INCIDENT_WEBHOOK_TOKEN: ${{ secrets.ROLLBACK_INCIDENT_WEBHOOK_TOKEN }}
           ROLLBACK_INCIDENT_STRICT: ${{ vars.ROLLBACK_INCIDENT_STRICT || 'false' }}
+          ROLLBACK_INCIDENT_MAX_ATTEMPTS: ${{ vars.ROLLBACK_INCIDENT_MAX_ATTEMPTS || '3' }}
+          ROLLBACK_INCIDENT_BACKOFF_SECONDS: ${{ vars.ROLLBACK_INCIDENT_BACKOFF_SECONDS || '2' }}
         run: |
           STRICT_FLAG=""
           if [[ "$ROLLBACK_INCIDENT_STRICT" == "true" ]]; then
@@ -189,6 +192,9 @@ jobs:
 
           python scripts/ops/dispatch_rollback_incident.py \
             --incident-payload "$DEPLOYMENT_ROLLBACK_INCIDENT_PAYLOAD_PATH" \
+            --max-attempts "$ROLLBACK_INCIDENT_MAX_ATTEMPTS" \
+            --backoff-seconds "$ROLLBACK_INCIDENT_BACKOFF_SECONDS" \
+            --dead-letter-output "$DEPLOYMENT_ROLLBACK_INCIDENT_DEAD_LETTER_PATH" \
             --output "$DEPLOYMENT_ROLLBACK_INCIDENT_DISPATCH_REPORT_PATH" \
             $STRICT_FLAG
 
@@ -206,4 +212,5 @@ jobs:
             artifacts/promotions/release_lock.json
             artifacts/promotions/rollback_incident_payload.json
             artifacts/promotions/rollback_incident_dispatch.json
+            artifacts/promotions/rollback_incident_dead_letter.json
           if-no-files-found: ignore

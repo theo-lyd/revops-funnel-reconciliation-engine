@@ -7,6 +7,7 @@ Strengthen deployment security posture by introducing Snowflake key-pair authent
 - Batch 7.1: Snowflake key-pair authentication and release access controls.
 - Batch 7.2: Controlled rollback playbook execution and deployment integration validation.
 - Batch 7.3: Rollback incident webhook dispatch and stricter rollback execution access enforcement.
+- Batch 7.4: Webhook delivery retry/backoff and dead-letter artifacting for rollback incidents.
 
 ## Design Principles
 - Keep local development non-blocking and fallback-safe.
@@ -22,4 +23,5 @@ Strengthen deployment security posture by introducing Snowflake key-pair authent
 - CI includes deployment-focused integration validation for rollback manifest/execution paths.
 - Release failure paths support webhook-based incident dispatch with explicit strict-mode enforcement option.
 - Rollback playbook execution can be actor-gated in deployment contexts.
+- Incident webhook delivery supports configurable retries/backoff with dead-letter artifacts on terminal failure.
 - Security changes are documented and covered by tests.

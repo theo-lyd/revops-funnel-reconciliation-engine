@@ -42,6 +42,7 @@ The CI/CD pipeline enforces code quality, data model correctness, and production
   - `ROLLBACK_INCIDENT_WEBHOOK_URL` (optional; required only when incident dispatch is enabled)
   - `ROLLBACK_INCIDENT_WEBHOOK_TOKEN` (optional bearer token for incident webhook)
   - `RELEASE_ALLOWED_ACTORS` / `ROLLBACK_ALLOWED_ACTORS` (optional actor allowlists for release/rollback enforcement)
+  - `ROLLBACK_INCIDENT_MAX_ATTEMPTS` / `ROLLBACK_INCIDENT_BACKOFF_SECONDS` (optional workflow vars for delivery retries)
 
 **Steps**:
 - Checkout code
@@ -169,4 +170,4 @@ if: |
 
 1. **Conditional Secret Handling**: Extend logic to handle other environment-specific deployments.
 2. **Artifact Retention**: Tune retention windows and centralized indexing for CI evidence artifacts.
-3. **Webhook Delivery Robustness**: Add retry/backoff and optional dead-letter queue for incident dispatch failures.
+3. **Escalation Integrations**: Route dead-letter incidents to paging/ticketing systems for automated follow-up.

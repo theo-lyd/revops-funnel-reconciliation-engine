@@ -176,6 +176,8 @@ def test_dispatch_rollback_incident_payload_skips_without_webhook(tmp_path: Path
 
     assert report.dispatch_status == "skipped"
     assert report.incident_webhook_configured is False
+    assert report.attempt_count == 0
+    assert report.dead_letter_created is False
     assert output.exists()
 
 
@@ -200,12 +202,15 @@ def test_dispatch_rollback_incident_payload_sends_webhook(tmp_path: Path) -> Non
 
     assert report.dispatch_status == "sent"
     assert report.http_status_code == 202
+    assert report.attempt_count == 1
+    assert report.dead_letter_created is False
     assert output.exists()
 
 
 def test_dispatch_rollback_incident_payload_handles_request_error(tmp_path: Path) -> None:
     payload = tmp_path / "rollback_incident_payload.json"
     output = tmp_path / "rollback_incident_dispatch.json"
+    dead_letter = tmp_path / "rollback_incident_dead_letter.json"
     payload.write_text(
         json.dumps({"release_id": "release-123", "environment": "production"}),
         encoding="utf-8",
@@ -218,9 +223,76 @@ def test_dispatch_rollback_incident_payload_handles_request_error(tmp_path: Path
         report = dispatch_rollback_incident_payload(
             incident_payload_path=payload,
             incident_webhook_url="https://example.com/webhook",
+            dead_letter_output_path=dead_letter,
             output_path=output,
         )
 
     assert report.dispatch_status == "failed"
     assert "network down" in report.error_message
+    assert report.dead_letter_created is True
+    assert report.dead_letter_path == str(dead_letter)
     assert output.exists()
+    assert dead_letter.exists()
+
+
+def test_dispatch_rollback_incident_payload_retries_then_succeeds(tmp_path: Path) -> None:
+    payload = tmp_path / "rollback_incident_payload.json"
+    output = tmp_path / "rollback_incident_dispatch.json"
+    payload.write_text(
+        json.dumps({"release_id": "release-123", "environment": "production"}),
+        encoding="utf-8",
+    )
+
+    class _SuccessResponse:
+        status_code = 200
+        text = "ok"
+
+    with patch(
+        "revops_funnel.deployment_ops.requests.post",
+        side_effect=[requests.RequestException("transient"), _SuccessResponse()],
+    ):
+        report = dispatch_rollback_incident_payload(
+            incident_payload_path=payload,
+            incident_webhook_url="https://example.com/webhook",
+            max_attempts=2,
+            backoff_seconds=0,
+            output_path=output,
+        )
+
+    assert report.dispatch_status == "sent"
+    assert report.attempt_count == 2
+    assert report.max_attempts == 2
+    assert report.dead_letter_created is False
+
+
+def test_dispatch_rollback_incident_payload_writes_dead_letter_on_non_2xx(tmp_path: Path) -> None:
+    payload = tmp_path / "rollback_incident_payload.json"
+    output = tmp_path / "rollback_incident_dispatch.json"
+    dead_letter = tmp_path / "rollback_incident_dead_letter.json"
+    payload.write_text(
+        json.dumps({"release_id": "release-123", "environment": "production"}),
+        encoding="utf-8",
+    )
+
+    class _FailureResponse:
+        status_code = 503
+        text = "unavailable"
+
+    with patch(
+        "revops_funnel.deployment_ops.requests.post",
+        return_value=_FailureResponse(),
+    ):
+        report = dispatch_rollback_incident_payload(
+            incident_payload_path=payload,
+            incident_webhook_url="https://example.com/webhook",
+            max_attempts=2,
+            backoff_seconds=0,
+            dead_letter_output_path=dead_letter,
+            output_path=output,
+        )
+
+    assert report.dispatch_status == "failed"
+    assert report.http_status_code == 503
+    assert report.attempt_count == 2
+    assert report.dead_letter_created is True
+    assert dead_letter.exists()

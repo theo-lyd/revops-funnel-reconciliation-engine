@@ -378,3 +378,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: keep release-time incident dispatch strictness environment-controlled while preserving local-safe defaults
 - Alternative resolution options: Not applicable
 - Verification evidence: `make lint` and `make test` passed after webhook dispatch and access-control additions
+
+### Issue ID: ISS-034
+- Phase and batch: Phase 7 Batch 7.4 - Webhook retry/backoff and dead-letter hardening
+- Date observed: 2026-04-02
+- Where it occurred: Batch 7.4 implementation and validation
+- Symptom: No blocking defects encountered
+- Root cause: Not applicable
+- Resolution: Not applicable
+- How to avoid: keep retry/backoff defaults conservative and capture terminal failures in dead-letter artifacts for escalation
+- Alternative resolution options: Not applicable
+- Verification evidence: `make lint` and `make test` passed with retry/dead-letter coverage

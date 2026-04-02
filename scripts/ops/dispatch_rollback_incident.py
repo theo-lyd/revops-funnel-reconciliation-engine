@@ -9,6 +9,7 @@ import os
 from dataclasses import asdict
 
 from revops_funnel.deployment_ops import (
+    DEFAULT_ROLLBACK_INCIDENT_DEAD_LETTER_OUTPUT,
     DEFAULT_ROLLBACK_INCIDENT_DISPATCH_OUTPUT,
     DEFAULT_ROLLBACK_INCIDENT_PAYLOAD,
     dispatch_rollback_incident_payload,
@@ -39,6 +40,23 @@ def parse_args() -> argparse.Namespace:
         help="HTTP timeout in seconds.",
     )
     parser.add_argument(
+        "--max-attempts",
+        type=int,
+        default=int(os.getenv("ROLLBACK_INCIDENT_MAX_ATTEMPTS", "1")),
+        help="Maximum webhook delivery attempts before declaring failure.",
+    )
+    parser.add_argument(
+        "--backoff-seconds",
+        type=float,
+        default=float(os.getenv("ROLLBACK_INCIDENT_BACKOFF_SECONDS", "0")),
+        help="Fixed backoff delay between retry attempts.",
+    )
+    parser.add_argument(
+        "--dead-letter-output",
+        default=str(DEFAULT_ROLLBACK_INCIDENT_DEAD_LETTER_OUTPUT),
+        help="Path for dead-letter artifact when dispatch fails after retries.",
+    )
+    parser.add_argument(
         "--strict",
         action="store_true",
         help="Fail when incident dispatch is skipped or fails.",
@@ -58,6 +76,9 @@ def main() -> int:
         incident_webhook_url=args.webhook_url,
         incident_webhook_token=args.webhook_token,
         timeout_seconds=args.timeout_seconds,
+        max_attempts=args.max_attempts,
+        backoff_seconds=args.backoff_seconds,
+        dead_letter_output_path=args.dead_letter_output,
         output_path=args.output,
     )
     print(json.dumps(asdict(report), indent=2, sort_keys=True))

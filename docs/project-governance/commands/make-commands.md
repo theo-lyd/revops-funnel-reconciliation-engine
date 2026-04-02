@@ -690,3 +690,27 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: pytest dependencies installed
   - Expected output: full test suite pass including new deployment ops and CLI tests
   - Recovery: remediate failing tests and rerun gates
+
+## Phase 7 Batch 7.4 execution entries
+
+### MK-057
+- What: make lint
+- Why: validate incident webhook retry/backoff and dead-letter hardening for style/type safety
+- Who: project maintainer
+- When: 2026-04-02, Phase 7 Batch 7.4 validation
+- Where: repository root
+- How:
+  - Preconditions: dependencies installed and Phase 7.4 files updated
+  - Expected output: Ruff and mypy pass across updated source/scripts/workflows
+  - Recovery: fix lint/type findings and rerun
+
+### MK-058
+- What: make test
+- Why: verify retry/dead-letter behavior and CLI enforcement without regression
+- Who: project maintainer
+- When: 2026-04-02, Phase 7 Batch 7.4 validation
+- Where: repository root
+- How:
+  - Preconditions: pytest dependencies installed
+  - Expected output: full suite pass including new webhook robustness tests
+  - Recovery: remediate failing tests and rerun gates

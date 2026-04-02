@@ -103,7 +103,7 @@ execute-rollback-playbook:
 	$(PYTHON) scripts/ops/execute_rollback_playbook.py --rollback-report artifacts/promotions/deployment_rollback.json
 
 dispatch-rollback-incident:
-	$(PYTHON) scripts/ops/dispatch_rollback_incident.py --incident-payload artifacts/promotions/rollback_incident_payload.json
+	$(PYTHON) scripts/ops/dispatch_rollback_incident.py --incident-payload artifacts/promotions/rollback_incident_payload.json --max-attempts $${ROLLBACK_INCIDENT_MAX_ATTEMPTS:-3} --backoff-seconds $${ROLLBACK_INCIDENT_BACKOFF_SECONDS:-2} --dead-letter-output artifacts/promotions/rollback_incident_dead_letter.json
 
 production-stop-gate:
 	$(MAKE) quality-gate

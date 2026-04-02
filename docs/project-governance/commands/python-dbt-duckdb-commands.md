@@ -479,3 +479,27 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: incident payload exists; optional webhook URL/token provided via environment or arguments
   - Expected output: dispatch report with status `sent`, `failed`, or `skipped`
   - Recovery: configure webhook secrets, adjust strictness mode, and rerun dispatch command
+
+## Phase 7 Batch 7.4 execution entries
+
+### PDD-041
+- What: python scripts/ops/dispatch_rollback_incident.py --incident-payload artifacts/promotions/rollback_incident_payload.json --max-attempts 3 --backoff-seconds 2 --dead-letter-output artifacts/promotions/rollback_incident_dead_letter.json --output artifacts/promotions/rollback_incident_dispatch.json
+- Why: increase rollback incident delivery reliability with retry/backoff controls and dead-letter artifacting on terminal failures
+- Who: project maintainer
+- When: 2026-04-02, Phase 7 Batch 7.4 implementation
+- Where: release workflow failure path
+- How:
+  - Preconditions: incident payload exists and webhook secrets configured for dispatch
+  - Expected output: dispatch report records attempt metadata; dead-letter artifact produced only when retries are exhausted
+  - Recovery: adjust retry/backoff values or investigate dead-letter output for escalation
+
+### PDD-042
+- What: python scripts/ops/dispatch_rollback_incident.py --incident-payload artifacts/promotions/rollback_incident_payload.json --strict
+- Why: enforce mandatory incident notification in environments that require dispatch guarantees
+- Who: project maintainer
+- When: 2026-04-02, Phase 7 Batch 7.4 implementation
+- Where: release workflow with `ROLLBACK_INCIDENT_STRICT=true`
+- How:
+  - Preconditions: webhook configuration is expected to be present and healthy
+  - Expected output: command exits non-zero when dispatch status is `skipped` or `failed`
+  - Recovery: restore webhook configuration or switch strict mode off for controlled fallback

@@ -978,3 +978,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful commit and remote connectivity
   - Expected output: remote master updated with Phase 7.3 changes
   - Recovery: resolve conflicts and retry push
+
+## Phase 7: Webhook retry/backoff and dead-letter hardening entries
+
+### GIT-084
+- What: git add .env.example .github/workflows/ci.yml .github/workflows/release.yml Makefile src/revops_funnel/deployment_ops.py scripts/ops/dispatch_rollback_incident.py tests/test_deployment_ops.py tests/test_dispatch_rollback_incident_cli.py docs/reports/phase-7/PHASE-7-PLAN.md docs/reports/phase-7/batch-7.4-webhook-retry-backoff-and-dead-letter-hardening.md docs/project-governance/ci-cd-runbook.md README.md docs/project-governance/issues-log.md docs/project-governance/commands/make-commands.md docs/project-governance/commands/python-dbt-duckdb-commands.md docs/project-governance/commands/git-commands.md docs/project-governance/phase-completion-checklist.md
+- Why: stage Phase 7.4 webhook reliability hardening and governance updates as one auditable unit
+- Who: data engineer or analytics lead
+- When: 2026-04-02, Phase 7 Batch 7.4 completion
+- Where: repository root
+- How:
+  - Preconditions: lint/test gates pass for Phase 7.4 scope
+  - Expected output: only intended Phase 7.4 files staged
+  - Recovery: unstage unrelated files and restage explicit scope
+
+### GIT-085
+- What: git commit -m "feat(phase-7): harden incident webhook delivery retries"
+- Why: persist retry/backoff/dead-letter controls for rollback incident dispatch
+- Who: data engineer or analytics lead
+- When: 2026-04-02, after staging review
+- Where: repository root
+- How:
+  - Preconditions: staged files reviewed and hooks passing
+  - Expected output: commit hash for Phase 7.4 batch
+  - Recovery: resolve hook findings and recommit
+
+### GIT-086
+- What: git push origin master
+- Why: publish Phase 7.4 hardening updates to remote
+- Who: data engineer or analytics lead
+- When: 2026-04-02, immediately after commit
+- Where: repository root
+- How:
+  - Preconditions: successful commit and remote connectivity
+  - Expected output: remote master updated with Phase 7.4 changes
+  - Recovery: resolve conflicts and retry push
