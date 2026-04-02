@@ -152,7 +152,6 @@ Phase 7 continues with authentication hardening, access controls, and controlled
 5. **Batch 7.4**: [Webhook retry/backoff and dead-letter hardening](docs/reports/phase-7/batch-7.4-webhook-retry-backoff-and-dead-letter-hardening.md)
 6. **Batch 7.5**: [Dead-letter escalation automation](docs/reports/phase-7/batch-7.5-dead-letter-escalation-automation.md)
 7. **End Report**: [Phase 7 end report](docs/reports/phase-7/phase-7-end-report.md)
-6. **Batch 7.5**: [Dead-letter escalation automation](docs/reports/phase-7/batch-7.5-dead-letter-escalation-automation.md)
 
 ### Project Governance
 - [Standing instructions and process documentation](docs/project-governance/standing-instructions.md)
