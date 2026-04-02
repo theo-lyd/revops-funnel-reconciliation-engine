@@ -667,3 +667,25 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: required telemetry artifacts must be present and parseable
   - Expected output: non-zero exit when no runbook artifacts are found
   - Recovery: restore artifact-producing steps (health, dashboards, rollback, dispatch/escalation) and rerun
+
+### PDD-057
+- What: python scripts/analytics/generate_reporting_pack.py --package-version <version> --output artifacts/reports/public_sector_executive_reporting_pack.json
+- Why: bundle executive and public-sector query pack SQL assets into a machine-readable reporting artifact
+- Who: project maintainer
+- When: 2026-04-02+, during executive reporting publish cycles
+- Where: local analytics workflows and CI/release artifact generation
+- How:
+  - Preconditions: executive/public-sector/streamlit query pack SQL files are present
+  - Expected output: reporting pack artifact with package metadata, asset list, SQL text, and checksums
+  - Recovery: verify query pack file paths and rerun generator
+
+### PDD-058
+- What: python scripts/analytics/generate_reporting_pack.py --strict-files --output artifacts/reports/public_sector_executive_reporting_pack.json
+- Why: enforce strict query-pack completeness for governed reporting pack distribution
+- Who: project maintainer
+- When: 2026-04-02+, during compliance-sensitive reporting releases
+- Where: CI/release validation contexts
+- How:
+  - Preconditions: all required query pack SQL files exist
+  - Expected output: non-zero exit if any required pack file is missing
+  - Recovery: restore missing query pack sources before rerunning in strict mode

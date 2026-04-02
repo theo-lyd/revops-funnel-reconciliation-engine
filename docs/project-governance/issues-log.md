@@ -466,3 +466,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: keep failure-pattern detection deterministic and preserve strict/non-strict runbook modes for local-safe and production contexts
 - Alternative resolution options: Not applicable
 - Verification evidence: unit and CLI tests validate unhealthy/degraded pattern detection, escalation routing, runbook serialization, safe-skip behavior, and strict-artifact enforcement
+
+### Issue ID: ISS-042
+- Phase and batch: Public-Sector and Executive Reporting Pack gap-closure implementation
+- Date observed: 2026-04-02
+- Where it occurred: reporting-pack and public-sector BI model implementation
+- Symptom: Executive reporting assets existed, but explicit public-sector BI surface and reporting pack bundling automation were missing
+- Root cause: Earlier phases delivered executive assets without a dedicated public-sector aggregate model and package generator
+- Resolution: added `bi_public_sector_executive_overview`, public-sector Metabase query pack, reporting-pack generator CLI/module, and tests
+- How to avoid: keep roadmap-to-deliverable traceability checks in phase close-outs to catch missing packaging and audience-specific BI artifacts
+- Alternative resolution options: manual query-pack distribution without automated packaging (rejected due to governance/audit gaps)
+- Verification evidence: lint/type checks passed; targeted reporting-pack tests and full pytest suite passed

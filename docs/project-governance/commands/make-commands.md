@@ -900,3 +900,14 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: health, dashboard, rollback, dispatch, and escalation artifacts available
   - Expected output: non-zero exit when no runbook input artifacts are found
   - Recovery: ensure upstream observability and rollback artifact generation succeeded, then rerun
+
+### MK-075
+- What: make reporting-pack
+- Why: generate a distributable Public-Sector and Executive Reporting Pack artifact for BI and stakeholder delivery
+- Who: project maintainer
+- When: 2026-04-02+, during analytics release preparation and executive reporting refreshes
+- Where: repository root and CI/release artifact generation contexts
+- How:
+  - Preconditions: phase-4 query pack SQL files exist and are accessible
+  - Expected output: JSON reporting pack artifact with bundled query assets and checksums
+  - Recovery: restore missing query pack files or rerun with strict file validation disabled

@@ -17,6 +17,7 @@ def test_build_template_catalog_contains_gold_models() -> None:
     templates = build_template_catalog("analytics_gold")
     assert set(templates) == {
         "Executive Monthly Overview",
+        "Public Sector Monthly Overview",
         "Sales Team Performance",
         "Leakage Reason Analysis",
         "Pipeline Velocity",
@@ -67,3 +68,12 @@ def test_validate_columns_reports_missing_fields() -> None:
     frame = pd.DataFrame({"metric_month": ["2026-01-01"], "regional_office": ["London"]})
     missing = validate_columns(frame, {"metric_month", "regional_office", "win_rate"})
     assert missing == ["win_rate"]
+
+
+def test_heuristic_resolution_prefers_public_sector_template() -> None:
+    resolution = heuristic_resolution(
+        "Show public sector government funnel performance in Paris",
+        ["London", "Paris"],
+    )
+    assert resolution.template_key == "Public Sector Monthly Overview"
+    assert resolution.offices == ["Paris"]

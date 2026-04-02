@@ -35,7 +35,7 @@ ONCALL_PRIMARY_ENDPOINT ?= pagerduty-primary
 ONCALL_SECONDARY_ENDPOINT ?= pagerduty-secondary
 ONCALL_TICKET_QUEUE ?= revops-platform
 
-.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-build-changed dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-test-changed dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle refresh-caches promote-deployment rollback-deployment production-stop-gate production-stop-gate-strict query-cost-attribution query-cost-attribution-strict query-cost-regression query-cost-regression-strict health-checks health-checks-strict dashboards dashboards-strict oncall-runbooks oncall-runbooks-strict query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness metabase-setup streamlit-dev anomaly-check insights-generate
+.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-build-changed dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-test-changed dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle refresh-caches promote-deployment rollback-deployment production-stop-gate production-stop-gate-strict query-cost-attribution query-cost-attribution-strict query-cost-regression query-cost-regression-strict health-checks health-checks-strict dashboards dashboards-strict oncall-runbooks oncall-runbooks-strict query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness metabase-setup streamlit-dev anomaly-check insights-generate reporting-pack
 
 setup:
 	$(PIP) install "apache-airflow==$(AIRFLOW_VERSION)" --constraint "$(AIRFLOW_CONSTRAINTS)"
@@ -234,3 +234,7 @@ anomaly-check:
 insights-generate:
 	@echo "Generating Batch 5.4 monitoring insights..."
 	$(PYTHON) scripts/analytics/anomaly_monitor.py --source duckdb --output-json $(ANOMALY_REPORT_PATH) --output-markdown $(ANOMALY_MARKDOWN_PATH)
+
+reporting-pack:
+	@echo "Generating Public-Sector and Executive Reporting Pack..."
+	$(PYTHON) scripts/analytics/generate_reporting_pack.py --output $${REPORTING_PACK_OUTPUT_PATH:-artifacts/reports/public_sector_executive_reporting_pack.json}

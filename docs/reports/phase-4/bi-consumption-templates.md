@@ -6,6 +6,7 @@ Provide standardized consumption guidance so Metabase dashboards and Streamlit w
 ## Approved Gold models for BI
 - `analytics_gold.fct_revenue_funnel`: row-level funnel fact model.
 - `analytics_gold.bi_executive_funnel_overview`: executive aggregate model for dashboard cards and trends.
+- `analytics_gold.bi_public_sector_executive_overview`: public-sector executive aggregate model for governance views.
 - `analytics_gold.dim_metric_contract`: governed semantic registry for metric definitions and ownership.
 
 ## Naming and usage conventions
@@ -21,6 +22,7 @@ Provide standardized consumption guidance so Metabase dashboards and Streamlit w
 
 ## Query packs
 - Metabase: `docs/reports/phase-4/query-packs/metabase-executive-funnel-view.sql`
+- Metabase: `docs/reports/phase-4/query-packs/metabase-public-sector-funnel-view.sql`
 - Streamlit + LLM: `docs/reports/phase-4/query-packs/streamlit-text-to-sql-safe-templates.sql`
 
 ## Stability controls

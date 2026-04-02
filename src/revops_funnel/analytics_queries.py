@@ -69,6 +69,30 @@ def build_template_catalog(bi_schema: str) -> dict[str, QueryTemplate]:
             chart_y="win_rate",
             chart_type="line",
         ),
+        "Public Sector Monthly Overview": QueryTemplate(
+            name="Public Sector Monthly Overview",
+            description="Public-sector monthly KPI overview for executive governance reporting.",
+            base_sql=(
+                f"""
+                select
+                    metric_month,
+                    regional_office,
+                    total_opportunities,
+                    won_opportunities,
+                    lost_opportunities,
+                    win_rate,
+                    leakage_ratio,
+                    avg_cycle_days,
+                    avg_stage_age_days
+                from {bi_schema}.bi_public_sector_executive_overview
+                """
+            ),
+            date_column="metric_month",
+            office_column="regional_office",
+            chart_x="metric_month",
+            chart_y="win_rate",
+            chart_type="line",
+        ),
         "Sales Team Performance": QueryTemplate(
             name="Sales Team Performance",
             description="Sales team outcomes and value metrics by regional office.",
@@ -178,7 +202,14 @@ def build_query_sql(
 
 def heuristic_resolution(prompt: str, offices: list[str]) -> LlmResolution:
     lowered = prompt.lower()
-    if "velocity" in lowered or "stage" in lowered:
+    if (
+        "public sector" in lowered
+        or "government" in lowered
+        or "federal" in lowered
+        or "municipal" in lowered
+    ):
+        template_key = "Public Sector Monthly Overview"
+    elif "velocity" in lowered or "stage" in lowered:
         template_key = "Pipeline Velocity"
     elif "team" in lowered or "agent" in lowered or "manager" in lowered:
         template_key = "Sales Team Performance"

@@ -81,3 +81,25 @@ models:
           - dbt_utils.accepted_range:
               min_value: 0
               max_value: 1
+
+  - name: bi_public_sector_executive_overview
+    description: BI-safe aggregate view for public-sector executive reporting consumption.
+    columns:
+      - name: regional_office
+        tests: [not_null]
+      - name: metric_month
+        tests: [not_null]
+      - name: total_opportunities
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+      - name: win_rate
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
+      - name: leakage_ratio
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
