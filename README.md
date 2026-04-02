@@ -153,6 +153,12 @@ Phase 7 continues with authentication hardening, access controls, and controlled
 6. **Batch 7.5**: [Dead-letter escalation automation](docs/reports/phase-7/batch-7.5-dead-letter-escalation-automation.md)
 7. **End Report**: [Phase 7 end report](docs/reports/phase-7/phase-7-end-report.md)
 
+### Phase 8: Performance and Cost Engineering
+Phase 8 adds performance and cost guardrails for production transformation paths:
+
+1. **Plan**: [Phase 8 implementation plan](docs/reports/phase-8/PHASE-8-PLAN.md)
+2. **Batch 8.1**: [Budgeted dbt execution for production build/test](docs/reports/phase-8/batch-8.1-budgeted-dbt-execution.md)
+
 ### Project Governance
 - [Standing instructions and process documentation](docs/project-governance/standing-instructions.md)
 - [Phase completion checklist and stop-gate workflow](docs/project-governance/phase-completion-checklist.md)

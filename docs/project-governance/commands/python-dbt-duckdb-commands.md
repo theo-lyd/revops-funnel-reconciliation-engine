@@ -527,3 +527,27 @@ This file records Python, dbt, and DuckDB-specific commands.
   - Preconditions: escalation webhook configuration is expected and reachable
   - Expected output: non-zero exit when dead-letter exists and escalation is not sent
   - Recovery: fix escalation endpoint/configuration or disable strict mode in fallback environments
+
+## Phase 8 Batch 8.1 execution entries
+
+### PDD-045
+- What: python scripts/ops/run_dbt_budgeted.py --command build --environment production --project-dir dbt --profiles-dir profiles --target prod --threads <n> --max-threads-local <n> --max-threads-prod <n> --timeout-seconds-local <s> --timeout-seconds-prod <s> --output artifacts/performance/dbt_build_prod_report.json
+- Why: execute production dbt build under explicit concurrency and timeout budgets with auditable performance output
+- Who: project maintainer
+- When: 2026-04-02, Phase 8 Batch 8.1 implementation
+- Where: release workflow and production deployment paths
+- How:
+  - Preconditions: dbt project/profiles available and target environment credentials configured
+  - Expected output: dbt build execution report with effective threads, timeout, duration, and exit code
+  - Recovery: tune budget values and rerun command when timeout or cap constraints are exceeded
+
+### PDD-046
+- What: python scripts/ops/run_dbt_budgeted.py --command test --environment production --project-dir dbt --profiles-dir profiles --target prod --threads <n> --max-threads-local <n> --max-threads-prod <n> --timeout-seconds-local <s> --timeout-seconds-prod <s> --output artifacts/performance/dbt_test_prod_report.json
+- Why: execute production dbt tests under the same cost/performance budget controls as build paths
+- Who: project maintainer
+- When: 2026-04-02, Phase 8 Batch 8.1 implementation
+- Where: release workflow and production deployment paths
+- How:
+  - Preconditions: dbt build path and profiles are available
+  - Expected output: dbt test execution report artifact with budgeted runtime metadata
+  - Recovery: adjust thread/timeout budgets and rerun after investigating failing tests or timeouts

@@ -400,3 +400,14 @@ This log tracks implementation issues across all phases.
 - How to avoid: keep escalation strictness optional and default-safe while ensuring escalation report artifacts are always generated
 - Alternative resolution options: Not applicable
 - Verification evidence: `make lint` and `make test` passed with escalation automation tests
+
+### Issue ID: ISS-036
+- Phase and batch: Phase 8 Batch 8.1 - Budgeted dbt execution for production build/test
+- Date observed: 2026-04-02
+- Where it occurred: Batch 8.1 implementation and validation
+- Symptom: No blocking defects encountered
+- Root cause: Not applicable
+- Resolution: Not applicable
+- How to avoid: keep budget defaults conservative and validate both timeout and thread-cap behavior with focused tests
+- Alternative resolution options: Not applicable
+- Verification evidence: `make lint` and `make test` passed with budgeted dbt execution coverage

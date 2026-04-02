@@ -738,3 +738,27 @@ This file records Make targets used in the project lifecycle.
   - Preconditions: pytest dependencies installed
   - Expected output: full suite pass including dead-letter escalation tests
   - Recovery: remediate failing tests and rerun gates
+
+## Phase 8 Batch 8.1 execution entries
+
+### MK-061
+- What: make lint
+- Why: validate performance/cost budget helper and budgeted dbt runner changes for style/type safety
+- Who: project maintainer
+- When: 2026-04-02, Phase 8 Batch 8.1 validation
+- Where: repository root
+- How:
+  - Preconditions: dependencies installed and Phase 8.1 files updated
+  - Expected output: Ruff and mypy pass across updated source and script modules
+  - Recovery: remediate lint/type findings and rerun
+
+### MK-062
+- What: make test
+- Why: verify budget resolution and timeout/thread-cap behavior while preserving prior coverage
+- Who: project maintainer
+- When: 2026-04-02, Phase 8 Batch 8.1 validation
+- Where: repository root
+- How:
+  - Preconditions: pytest dependencies installed
+  - Expected output: full suite pass including new performance budget tests
+  - Recovery: remediate failing tests and rerun

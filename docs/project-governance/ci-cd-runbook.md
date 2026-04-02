@@ -43,6 +43,8 @@ The CI/CD pipeline enforces code quality, data model correctness, and production
   - `ROLLBACK_INCIDENT_WEBHOOK_TOKEN` (optional bearer token for incident webhook)
   - `RELEASE_ALLOWED_ACTORS` / `ROLLBACK_ALLOWED_ACTORS` (optional actor allowlists for release/rollback enforcement)
   - `ROLLBACK_INCIDENT_MAX_ATTEMPTS` / `ROLLBACK_INCIDENT_BACKOFF_SECONDS` (optional workflow vars for delivery retries)
+  - `DBT_MAX_THREADS_LOCAL` / `DBT_MAX_THREADS_PROD` (optional workflow vars for dbt thread budget caps)
+  - `DBT_TIMEOUT_SECONDS_LOCAL` / `DBT_TIMEOUT_SECONDS_PROD` (optional workflow vars for dbt runtime budget timeouts)
 
 **Steps**:
 - Checkout code

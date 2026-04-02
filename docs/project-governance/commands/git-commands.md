@@ -1083,3 +1083,38 @@ This file records Git commands used in the project with beginner-friendly contex
   - Preconditions: successful commit and remote connectivity
   - Expected output: remote master updated with Phase 7.5 changes
   - Recovery: resolve conflicts and retry push
+
+## Phase 8: Budgeted dbt execution entries
+
+### GIT-090
+- What: git add src/revops_funnel/performance.py scripts/ops/run_dbt_budgeted.py tests/test_performance_budget.py tests/test_run_dbt_budgeted_cli.py .env.example Makefile .github/workflows/release.yml docs/reports/phase-8/PHASE-8-PLAN.md docs/reports/phase-8/batch-8.1-budgeted-dbt-execution.md README.md docs/project-governance/issues-log.md docs/project-governance/phase-completion-checklist.md docs/project-governance/commands/make-commands.md docs/project-governance/commands/python-dbt-duckdb-commands.md docs/project-governance/commands/git-commands.md
+- Why: stage Phase 8.1 performance/cost budget controls and governance updates as one auditable unit
+- Who: data engineer or analytics lead
+- When: 2026-04-02, Phase 8 Batch 8.1 completion
+- Where: repository root
+- How:
+  - Preconditions: lint/test gates pass for Phase 8.1 scope
+  - Expected output: only intended Phase 8.1 files staged
+  - Recovery: unstage unrelated files and restage explicit scope
+
+### GIT-091
+- What: git commit -m "feat(phase-8): add budgeted dbt execution guardrails"
+- Why: persist Phase 8.1 performance and cost controls for production dbt paths
+- Who: data engineer or analytics lead
+- When: 2026-04-02, after staging review
+- Where: repository root
+- How:
+  - Preconditions: staged files reviewed and hooks passing
+  - Expected output: commit hash for Phase 8.1 batch
+  - Recovery: resolve hook findings and recommit
+
+### GIT-092
+- What: git push origin master
+- Why: publish Phase 8.1 performance/cost engineering updates to remote
+- Who: data engineer or analytics lead
+- When: 2026-04-02, immediately after commit
+- Where: repository root
+- How:
+  - Preconditions: successful commit and remote connectivity
+  - Expected output: remote master updated with Phase 8.1 changes
+  - Recovery: resolve conflicts and retry push

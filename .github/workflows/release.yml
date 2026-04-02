@@ -112,6 +112,12 @@ jobs:
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
           SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
+          DBT_THREADS_PROD: ${{ vars.DBT_THREADS_PROD || '4' }}
+          DBT_MAX_THREADS_LOCAL: ${{ vars.DBT_MAX_THREADS_LOCAL || '2' }}
+          DBT_MAX_THREADS_PROD: ${{ vars.DBT_MAX_THREADS_PROD || '4' }}
+          DBT_TIMEOUT_SECONDS_LOCAL: ${{ vars.DBT_TIMEOUT_SECONDS_LOCAL || '900' }}
+          DBT_TIMEOUT_SECONDS_PROD: ${{ vars.DBT_TIMEOUT_SECONDS_PROD || '1800' }}
+          DBT_PROD_SELECTOR: ${{ vars.DBT_PROD_SELECTOR || 'path:models/staging path:models/intermediate path:models/marts' }}
         run: make dbt-deploy-prod
 
       - name: Run strict metric parity gate
@@ -228,6 +234,8 @@ jobs:
           path: |
             artifacts/parity/metric_parity_report.json
             artifacts/cache/cache_refresh.json
+            artifacts/performance/dbt_build_prod_report.json
+            artifacts/performance/dbt_test_prod_report.json
             artifacts/promotions/deployment_promotion.json
             artifacts/promotions/deployment_rollback.json
             artifacts/promotions/deployment_rollback_execution.json

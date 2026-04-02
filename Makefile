@@ -4,7 +4,12 @@ AIRFLOW_VERSION ?= 2.10.5
 AIRFLOW_CONSTRAINTS ?= https://raw.githubusercontent.com/apache/airflow/constraints-$(AIRFLOW_VERSION)/constraints-3.10.txt
 DBT_THREADS_LOCAL ?= 1
 DBT_THREADS_PROD ?= 4
+DBT_MAX_THREADS_LOCAL ?= 2
+DBT_MAX_THREADS_PROD ?= 4
+DBT_TIMEOUT_SECONDS_LOCAL ?= 900
+DBT_TIMEOUT_SECONDS_PROD ?= 1800
 DBT_BASE_REF ?= origin/master
+DBT_PROD_SELECTOR ?= path:models/staging path:models/intermediate path:models/marts
 
 .PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-build-changed dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-test-changed dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle refresh-caches promote-deployment rollback-deployment production-stop-gate production-stop-gate-strict query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness metabase-setup streamlit-dev anomaly-check insights-generate
 
@@ -44,7 +49,7 @@ dbt-build:
 	cd dbt && dbt build --profiles-dir profiles --threads $(DBT_THREADS_LOCAL)
 
 dbt-build-prod:
-	cd dbt && dbt build --profiles-dir profiles --target prod --threads $(DBT_THREADS_PROD)
+	$(PYTHON) scripts/ops/run_dbt_budgeted.py --command build --environment production --project-dir dbt --profiles-dir profiles --target prod --select "$(DBT_PROD_SELECTOR)" --threads $(DBT_THREADS_PROD) --max-threads-local $(DBT_MAX_THREADS_LOCAL) --max-threads-prod $(DBT_MAX_THREADS_PROD) --timeout-seconds-local $(DBT_TIMEOUT_SECONDS_LOCAL) --timeout-seconds-prod $(DBT_TIMEOUT_SECONDS_PROD) --output artifacts/performance/dbt_build_prod_report.json
 
 dbt-build-changed:
 	$(PYTHON) scripts/ops/run_changed_model_dbt.py build --base-ref $(DBT_BASE_REF)
@@ -62,7 +67,7 @@ dbt-test:
 	cd dbt && dbt test --profiles-dir profiles --threads $(DBT_THREADS_LOCAL)
 
 dbt-test-prod:
-	cd dbt && dbt test --profiles-dir profiles --target prod --threads $(DBT_THREADS_PROD)
+	$(PYTHON) scripts/ops/run_dbt_budgeted.py --command test --environment production --project-dir dbt --profiles-dir profiles --target prod --select "$(DBT_PROD_SELECTOR)" --threads $(DBT_THREADS_PROD) --max-threads-local $(DBT_MAX_THREADS_LOCAL) --max-threads-prod $(DBT_MAX_THREADS_PROD) --timeout-seconds-local $(DBT_TIMEOUT_SECONDS_LOCAL) --timeout-seconds-prod $(DBT_TIMEOUT_SECONDS_PROD) --output artifacts/performance/dbt_test_prod_report.json
 
 dbt-test-changed:
 	$(PYTHON) scripts/ops/run_changed_model_dbt.py test --base-ref $(DBT_BASE_REF)
@@ -107,6 +112,9 @@ dispatch-rollback-incident:
 
 escalate-rollback-dead-letter:
 	$(PYTHON) scripts/ops/escalate_rollback_dead_letter.py --dead-letter artifacts/promotions/rollback_incident_dead_letter.json --max-attempts $${ROLLBACK_ESCALATION_MAX_ATTEMPTS:-2} --backoff-seconds $${ROLLBACK_ESCALATION_BACKOFF_SECONDS:-3}
+
+performance-gate:
+	$(PYTHON) scripts/ops/run_dbt_budgeted.py --command build --environment local --project-dir dbt --profiles-dir profiles --threads $(DBT_THREADS_LOCAL) --max-threads-local $(DBT_MAX_THREADS_LOCAL) --max-threads-prod $(DBT_MAX_THREADS_PROD) --timeout-seconds-local $(DBT_TIMEOUT_SECONDS_LOCAL) --timeout-seconds-prod $(DBT_TIMEOUT_SECONDS_PROD) --output artifacts/performance/dbt_build_local_report.json
 
 production-stop-gate:
 	$(MAKE) quality-gate
