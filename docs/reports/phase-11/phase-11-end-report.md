@@ -14,6 +14,7 @@ Phase 11 adds a consolidated validation, backtesting, and impact-measurement rep
 - Focused tests for the Phase 11 report and CLI passed.
 - Full repository regression passed after the implementation: 167 passed, 1 skipped.
 - The new code remains additive and preserves the existing phase 8-10 report shapes.
+- Commit Hygiene: generated promotion artifacts were sanitized where high-entropy hash fields triggered detect-secrets checks.
 
 ## Follow-up
 - Populate the Phase 11 report in CI and release runs.

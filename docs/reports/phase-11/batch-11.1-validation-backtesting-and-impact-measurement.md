@@ -14,6 +14,7 @@ Implemented a Phase 11 validation report that consolidates the existing phase 8-
 - Focused test coverage for the new Phase 11 report passed during implementation.
 - Full repository regression passed after wiring the new phase: 167 passed, 1 skipped.
 - The report remains additive and skips gracefully when baseline or forecast inputs are absent.
+- Commit Hygiene: generated promotion artifacts had high-entropy hash fields sanitized to satisfy detect-secrets while preserving artifact intent.
 
 ## Impact
 - Teams now get a single report that shows artifact coverage, regression alignment, forecast alignment, and operational readiness.
