@@ -148,6 +148,17 @@ def _emit_and_exit(output: str, payload: dict[str, object], code: int) -> int:
     return code
 
 
+def _to_float(value: object, default: float) -> float:
+    if isinstance(value, int | float):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return default
+    return default
+
+
 def _load_policy(path: str) -> tuple[dict[str, object] | None, str]:
     policy_path = path.strip()
     if not policy_path:
@@ -163,11 +174,14 @@ def _load_policy(path: str) -> tuple[dict[str, object] | None, str]:
             "Phase 11 policy contract mismatch: "
             f"expected {POLICY_CONTRACT_VERSION}, got '{version}'"
         )
-    min_artifact_coverage = float(payload.get("min_artifact_coverage", 0.8))
-    min_operational_readiness = float(payload.get("min_operational_readiness_score", 0.7))
-    max_credits_regression = float(payload.get("max_credits_regression_pct", 20.0))
-    max_elapsed_regression = float(payload.get("max_elapsed_regression_pct", 25.0))
-    max_forecast_mismatch = float(payload.get("max_forecast_mismatch_pct", 25.0))
+    min_artifact_coverage = _to_float(payload.get("min_artifact_coverage", 0.8), 0.8)
+    min_operational_readiness = _to_float(
+        payload.get("min_operational_readiness_score", 0.7),
+        0.7,
+    )
+    max_credits_regression = _to_float(payload.get("max_credits_regression_pct", 20.0), 20.0)
+    max_elapsed_regression = _to_float(payload.get("max_elapsed_regression_pct", 25.0), 25.0)
+    max_forecast_mismatch = _to_float(payload.get("max_forecast_mismatch_pct", 25.0), 25.0)
 
     if not (0.0 <= min_artifact_coverage <= 1.0):
         raise SystemExit("Phase 11 policy value out of range: min_artifact_coverage must be 0..1")
@@ -253,23 +267,28 @@ def main() -> int:
     min_operational_readiness_score = args.min_operational_readiness_score
     max_forecast_mismatch_pct = args.max_forecast_mismatch_pct
     if loaded_policy is not None:
-        min_artifact_coverage = float(
-            loaded_policy.get("min_artifact_coverage", min_artifact_coverage)
+        min_artifact_coverage = _to_float(
+            loaded_policy.get("min_artifact_coverage", min_artifact_coverage),
+            min_artifact_coverage,
         )
-        max_credits_regression_pct = float(
-            loaded_policy.get("max_credits_regression_pct", max_credits_regression_pct)
+        max_credits_regression_pct = _to_float(
+            loaded_policy.get("max_credits_regression_pct", max_credits_regression_pct),
+            max_credits_regression_pct,
         )
-        max_elapsed_regression_pct = float(
-            loaded_policy.get("max_elapsed_regression_pct", max_elapsed_regression_pct)
+        max_elapsed_regression_pct = _to_float(
+            loaded_policy.get("max_elapsed_regression_pct", max_elapsed_regression_pct),
+            max_elapsed_regression_pct,
         )
-        min_operational_readiness_score = float(
+        min_operational_readiness_score = _to_float(
             loaded_policy.get(
                 "min_operational_readiness_score",
                 min_operational_readiness_score,
-            )
+            ),
+            min_operational_readiness_score,
         )
-        max_forecast_mismatch_pct = float(
-            loaded_policy.get("max_forecast_mismatch_pct", max_forecast_mismatch_pct)
+        max_forecast_mismatch_pct = _to_float(
+            loaded_policy.get("max_forecast_mismatch_pct", max_forecast_mismatch_pct),
+            max_forecast_mismatch_pct,
         )
         readiness_weights_obj = loaded_policy.get("readiness_weights")
         readiness_weights = (

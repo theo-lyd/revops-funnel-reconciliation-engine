@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import json
 import os
+import urllib.error
+import urllib.request
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, cast
@@ -69,6 +71,8 @@ SNOWFLAKE_DATABASE = os.getenv("SNOWFLAKE_DATABASE", "REVOPS")
 SNOWFLAKE_SCHEMA = os.getenv("SNOWFLAKE_GOLD_SCHEMA", "analytics_gold")
 SNOWFLAKE_WAREHOUSE = os.getenv("SNOWFLAKE_WAREHOUSE", "TRANSFORMING")
 SNOWFLAKE_ROLE = os.getenv("SNOWFLAKE_ROLE", "TRANSFORMER")
+METABASE_HOST = os.getenv("METABASE_HOST", "http://localhost")
+METABASE_PORT = os.getenv("METABASE_PORT", "3000")
 
 
 def _check_rate_limit() -> bool:
@@ -119,6 +123,18 @@ def _append_audit_log(
 def _snowflake_available() -> bool:
     config = snowflake_auth_from_env()
     return bool(config.account and config.user and config.is_auth_configured)
+
+
+def _metabase_status() -> tuple[bool, str]:
+    base = f"{METABASE_HOST}:{METABASE_PORT}".rstrip("/")
+    health_url = f"{base}/api/health"
+    try:
+        with urllib.request.urlopen(health_url, timeout=1.5) as response:
+            if response.status == 200:
+                return True, base
+    except (urllib.error.URLError, TimeoutError, ValueError):
+        pass
+    return False, base
 
 
 @st.cache_resource
@@ -233,6 +249,207 @@ def _load_monitoring_frame(source: str) -> pd.DataFrame:
     return _run_duckdb_query(sql) if source == "DuckDB" else _run_snowflake_query(sql)
 
 
+def _prepare_executive_frame(source: str) -> pd.DataFrame:
+    frame = _load_monitoring_frame(source).copy()
+    if frame.empty:
+        return frame
+
+    frame["metric_month"] = pd.to_datetime(frame["metric_month"], errors="coerce")
+    frame = frame.dropna(subset=["metric_month"]).sort_values(["metric_month", "regional_office"])
+    frame["regional_office"] = frame["regional_office"].fillna("Unknown")
+    return frame
+
+
+def _safe_mean(frame: pd.DataFrame, column: str) -> float:
+    if column not in frame.columns or frame.empty:
+        return 0.0
+    series = pd.to_numeric(frame[column], errors="coerce")
+    return float(series.mean()) if not series.isna().all() else 0.0
+
+
+def _safe_sum(frame: pd.DataFrame, column: str) -> int:
+    if column not in frame.columns or frame.empty:
+        return 0
+    series = pd.to_numeric(frame[column], errors="coerce")
+    return int(series.sum()) if not series.isna().all() else 0
+
+
+def _render_executive_brief(source: str) -> None:
+    st.subheader("Executive Brief")
+    st.caption(
+        "Answers core stakeholder questions: pipeline health, where leakage is rising, "
+        "whether velocity is improving, and where intervention is needed now."
+    )
+
+    try:
+        frame = _prepare_executive_frame(source)
+    except Exception as exc:
+        st.error(f"Unable to load executive metrics: {exc}")
+        return
+
+    if frame.empty:
+        st.warning("No executive funnel data is available.")
+        return
+
+    latest_month = cast(pd.Timestamp, frame["metric_month"].max())
+    previous_candidates = frame.loc[frame["metric_month"] < latest_month, "metric_month"]
+    previous_month = cast(
+        pd.Timestamp | None,
+        previous_candidates.max() if not previous_candidates.empty else None,
+    )
+
+    latest = frame[frame["metric_month"] == latest_month]
+    previous = (
+        frame[frame["metric_month"] == previous_month]
+        if previous_month is not None
+        else pd.DataFrame()
+    )
+
+    current_total = _safe_sum(latest, "total_opportunities")
+    previous_total = _safe_sum(previous, "total_opportunities")
+    current_win = _safe_mean(latest, "win_rate")
+    previous_win = _safe_mean(previous, "win_rate")
+    current_leak = _safe_mean(latest, "leakage_ratio")
+    previous_leak = _safe_mean(previous, "leakage_ratio")
+    current_cycle = _safe_mean(latest, "avg_cycle_days")
+    previous_cycle = _safe_mean(previous, "avg_cycle_days")
+
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric(
+        "Total Opportunities",
+        f"{current_total:,}",
+        delta=f"{current_total - previous_total:+,}" if previous_month is not None else None,
+    )
+    col2.metric(
+        "Win Rate",
+        f"{current_win:.1%}",
+        delta=(
+            f"{(current_win - previous_win) * 100:+.1f} pp" if previous_month is not None else None
+        ),
+    )
+    col3.metric(
+        "Leakage Ratio",
+        f"{current_leak:.1%}",
+        delta=(
+            f"{(current_leak - previous_leak) * 100:+.1f} pp"
+            if previous_month is not None
+            else None
+        ),
+        delta_color="inverse",
+    )
+    col4.metric(
+        "Avg Cycle Days",
+        f"{current_cycle:.1f}",
+        delta=(
+            f"{current_cycle - previous_cycle:+.1f} days" if previous_month is not None else None
+        ),
+        delta_color="inverse",
+    )
+
+    monthly_office = (
+        frame.groupby(["metric_month", "regional_office"], as_index=False)
+        .agg(
+            total_opportunities=("total_opportunities", "sum"),
+            win_rate=("win_rate", "mean"),
+            leakage_ratio=("leakage_ratio", "mean"),
+            avg_cycle_days=("avg_cycle_days", "mean"),
+        )
+        .sort_values(["metric_month", "regional_office"])
+    )
+    monthly_office["prior_leakage_ratio"] = monthly_office.groupby("regional_office")[
+        "leakage_ratio"
+    ].shift(1)
+    monthly_office["leakage_delta_pp"] = (
+        monthly_office["leakage_ratio"] - monthly_office["prior_leakage_ratio"]
+    ) * 100
+
+    latest_office = monthly_office[monthly_office["metric_month"] == latest_month].copy()
+    latest_office["action_status"] = "Monitor"
+    latest_office.loc[
+        (latest_office["leakage_ratio"] >= 0.5)
+        | (latest_office["win_rate"] <= 0.25)
+        | (latest_office["avg_cycle_days"] >= 60),
+        "action_status",
+    ] = "Intervene"
+
+    q1, q2 = st.columns(2)
+    with q1:
+        st.markdown("**Where are we leaking pipeline most this month?**")
+        leakage_view = latest_office[
+            [
+                "regional_office",
+                "total_opportunities",
+                "leakage_ratio",
+                "leakage_delta_pp",
+                "action_status",
+            ]
+        ].sort_values("leakage_ratio", ascending=False)
+        st.dataframe(leakage_view.head(8), use_container_width=True, hide_index=True)
+
+    with q2:
+        st.markdown("**Which offices need immediate action?**")
+        intervene = latest_office[latest_office["action_status"] == "Intervene"].copy()
+        if intervene.empty:
+            st.success("No office breaches intervention thresholds in the latest month.")
+        else:
+            st.error(
+                "Intervention candidates: "
+                + ", ".join(
+                    intervene.sort_values("leakage_ratio", ascending=False)[
+                        "regional_office"
+                    ].tolist()
+                )
+            )
+            st.dataframe(
+                intervene[
+                    [
+                        "regional_office",
+                        "win_rate",
+                        "leakage_ratio",
+                        "avg_cycle_days",
+                        "total_opportunities",
+                    ]
+                ].sort_values("leakage_ratio", ascending=False),
+                use_container_width=True,
+                hide_index=True,
+            )
+
+    trend = (
+        frame.groupby("metric_month", as_index=False)
+        .agg(
+            win_rate=("win_rate", "mean"),
+            leakage_ratio=("leakage_ratio", "mean"),
+            avg_cycle_days=("avg_cycle_days", "mean"),
+            total_opportunities=("total_opportunities", "sum"),
+        )
+        .sort_values("metric_month")
+    )
+
+    trend_fig = px.line(
+        trend,
+        x="metric_month",
+        y=["win_rate", "leakage_ratio"],
+        markers=True,
+        title="Conversion vs Leakage Trend",
+    )
+    trend_fig.update_layout(
+        height=360,
+        margin=dict(l=20, r=20, t=45, b=20),
+        legend_title_text="Metric",
+    )
+    trend_fig.update_yaxes(tickformat=".0%")
+    st.plotly_chart(trend_fig, use_container_width=True)
+
+    cycle_fig = px.bar(
+        trend,
+        x="metric_month",
+        y="avg_cycle_days",
+        title="Sales Cycle Duration Trend",
+    )
+    cycle_fig.update_layout(height=320, margin=dict(l=20, r=20, t=45, b=20))
+    st.plotly_chart(cycle_fig, use_container_width=True)
+
+
 def _render_chart(df: pd.DataFrame, template: QueryTemplate) -> None:
     if df.empty or template.chart_x not in df.columns or template.chart_y not in df.columns:
         st.info("No chart rendered for this selection.")
@@ -345,6 +562,12 @@ def main() -> None:
 
     with st.sidebar:
         st.header("Query Controls")
+        metabase_up, metabase_url = _metabase_status()
+        if metabase_up:
+            st.success(f"Metabase online: {metabase_url}")
+        else:
+            st.warning("Metabase offline on configured host/port")
+
         source_options = ["DuckDB"]
         if _snowflake_available():
             source_options.append("Snowflake")
@@ -405,7 +628,12 @@ def main() -> None:
             )
             run_query = True
 
-    analytics_tab, monitoring_tab = st.tabs(["Analytics Explorer", "Monitoring Dashboard"])
+    executive_tab, analytics_tab, monitoring_tab = st.tabs(
+        ["Executive Brief", "Analytics Explorer", "Monitoring Dashboard"]
+    )
+
+    with executive_tab:
+        _render_executive_brief(source)
 
     with analytics_tab:
         selected_template = templates[selected_template_key]

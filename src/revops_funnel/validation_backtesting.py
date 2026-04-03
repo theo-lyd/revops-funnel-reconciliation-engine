@@ -282,7 +282,7 @@ def _operational_readiness_score(
     runbook_report: dict[str, Any] | None,
     incident_operations_report: dict[str, Any] | None,
     weights: dict[str, float] | None = None,
-) -> dict[str, float]:
+) -> dict[str, Any]:
     health_score = _score_status(
         _safe_str(health_report, "overall_status", ""),
         {"ok", "healthy"},

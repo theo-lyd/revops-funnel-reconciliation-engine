@@ -11,8 +11,8 @@ python-dotenv==1.1.0
 requests==2.32.3
 uvicorn==0.34.0
 # Phase 5: Analytics and Visualization
-sqlalchemy==2.0.25
+sqlalchemy==1.4.54
 plotly==5.18.0
 streamlit==1.42.0
-streamlit-caching==0.2.1
 openai==1.52.2
+# Removed streamlit-caching dependency
