@@ -54,8 +54,27 @@ INCIDENT_OPS_FATIGUE_DECAY_HALF_LIFE_HOURS ?= 24
 INCIDENT_OPS_POLICY_PATH ?=
 INCIDENT_OPS_STRICT_MIN_EVIDENCE_COMPLETENESS ?= 0.8
 INCIDENT_OPS_CORRELATION_ID ?=
+PHASE11_VALIDATION_REPORT_PATH ?= artifacts/validation/validation_backtesting_report.json
+PHASE11_CURRENT_COST_REPORT_PATH ?= artifacts/performance/query_cost_attribution_report.json
+PHASE11_BASELINE_COST_REPORT_PATH ?= artifacts/performance/query_cost_attribution_baseline.json
+PHASE11_REGRESSION_REPORT_PATH ?= artifacts/performance/query_cost_regression_report.json
+PHASE11_FORECAST_REPORT_PATH ?= artifacts/performance/query_cost_forecast_report.json
+PHASE11_CROSS_ENVIRONMENT_REPORT_PATH ?= artifacts/performance/cross_environment_forecast.json
+PHASE11_PR_IMPACT_REPORT_PATH ?= artifacts/performance/pr_cost_impact_score.json
+PHASE11_HEALTH_REPORT_PATH ?= artifacts/monitoring/health_report.json
+PHASE11_DASHBOARD_REPORT_PATH ?= artifacts/monitoring/operational_dashboard.json
+PHASE11_RUNBOOK_REPORT_PATH ?= artifacts/runbooks/oncall_runbook_report.json
+PHASE11_INCIDENT_OPERATIONS_REPORT_PATH ?= artifacts/runbooks/incident_operations_report.json
+PHASE11_MIN_ARTIFACT_COVERAGE ?= 0.8
+PHASE11_MAX_CREDITS_REGRESSION_PCT ?= 20
+PHASE11_MAX_ELAPSED_REGRESSION_PCT ?= 25
+PHASE11_MIN_OPERATIONAL_READINESS_SCORE ?= 0.7
+PHASE11_MAX_FORECAST_MISMATCH_PCT ?= 25
+PHASE11_STRICT_VALIDATION ?= false
+PHASE11_POLICY_PATH ?=
+PHASE11_CORRELATION_ID ?=
 
-.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-build-changed dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-test-changed dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle refresh-caches promote-deployment rollback-deployment production-stop-gate production-stop-gate-strict query-cost-attribution query-cost-attribution-strict query-cost-regression query-cost-regression-strict phase82-cost-forecast phase82-pattern-analysis phase82-phase-attribution phase82-cross-env-impact phase82-pr-impact phase82-warehouse-preflight phase82-runbook-gen phase82-suite health-checks health-checks-strict dashboards dashboards-strict oncall-runbooks oncall-runbooks-strict incident-ops incident-ops-strict query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness metabase-setup streamlit-dev anomaly-check insights-generate reporting-pack
+.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-build-changed dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-test-changed dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle refresh-caches promote-deployment rollback-deployment production-stop-gate production-stop-gate-strict query-cost-attribution query-cost-attribution-strict query-cost-regression query-cost-regression-strict phase82-cost-forecast phase82-pattern-analysis phase82-phase-attribution phase82-cross-env-impact phase82-pr-impact phase82-warehouse-preflight phase82-runbook-gen phase82-suite health-checks health-checks-strict dashboards dashboards-strict oncall-runbooks oncall-runbooks-strict incident-ops incident-ops-strict phase11-validation phase11-validation-strict query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness metabase-setup streamlit-dev anomaly-check insights-generate reporting-pack
 
 setup:
 	$(PIP) install "apache-airflow==$(AIRFLOW_VERSION)" --constraint "$(AIRFLOW_CONSTRAINTS)"
@@ -225,6 +244,12 @@ incident-ops:
 
 incident-ops-strict:
 	$(PYTHON) scripts/ops/run_incident_operations.py --strict-operations --require-dispatch-sent --require-escalation-sent --strict-min-evidence-completeness $(INCIDENT_OPS_STRICT_MIN_EVIDENCE_COMPLETENESS) --health-report $(INCIDENT_OPS_HEALTH_REPORT) --dashboard-report $(INCIDENT_OPS_DASHBOARD_REPORT) --runbook-report $(INCIDENT_OPS_RUNBOOK_REPORT) --dispatch-report $(INCIDENT_OPS_DISPATCH_REPORT) --escalation-report $(INCIDENT_OPS_ESCALATION_REPORT) --recent-patterns $(INCIDENT_OPS_RECENT_PATTERNS) --fatigue-repeat-threshold $(INCIDENT_OPS_FATIGUE_REPEAT_THRESHOLD) --fatigue-decay-half-life-hours $(INCIDENT_OPS_FATIGUE_DECAY_HALF_LIFE_HOURS) --policy "$(INCIDENT_OPS_POLICY_PATH)" --correlation-id "$(INCIDENT_OPS_CORRELATION_ID)" --output $(INCIDENT_OPERATIONS_REPORT_PATH)
+
+phase11-validation:
+	$(PYTHON) scripts/ops/run_validation_backtesting.py --current-cost-report $(PHASE11_CURRENT_COST_REPORT_PATH) --baseline-cost-report $(PHASE11_BASELINE_COST_REPORT_PATH) --regression-report $(PHASE11_REGRESSION_REPORT_PATH) --forecast-report $(PHASE11_FORECAST_REPORT_PATH) --cross-environment-report $(PHASE11_CROSS_ENVIRONMENT_REPORT_PATH) --pr-impact-report $(PHASE11_PR_IMPACT_REPORT_PATH) --health-report $(PHASE11_HEALTH_REPORT_PATH) --dashboard-report $(PHASE11_DASHBOARD_REPORT_PATH) --runbook-report $(PHASE11_RUNBOOK_REPORT_PATH) --incident-operations-report $(PHASE11_INCIDENT_OPERATIONS_REPORT_PATH) --policy "$(PHASE11_POLICY_PATH)" --correlation-id "$(PHASE11_CORRELATION_ID)" --min-artifact-coverage $(PHASE11_MIN_ARTIFACT_COVERAGE) --max-credits-regression-pct $(PHASE11_MAX_CREDITS_REGRESSION_PCT) --max-elapsed-regression-pct $(PHASE11_MAX_ELAPSED_REGRESSION_PCT) --min-operational-readiness-score $(PHASE11_MIN_OPERATIONAL_READINESS_SCORE) --max-forecast-mismatch-pct $(PHASE11_MAX_FORECAST_MISMATCH_PCT) --output $(PHASE11_VALIDATION_REPORT_PATH)
+
+phase11-validation-strict:
+	$(PYTHON) scripts/ops/run_validation_backtesting.py --strict-validation --current-cost-report $(PHASE11_CURRENT_COST_REPORT_PATH) --baseline-cost-report $(PHASE11_BASELINE_COST_REPORT_PATH) --regression-report $(PHASE11_REGRESSION_REPORT_PATH) --forecast-report $(PHASE11_FORECAST_REPORT_PATH) --cross-environment-report $(PHASE11_CROSS_ENVIRONMENT_REPORT_PATH) --pr-impact-report $(PHASE11_PR_IMPACT_REPORT_PATH) --health-report $(PHASE11_HEALTH_REPORT_PATH) --dashboard-report $(PHASE11_DASHBOARD_REPORT_PATH) --runbook-report $(PHASE11_RUNBOOK_REPORT_PATH) --incident-operations-report $(PHASE11_INCIDENT_OPERATIONS_REPORT_PATH) --policy "$(PHASE11_POLICY_PATH)" --correlation-id "$(PHASE11_CORRELATION_ID)" --min-artifact-coverage $(PHASE11_MIN_ARTIFACT_COVERAGE) --max-credits-regression-pct $(PHASE11_MAX_CREDITS_REGRESSION_PCT) --max-elapsed-regression-pct $(PHASE11_MAX_ELAPSED_REGRESSION_PCT) --min-operational-readiness-score $(PHASE11_MIN_OPERATIONAL_READINESS_SCORE) --max-forecast-mismatch-pct $(PHASE11_MAX_FORECAST_MISMATCH_PCT) --output $(PHASE11_VALIDATION_REPORT_PATH)
 
 production-stop-gate:
 	$(MAKE) quality-gate

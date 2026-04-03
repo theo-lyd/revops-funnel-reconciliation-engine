@@ -168,6 +168,22 @@ Phase 9 establishes production-grade observability, health monitoring, SLO/SLI t
 
 1. **Plan**: [Phase 9 implementation plan](docs/reports/phase-9/PHASE-9-PLAN.md)
 
+### Phase 10: Reliability Engineering and Incident Operations
+
+Phase 10 adds incident-command orchestration, strict reliability gates, and evidence-linked incident operations reporting:
+
+1. **Plan**: [Phase 10 implementation plan](docs/reports/phase-10/PHASE-10-PLAN.md)
+2. **Batch 10.1**: [Reliability engineering and incident operations](docs/reports/phase-10/batch-10.1-reliability-engineering-and-incident-operations.md)
+3. **End Report**: [Phase 10 end report](docs/reports/phase-10/phase-10-end-report.md)
+
+### Phase 11: Validation, Backtesting, and Impact Measurement
+
+Phase 11 consolidates the operational artifacts into a single validation and measurement report that backtests regression signals and tracks impact over time:
+
+1. **Plan**: [Phase 11 implementation plan](docs/reports/phase-11/PHASE-11-PLAN.md)
+2. **Batch 11.1**: [Validation, backtesting, and impact measurement](docs/reports/phase-11/batch-11.1-validation-backtesting-and-impact-measurement.md)
+3. **End Report**: [Phase 11 end report](docs/reports/phase-11/phase-11-end-report.md)
+
 ### Project Governance
 - [Standing instructions and process documentation](docs/project-governance/standing-instructions.md)
 - [Phase completion checklist and stop-gate workflow](docs/project-governance/phase-completion-checklist.md)

@@ -30,6 +30,7 @@ jobs:
       QUERY_COST_ATTRIBUTION_REPORT_PATH: artifacts/performance/query_cost_attribution_report.json
       QUERY_COST_BASELINE_REPORT_PATH: artifacts/performance/query_cost_attribution_baseline.json
       QUERY_COST_REGRESSION_REPORT_PATH: artifacts/performance/query_cost_regression_report.json
+      PHASE11_VALIDATION_REPORT_PATH: artifacts/validation/validation_backtesting_report.json
       PHASE82_ENABLE: ${{ vars.PHASE82_ENABLE || 'false' }}
       PHASE82_TEAM_TAG_MAPPING: ${{ vars.PHASE82_TEAM_TAG_MAPPING || '' }}
       PHASE82_BUDGET_THRESHOLD_PCT: ${{ vars.PHASE82_BUDGET_THRESHOLD_PCT || '80' }}
@@ -56,6 +57,9 @@ jobs:
       INCIDENT_OPS_FATIGUE_DECAY_HALF_LIFE_HOURS: ${{ vars.INCIDENT_OPS_FATIGUE_DECAY_HALF_LIFE_HOURS || '24' }}
       INCIDENT_OPS_STRICT_MIN_EVIDENCE_COMPLETENESS: ${{ vars.INCIDENT_OPS_STRICT_MIN_EVIDENCE_COMPLETENESS || '0.8' }}
       INCIDENT_OPS_POLICY_PATH: ${{ vars.INCIDENT_OPS_POLICY_PATH || '' }}
+      PHASE11_STRICT_VALIDATION: ${{ vars.PHASE11_STRICT_VALIDATION || 'true' }}
+      PHASE11_POLICY_PATH: ${{ vars.PHASE11_POLICY_PATH || '' }}
+      PHASE11_CORRELATION_ID: ${{ vars.PHASE11_CORRELATION_ID || '' }}
 
     permissions:
       contents: read
@@ -439,6 +443,35 @@ jobs:
             $POLICY_FLAG \
             $STRICT_OPS_FLAG
 
+      - name: Run Phase 11 validation/backtesting
+        if: always()
+        run: |
+          STRICT_PHASE11_FLAG=""
+          if [[ "$PHASE11_STRICT_VALIDATION" == "true" ]]; then
+            STRICT_PHASE11_FLAG="--strict-validation"
+          fi
+
+          PHASE11_POLICY_FLAG=""
+          if [[ -n "$PHASE11_POLICY_PATH" ]]; then
+            PHASE11_POLICY_FLAG="--policy $PHASE11_POLICY_PATH"
+          fi
+
+          python scripts/ops/run_validation_backtesting.py \
+            $STRICT_PHASE11_FLAG \
+            --current-cost-report "$QUERY_COST_ATTRIBUTION_REPORT_PATH" \
+            --baseline-cost-report "$QUERY_COST_BASELINE_REPORT_PATH" \
+            --regression-report "$QUERY_COST_REGRESSION_REPORT_PATH" \
+            --forecast-report artifacts/performance/query_cost_forecast_report.json \
+            --cross-environment-report artifacts/performance/cross_environment_forecast.json \
+            --pr-impact-report artifacts/performance/pr_cost_impact_score.json \
+            --health-report "$HEALTH_REPORT_PATH" \
+            --dashboard-report "$DASHBOARD_OUTPUT_PATH" \
+            --runbook-report "$ONCALL_RUNBOOK_REPORT_PATH" \
+            --incident-operations-report "$INCIDENT_OPERATIONS_REPORT_PATH" \
+            --correlation-id "$PHASE11_CORRELATION_ID" \
+            $PHASE11_POLICY_FLAG \
+            --output "$PHASE11_VALIDATION_REPORT_PATH"
+
       - name: Upload release gate artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -456,6 +489,7 @@ jobs:
             artifacts/runbooks/oncall_runbook_report.json
             artifacts/runbooks/incident_timeline.json
             artifacts/runbooks/incident_operations_report.json
+            artifacts/validation/validation_backtesting_report.json
             artifacts/promotions/deployment_promotion.json
             artifacts/promotions/deployment_rollback.json
             artifacts/promotions/deployment_rollback_execution.json

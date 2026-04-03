@@ -1,0 +1,60 @@
+{
+  "timeline": [
+    {
+      "timestamp_utc": "2026-04-03T02:59:06.035318+00:00",
+      "source": "health_report",
+      "event_type": "pattern_detected",
+      "severity": "p1",
+      "summary": "Health checks reported unhealthy status"
+    },
+    {
+      "timestamp_utc": "2026-04-03T02:59:06.035318+00:00",
+      "source": "operational_dashboard",
+      "event_type": "pattern_detected",
+      "severity": "p1",
+      "summary": "Operational dashboard reached critical state"
+    },
+    {
+      "timestamp_utc": "2026-04-03T02:59:06.035318+00:00",
+      "source": "rollback_dead_letter_escalation",
+      "event_type": "pattern_detected",
+      "severity": "p1",
+      "summary": "Dead-letter escalation failed"
+    },
+    {
+      "timestamp_utc": "2026-04-03T02:59:06.035318+00:00",
+      "source": "runbook",
+      "event_type": "action_recommended",
+      "severity": "info",
+      "summary": "Acknowledge incident and open coordination thread"
+    },
+    {
+      "timestamp_utc": "2026-04-03T02:59:06.035318+00:00",
+      "source": "runbook",
+      "event_type": "action_recommended",
+      "severity": "info",
+      "summary": "Collect latest release and health artifacts"
+    },
+    {
+      "timestamp_utc": "2026-04-03T02:59:06.035318+00:00",
+      "source": "runbook",
+      "event_type": "action_recommended",
+      "severity": "info",
+      "summary": "Regenerate strict operational dashboard"
+    },
+    {
+      "timestamp_utc": "2026-04-03T02:59:06.035318+00:00",
+      "source": "runbook",
+      "event_type": "action_recommended",
+      "severity": "info",
+      "summary": "Retry dead-letter escalation with strict mode"
+    },
+    {
+      "timestamp_utc": "2026-04-03T02:59:06.035318+00:00",
+      "source": "runbook",
+      "event_type": "action_recommended",
+      "severity": "info",
+      "summary": "Document incident timeline and root-cause hypothesis"
+    }
+  ]
+}

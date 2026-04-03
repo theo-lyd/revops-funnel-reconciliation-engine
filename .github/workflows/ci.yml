@@ -250,6 +250,21 @@ jobs:
             --escalation-report artifacts/promotions/rollback_dead_letter_escalation.json \
             --output artifacts/runbooks/incident_operations_report.json
 
+      - name: Run Phase 11 validation/backtesting (safe mode)
+        run: |
+          python scripts/ops/run_validation_backtesting.py \
+            --current-cost-report artifacts/performance/query_cost_attribution_report.json \
+            --baseline-cost-report artifacts/performance/query_cost_attribution_baseline.json \
+            --regression-report artifacts/performance/query_cost_regression_report.json \
+            --forecast-report artifacts/performance/query_cost_forecast_report.json \
+            --cross-environment-report artifacts/performance/cross_environment_forecast.json \
+            --pr-impact-report artifacts/performance/pr_cost_impact_score.json \
+            --health-report artifacts/monitoring/health_report.json \
+            --dashboard-report artifacts/monitoring/operational_dashboard.json \
+            --runbook-report artifacts/runbooks/oncall_runbook_report.json \
+            --incident-operations-report artifacts/runbooks/incident_operations_report.json \
+            --output artifacts/validation/validation_backtesting_report.json
+
       - name: Summarize failure-path observability (safe skip)
         if: always()
         run: |
@@ -301,6 +316,7 @@ jobs:
             artifacts/monitoring/operational_dashboard.json
             artifacts/runbooks/oncall_runbook_report.json
             artifacts/runbooks/incident_operations_report.json
+            artifacts/validation/validation_backtesting_report.json
           if-no-files-found: ignore
 
   production-parity-check:
