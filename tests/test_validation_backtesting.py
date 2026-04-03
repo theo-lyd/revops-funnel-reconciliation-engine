@@ -52,10 +52,13 @@ def test_generate_validation_backtesting_report_aligns_signals() -> None:
         dashboard_report={"operational_status": "ok"},
         runbook_report={"quality_gate_passed": True},
         incident_operations_report={
+            "contract_version": "phase10.v2",
             "incident_open": False,
             "strict_blockers": [],
             "evidence_completeness_score": 1.0,
         },
+        historical_cost_reports=None,
+        artifact_provenance={},
         policy=ValidationBacktestingPolicy(),
     )
 
@@ -95,10 +98,13 @@ def test_generate_validation_backtesting_report_flags_mismatched_alignment() -> 
         dashboard_report={"operational_status": "degraded"},
         runbook_report={"quality_gate_passed": False},
         incident_operations_report={
+            "contract_version": "phase10.v2",
             "incident_open": True,
             "strict_blockers": ["dispatch_status=missing"],
             "evidence_completeness_score": 0.5,
         },
+        historical_cost_reports=None,
+        artifact_provenance={},
         policy=ValidationBacktestingPolicy(min_operational_readiness_score=0.9),
     )
 
@@ -154,6 +160,7 @@ def test_run_validation_backtesting_cli_strict_fails(tmp_path: Path) -> None:
     _write_json(
         incident_ops_path,
         {
+            "contract_version": "phase10.v2",
             "incident_open": True,
             "strict_blockers": ["dispatch_status=missing"],
             "evidence_completeness_score": 0.5,
@@ -255,6 +262,7 @@ def test_run_validation_backtesting_cli_policy_file(tmp_path: Path) -> None:
     _write_json(
         incident_ops_path,
         {
+            "contract_version": "phase10.v2",
             "incident_open": False,
             "strict_blockers": [],
             "evidence_completeness_score": 1.0,
@@ -300,3 +308,142 @@ def test_run_validation_backtesting_cli_policy_file(tmp_path: Path) -> None:
     assert payload["status"] == "ok"
     assert payload["policy_source"] == "file"
     assert payload["correlation_id"] == "phase11-explicit-correlation"
+
+
+def test_generate_validation_backtesting_report_rolling_window_mode() -> None:
+    report = generate_validation_backtesting_report(
+        current_cost_report={
+            "status": "ok",
+            "totals": {"credits_used": 15.0, "elapsed_seconds": 120.0},
+        },
+        baseline_cost_report={
+            "status": "ok",
+            "totals": {"credits_used": 9.0, "elapsed_seconds": 90.0},
+        },
+        regression_report={
+            "status": "regression-detected",
+            "summary": {"blocked": True},
+            "query_tag_regressions": [{"query_tag": "dbt-build"}],
+            "new_query_tags": [],
+            "thresholds": {
+                "max_credits_regression_pct": 20.0,
+                "max_elapsed_regression_pct": 20.0,
+            },
+        },
+        forecast_report={
+            "status": "ok",
+            "forecasts": [{"query_tag": "dbt-build", "allocation_alert": "trending-over-budget"}],
+        },
+        cross_environment_report=None,
+        pr_impact_report=None,
+        health_report={"overall_status": "ok"},
+        dashboard_report={"operational_status": "ok"},
+        runbook_report={"quality_gate_passed": True},
+        incident_operations_report={
+            "contract_version": "phase10.v2",
+            "incident_open": False,
+            "strict_blockers": [],
+            "evidence_completeness_score": 1.0,
+        },
+        historical_cost_reports=[
+            {"status": "ok", "totals": {"credits_used": 8.0, "elapsed_seconds": 80.0}},
+            {"status": "ok", "totals": {"credits_used": 10.0, "elapsed_seconds": 100.0}},
+        ],
+        artifact_provenance={"current_cost_report": {"exists": True}},
+        policy=ValidationBacktestingPolicy(),
+    )
+
+    payload = report.to_dict()
+    assert payload["backtest_summary"]["backtest_mode"] == "rolling-window"
+    assert payload["backtest_summary"]["history_window_sample_size"] == 2
+    assert payload["backtest_summary"]["forecast_precision_confidence_band_pct"] is not None
+    assert payload["artifact_provenance"]["current_cost_report"]["exists"] is True
+
+
+def test_run_validation_backtesting_cli_policy_missing_contract_version_fails(
+    tmp_path: Path,
+) -> None:
+    current_path = tmp_path / "current.json"
+    policy_path = tmp_path / "policy.json"
+    output_path = tmp_path / "validation_backtesting.json"
+    _write_json(current_path, {"status": "ok", "totals": {"credits_used": 1.0}})
+    _write_json(policy_path, {"min_artifact_coverage": 0.8})
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/ops/run_validation_backtesting.py",
+            f"--current-cost-report={current_path}",
+            f"--policy={policy_path}",
+            f"--output={output_path}",
+        ],
+        cwd="/workspaces/revops-funnel-reconciliation-engine",
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 1
+    assert (
+        "policy contract mismatch" in result.stderr.lower()
+        or "policy contract mismatch" in result.stdout.lower()
+    )
+
+
+def test_run_validation_backtesting_cli_policy_out_of_range_fails(tmp_path: Path) -> None:
+    current_path = tmp_path / "current.json"
+    policy_path = tmp_path / "policy.json"
+    output_path = tmp_path / "validation_backtesting.json"
+    _write_json(current_path, {"status": "ok", "totals": {"credits_used": 1.0}})
+    _write_json(
+        policy_path,
+        {
+            "contract_version": POLICY_CONTRACT_VERSION,
+            "min_artifact_coverage": 1.5,
+        },
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/ops/run_validation_backtesting.py",
+            f"--current-cost-report={current_path}",
+            f"--policy={policy_path}",
+            f"--output={output_path}",
+        ],
+        cwd="/workspaces/revops-funnel-reconciliation-engine",
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 1
+    assert "out of range" in result.stderr.lower() or "out of range" in result.stdout.lower()
+
+
+def test_run_validation_backtesting_cli_policy_malformed_json_fails(tmp_path: Path) -> None:
+    current_path = tmp_path / "current.json"
+    policy_path = tmp_path / "policy.json"
+    output_path = tmp_path / "validation_backtesting.json"
+    _write_json(current_path, {"status": "ok", "totals": {"credits_used": 1.0}})
+    policy_path.write_text("{not-valid-json", encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "scripts/ops/run_validation_backtesting.py",
+            f"--current-cost-report={current_path}",
+            f"--policy={policy_path}",
+            f"--output={output_path}",
+        ],
+        cwd="/workspaces/revops-funnel-reconciliation-engine",
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 1
+    assert (
+        "policy path unreadable" in result.stderr.lower()
+        or "policy path unreadable" in result.stdout.lower()
+    )

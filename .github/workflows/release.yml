@@ -472,6 +472,35 @@ jobs:
             $PHASE11_POLICY_FLAG \
             --output "$PHASE11_VALIDATION_REPORT_PATH"
 
+      - name: Summarize Phase 11 release KPIs
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          path = Path(os.getenv("PHASE11_VALIDATION_REPORT_PATH", "artifacts/validation/validation_backtesting_report.json"))
+          if not path.exists():
+              print("Phase 11 release summary: validation report missing")
+              raise SystemExit(0)
+
+          payload = json.loads(path.read_text(encoding="utf-8"))
+          backtest = payload.get("backtest_summary", {})
+          readiness = (payload.get("impact_summary", {}) or {}).get("operational_readiness", {})
+          eligibility = payload.get("gate_eligibility", {}) or {}
+
+          print("Phase 11 Release KPI Summary")
+          print(f"- status={payload.get('status', 'unknown')}")
+          print(f"- status_reason={payload.get('status_reason', 'unknown')}")
+          print(f"- backtest_mode={backtest.get('backtest_mode', 'unknown')}")
+          print(f"- regression_alignment={backtest.get('regression_alignment', 'unknown')}")
+          print(f"- forecast_alignment_gap_pct={backtest.get('forecast_alignment_gap_pct', 'unknown')}")
+          print(f"- operational_readiness_score={readiness.get('overall_score', 'unknown')}")
+          print(f"- strict_mode_eligible={eligibility.get('strict_mode_eligible', 'unknown')}")
+          print(f"- blocking_issue_count={eligibility.get('blocking_issue_count', 'unknown')}")
+          PY
+
       - name: Upload release gate artifacts
         if: always()
         uses: actions/upload-artifact@v4

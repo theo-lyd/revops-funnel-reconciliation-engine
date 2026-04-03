@@ -9,10 +9,16 @@ Phase 11 adds a consolidated validation, backtesting, and impact-measurement rep
 - New report output: `artifacts/validation/validation_backtesting_report.json`
 - New safe and strict Make targets for local and release execution
 - Optional policy artifact support with contract validation and explicit correlation id override
+- Schema/version pre-scoring validation with strict-mode escalation
+- Provenance fingerprints for all input artifacts
+- Rolling-window backtesting mode with confidence-band metrics
+- Weighted readiness scoring and severity-tiered blockers
+- Additive `status_reason` and `gate_eligibility` operator fields
+- CI opt-in strict signal leg and release KPI summary output
 
 ## Validation
 - Focused tests for the Phase 11 report and CLI passed.
-- Full repository regression passed after the implementation: 167 passed, 1 skipped.
+- Full repository regression passed after hardening: 172 passed, 1 skipped.
 - The new code remains additive and preserves the existing phase 8-10 report shapes.
 - Commit Hygiene: generated promotion artifacts were sanitized where high-entropy hash fields triggered detect-secrets checks.
 

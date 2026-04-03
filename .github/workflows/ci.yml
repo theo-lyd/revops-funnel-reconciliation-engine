@@ -88,6 +88,9 @@ jobs:
       PHASE82_WAREHOUSE_DAILY_BUDGET_CREDITS: ${{ vars.PHASE82_WAREHOUSE_DAILY_BUDGET_CREDITS || '100' }}
       PHASE82_WAREHOUSE_CURRENT_DAILY_BURN: ${{ vars.PHASE82_WAREHOUSE_CURRENT_DAILY_BURN || '45.6' }}
       PHASE82_PROD_CURRENT_MONTHLY_COST: ${{ vars.PHASE82_PROD_CURRENT_MONTHLY_COST || '0' }}
+      PHASE11_STRICT_SIGNAL: ${{ vars.PHASE11_STRICT_SIGNAL || 'false' }}
+      PHASE11_POLICY_PATH: ${{ vars.PHASE11_POLICY_PATH || '' }}
+      PHASE11_HISTORY_REPORT_PATHS: ${{ vars.PHASE11_HISTORY_REPORT_PATHS || '' }}
 
     steps:
       - name: Checkout
@@ -265,6 +268,63 @@ jobs:
             --incident-operations-report artifacts/runbooks/incident_operations_report.json \
             --output artifacts/validation/validation_backtesting_report.json
 
+      - name: Run Phase 11 strict signal (opt-in)
+        if: env.PHASE11_STRICT_SIGNAL == 'true'
+        run: |
+          HISTORY_FLAGS=""
+          if [[ -n "$PHASE11_HISTORY_REPORT_PATHS" ]]; then
+            for path in ${PHASE11_HISTORY_REPORT_PATHS//,/ }; do
+              HISTORY_FLAGS="$HISTORY_FLAGS --history-report $path"
+            done
+          fi
+
+          POLICY_FLAG=""
+          if [[ -n "$PHASE11_POLICY_PATH" ]]; then
+            POLICY_FLAG="--policy $PHASE11_POLICY_PATH"
+          fi
+
+          python scripts/ops/run_validation_backtesting.py \
+            --strict-validation \
+            --current-cost-report artifacts/performance/query_cost_attribution_report.json \
+            --baseline-cost-report artifacts/performance/query_cost_attribution_baseline.json \
+            --regression-report artifacts/performance/query_cost_regression_report.json \
+            --forecast-report artifacts/performance/query_cost_forecast_report.json \
+            --cross-environment-report artifacts/performance/cross_environment_forecast.json \
+            --pr-impact-report artifacts/performance/pr_cost_impact_score.json \
+            --health-report artifacts/monitoring/health_report.json \
+            --dashboard-report artifacts/monitoring/operational_dashboard.json \
+            --runbook-report artifacts/runbooks/oncall_runbook_report.json \
+            --incident-operations-report artifacts/runbooks/incident_operations_report.json \
+            $POLICY_FLAG \
+            $HISTORY_FLAGS \
+            --output artifacts/validation/validation_backtesting_strict_report.json
+
+      - name: Summarize Phase 11 KPIs
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("artifacts/validation/validation_backtesting_report.json")
+          if not path.exists():
+              print("Phase 11 KPI Summary: report missing")
+              raise SystemExit(0)
+
+          payload = json.loads(path.read_text(encoding="utf-8"))
+          backtest = payload.get("backtest_summary", {})
+          readiness = (payload.get("impact_summary", {}) or {}).get("operational_readiness", {})
+
+          print("Phase 11 KPI Summary")
+          print(f"- status: {payload.get('status', 'unknown')}")
+          print(f"- status_reason: {payload.get('status_reason', 'unknown')}")
+          print(f"- backtest_mode: {backtest.get('backtest_mode', 'unknown')}")
+          print(f"- regression_alignment: {backtest.get('regression_alignment', 'unknown')}")
+          print(f"- forecast_alignment_gap_pct: {backtest.get('forecast_alignment_gap_pct', 'unknown')}")
+          print(f"- operational_readiness_score: {readiness.get('overall_score', 'unknown')}")
+          print(f"- blocking_issue_count: {(payload.get('gate_eligibility') or {}).get('blocking_issue_count', 'unknown')}")
+          PY
+
       - name: Summarize failure-path observability (safe skip)
         if: always()
         run: |
@@ -317,6 +377,7 @@ jobs:
             artifacts/runbooks/oncall_runbook_report.json
             artifacts/runbooks/incident_operations_report.json
             artifacts/validation/validation_backtesting_report.json
+            artifacts/validation/validation_backtesting_strict_report.json
           if-no-files-found: ignore
 
   production-parity-check:

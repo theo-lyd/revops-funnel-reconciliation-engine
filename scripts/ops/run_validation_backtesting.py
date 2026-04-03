@@ -4,9 +4,11 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 from dataclasses import asdict
+from datetime import datetime, timezone
 from pathlib import Path
 
 from revops_funnel.artifacts import write_json_artifact
@@ -60,6 +62,11 @@ DEFAULT_INCIDENT_OPERATIONS_REPORT = os.getenv(
     "PHASE11_INCIDENT_OPERATIONS_REPORT_PATH",
     "artifacts/runbooks/incident_operations_report.json",
 )
+DEFAULT_HISTORY_REPORTS = os.getenv("PHASE11_HISTORY_REPORT_PATHS", "")
+
+
+def _parse_history_defaults(value: str) -> list[str]:
+    return [item.strip() for item in value.split(",") if item.strip()]
 
 
 def parse_args() -> argparse.Namespace:
@@ -74,6 +81,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dashboard-report", default=DEFAULT_DASHBOARD_REPORT)
     parser.add_argument("--runbook-report", default=DEFAULT_RUNBOOK_REPORT)
     parser.add_argument("--incident-operations-report", default=DEFAULT_INCIDENT_OPERATIONS_REPORT)
+    parser.add_argument(
+        "--history-report",
+        action="append",
+        default=_parse_history_defaults(DEFAULT_HISTORY_REPORTS),
+        help="Optional historical cost attribution report path (repeatable).",
+    )
     parser.add_argument(
         "--min-artifact-coverage",
         type=float,
@@ -150,7 +163,68 @@ def _load_policy(path: str) -> tuple[dict[str, object] | None, str]:
             "Phase 11 policy contract mismatch: "
             f"expected {POLICY_CONTRACT_VERSION}, got '{version}'"
         )
+    min_artifact_coverage = float(payload.get("min_artifact_coverage", 0.8))
+    min_operational_readiness = float(payload.get("min_operational_readiness_score", 0.7))
+    max_credits_regression = float(payload.get("max_credits_regression_pct", 20.0))
+    max_elapsed_regression = float(payload.get("max_elapsed_regression_pct", 25.0))
+    max_forecast_mismatch = float(payload.get("max_forecast_mismatch_pct", 25.0))
+
+    if not (0.0 <= min_artifact_coverage <= 1.0):
+        raise SystemExit("Phase 11 policy value out of range: min_artifact_coverage must be 0..1")
+    if not (0.0 <= min_operational_readiness <= 1.0):
+        raise SystemExit(
+            "Phase 11 policy value out of range: min_operational_readiness_score must be 0..1"
+        )
+    if max_credits_regression < 0.0:
+        raise SystemExit(
+            "Phase 11 policy value out of range: max_credits_regression_pct must be >= 0"
+        )
+    if max_elapsed_regression < 0.0:
+        raise SystemExit(
+            "Phase 11 policy value out of range: max_elapsed_regression_pct must be >= 0"
+        )
+    if max_forecast_mismatch < 0.0:
+        raise SystemExit(
+            "Phase 11 policy value out of range: max_forecast_mismatch_pct must be >= 0"
+        )
+
+    readiness_weights_obj = payload.get("readiness_weights")
+    if readiness_weights_obj is not None and not isinstance(readiness_weights_obj, dict):
+        raise SystemExit("Phase 11 policy value invalid: readiness_weights must be an object")
+
     return payload, "file"
+
+
+def _sha256(path: Path) -> str | None:
+    if not path.exists() or not path.is_file():
+        return None
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(8192), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _artifact_meta(path_str: str) -> dict[str, object]:
+    path = Path(path_str)
+    if not path.exists():
+        return {
+            "path": str(path),
+            "exists": False,
+            "size_bytes": None,
+            "modified_at_utc": None,
+            "sha256": None,
+        }
+
+    stat = path.stat()
+    modified = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat()
+    return {
+        "path": str(path),
+        "exists": True,
+        "size_bytes": int(stat.st_size),
+        "modified_at_utc": modified,
+        "sha256": _sha256(path),
+    }
 
 
 def main() -> int:
@@ -166,6 +240,11 @@ def main() -> int:
     dashboard_report = _read_json(Path(args.dashboard_report))
     runbook_report = _read_json(Path(args.runbook_report))
     incident_operations_report = _read_json(Path(args.incident_operations_report))
+    historical_cost_reports = [
+        payload
+        for payload in (_read_json(Path(path)) for path in args.history_report)
+        if payload is not None
+    ]
 
     loaded_policy, policy_source = _load_policy(args.policy)
     min_artifact_coverage = args.min_artifact_coverage
@@ -192,6 +271,14 @@ def main() -> int:
         max_forecast_mismatch_pct = float(
             loaded_policy.get("max_forecast_mismatch_pct", max_forecast_mismatch_pct)
         )
+        readiness_weights_obj = loaded_policy.get("readiness_weights")
+        readiness_weights = (
+            {str(k): float(v) for k, v in readiness_weights_obj.items()}
+            if isinstance(readiness_weights_obj, dict)
+            else None
+        )
+    else:
+        readiness_weights = None
 
     policy = ValidationBacktestingPolicy(
         min_artifact_coverage=max(0.0, min(1.0, min_artifact_coverage)),
@@ -199,7 +286,25 @@ def main() -> int:
         max_elapsed_regression_pct=max(0.0, max_elapsed_regression_pct),
         min_operational_readiness_score=max(0.0, min(1.0, min_operational_readiness_score)),
         max_forecast_mismatch_pct=max(0.0, max_forecast_mismatch_pct),
+        readiness_weights=readiness_weights,
     )
+
+    artifact_provenance = {
+        "current_cost_report": _artifact_meta(args.current_cost_report),
+        "baseline_cost_report": _artifact_meta(args.baseline_cost_report),
+        "regression_report": _artifact_meta(args.regression_report),
+        "forecast_report": _artifact_meta(args.forecast_report),
+        "cross_environment_report": _artifact_meta(args.cross_environment_report),
+        "pr_impact_report": _artifact_meta(args.pr_impact_report),
+        "health_report": _artifact_meta(args.health_report),
+        "dashboard_report": _artifact_meta(args.dashboard_report),
+        "runbook_report": _artifact_meta(args.runbook_report),
+        "incident_operations_report": _artifact_meta(args.incident_operations_report),
+        "history_reports": {
+            "count": len(args.history_report),
+            "items": [_artifact_meta(path) for path in args.history_report],
+        },
+    }
 
     report = generate_validation_backtesting_report(
         current_cost_report=current_cost_report,
@@ -212,6 +317,8 @@ def main() -> int:
         dashboard_report=dashboard_report,
         runbook_report=runbook_report,
         incident_operations_report=incident_operations_report,
+        historical_cost_reports=historical_cost_reports,
+        artifact_provenance=artifact_provenance,
         policy=policy,
         explicit_correlation_id=(args.correlation_id or None),
         strict_validation=bool(args.strict_validation),
