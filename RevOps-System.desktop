@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=RevOps System Launcher
+Comment=Boot the RevOps system and open the stakeholder dashboard
+Exec=/usr/bin/env python3 /workspaces/revops-funnel-reconciliation-engine/scripts/run_revops_system.py --mode demo
+Path=/workspaces/revops-funnel-reconciliation-engine
+Terminal=true
+Categories=Development;Office;DataVisualization;
+StartupNotify=true

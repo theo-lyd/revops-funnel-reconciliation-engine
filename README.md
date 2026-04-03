@@ -87,6 +87,16 @@ RELEASE_ID=phase4-hardening-block4 make production-stop-gate-strict
 RELEASE_ID=phase4-hardening-block4 make release-evidence-bundle
 ```
 
+### One-click launcher for stakeholders
+
+For a guided local startup that bootstraps the warehouse and opens the dashboard, run:
+
+```bash
+./scripts/run_revops_system.py
+```
+
+For a clickable desktop launcher, use [RevOps-System.desktop](RevOps-System.desktop). It starts the same bootstrap flow and opens the stakeholder dashboard in a browser.
+
 ## Repository Layout
 
 - `.devcontainer/`: Reproducible Codespaces configuration
