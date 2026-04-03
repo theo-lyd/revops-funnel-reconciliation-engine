@@ -6,6 +6,7 @@ This directory contains mandatory project-process documents for this capstone.
 - Standing instructions: see [standing-instructions.md](standing-instructions.md).
 - Phase completion checklist and stop-gate workflow: see [phase-completion-checklist.md](phase-completion-checklist.md).
 - CI/CD pipeline and deployment workflow: see [ci-cd-runbook.md](ci-cd-runbook.md).
+- Artifact versioning policy and allowlist guard: see [artifact-policy.md](artifact-policy.md).
 
 ## Phase 4 post-completion hardening blocks
 After Phase 4 batches 4.1-4.4 are complete, the following optional hardening blocks strengthen production safety and governance:

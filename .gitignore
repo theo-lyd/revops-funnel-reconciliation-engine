@@ -206,12 +206,9 @@ data/warehouse/
 *.duckdb
 data/raw/marketing/*.jsonl
 data/processed/
-artifacts/parity/
-artifacts/release-evidence/
-artifacts/dashboards/
-artifacts/ai/
-artifacts/monitoring/
-artifacts/promotions/
+artifacts/**
+!artifacts/release-evidence/
+!artifacts/release-evidence/**
 .streamlit/
 .cursorignore
 .cursorindexingignore

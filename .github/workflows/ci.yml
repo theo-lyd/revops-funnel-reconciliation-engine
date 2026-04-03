@@ -30,6 +30,9 @@ jobs:
           pip install "apache-airflow==2.10.5" --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-2.10.5/constraints-3.10.txt"
           pip install -r requirements/base.txt -r requirements/dev.txt
 
+      - name: Enforce artifact commit policy
+        run: python scripts/governance/enforce_artifact_policy.py
+
       - name: Lint and type-check
         run: |
           ruff check .
