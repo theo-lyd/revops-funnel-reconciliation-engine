@@ -73,8 +73,20 @@ PHASE11_MAX_FORECAST_MISMATCH_PCT ?= 25
 PHASE11_STRICT_VALIDATION ?= false
 PHASE11_POLICY_PATH ?=
 PHASE11_CORRELATION_ID ?=
+PHASE12_DEFENSE_REPORT_PATH ?= artifacts/release-evidence/phase12_defense_package_report.json
+PHASE12_VALIDATION_REPORT_PATH ?= artifacts/validation/validation_backtesting_report.json
+PHASE12_INCIDENT_OPERATIONS_REPORT_PATH ?= artifacts/runbooks/incident_operations_report.json
+PHASE12_RUNBOOK_REPORT_PATH ?= artifacts/runbooks/oncall_runbook_report.json
+PHASE12_RELEASE_BUNDLE_PATH ?= artifacts/release-evidence/release-evidence-bundle.md
+PHASE12_MIN_DEFENSE_READINESS_SCORE ?= 0.75
+PHASE12_MIN_HANDOVER_COVERAGE ?= 0.85
+PHASE12_MAX_OPEN_P1_FAILURES ?= 0
+PHASE12_REQUIRE_REHEARSAL_NOT_DUE ?= true
+PHASE12_STRICT_VALIDATION ?= false
+PHASE12_POLICY_PATH ?=
+PHASE12_CORRELATION_ID ?=
 
-.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-build-changed dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-test-changed dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle refresh-caches promote-deployment rollback-deployment production-stop-gate production-stop-gate-strict query-cost-attribution query-cost-attribution-strict query-cost-regression query-cost-regression-strict phase82-cost-forecast phase82-pattern-analysis phase82-phase-attribution phase82-cross-env-impact phase82-pr-impact phase82-warehouse-preflight phase82-runbook-gen phase82-suite health-checks health-checks-strict dashboards dashboards-strict oncall-runbooks oncall-runbooks-strict incident-ops incident-ops-strict phase11-validation phase11-validation-strict artifact-policy-check query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness metabase-setup streamlit-dev anomaly-check insights-generate reporting-pack
+.PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-build-changed dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-test-changed dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle refresh-caches promote-deployment rollback-deployment production-stop-gate production-stop-gate-strict query-cost-attribution query-cost-attribution-strict query-cost-regression query-cost-regression-strict phase82-cost-forecast phase82-pattern-analysis phase82-phase-attribution phase82-cross-env-impact phase82-pr-impact phase82-warehouse-preflight phase82-runbook-gen phase82-suite health-checks health-checks-strict dashboards dashboards-strict oncall-runbooks oncall-runbooks-strict incident-ops incident-ops-strict phase11-validation phase11-validation-strict phase12-defense-package phase12-defense-package-strict artifact-policy-check query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness metabase-setup streamlit-dev anomaly-check insights-generate reporting-pack
 
 setup:
 	$(PIP) install "apache-airflow==$(AIRFLOW_VERSION)" --constraint "$(AIRFLOW_CONSTRAINTS)"
@@ -253,6 +265,12 @@ phase11-validation:
 
 phase11-validation-strict:
 	$(PYTHON) scripts/ops/run_validation_backtesting.py --strict-validation --current-cost-report $(PHASE11_CURRENT_COST_REPORT_PATH) --baseline-cost-report $(PHASE11_BASELINE_COST_REPORT_PATH) --regression-report $(PHASE11_REGRESSION_REPORT_PATH) --forecast-report $(PHASE11_FORECAST_REPORT_PATH) --cross-environment-report $(PHASE11_CROSS_ENVIRONMENT_REPORT_PATH) --pr-impact-report $(PHASE11_PR_IMPACT_REPORT_PATH) --health-report $(PHASE11_HEALTH_REPORT_PATH) --dashboard-report $(PHASE11_DASHBOARD_REPORT_PATH) --runbook-report $(PHASE11_RUNBOOK_REPORT_PATH) --incident-operations-report $(PHASE11_INCIDENT_OPERATIONS_REPORT_PATH) --policy "$(PHASE11_POLICY_PATH)" --correlation-id "$(PHASE11_CORRELATION_ID)" --min-artifact-coverage $(PHASE11_MIN_ARTIFACT_COVERAGE) --max-credits-regression-pct $(PHASE11_MAX_CREDITS_REGRESSION_PCT) --max-elapsed-regression-pct $(PHASE11_MAX_ELAPSED_REGRESSION_PCT) --min-operational-readiness-score $(PHASE11_MIN_OPERATIONAL_READINESS_SCORE) --max-forecast-mismatch-pct $(PHASE11_MAX_FORECAST_MISMATCH_PCT) --output $(PHASE11_VALIDATION_REPORT_PATH)
+
+phase12-defense-package:
+	PHASE12_REQUIRE_REHEARSAL_NOT_DUE=$(PHASE12_REQUIRE_REHEARSAL_NOT_DUE) $(PYTHON) scripts/ops/run_defense_package.py --validation-report $(PHASE12_VALIDATION_REPORT_PATH) --incident-operations-report $(PHASE12_INCIDENT_OPERATIONS_REPORT_PATH) --runbook-report $(PHASE12_RUNBOOK_REPORT_PATH) --release-evidence-bundle $(PHASE12_RELEASE_BUNDLE_PATH) --policy "$(PHASE12_POLICY_PATH)" --correlation-id "$(PHASE12_CORRELATION_ID)" --min-defense-readiness-score $(PHASE12_MIN_DEFENSE_READINESS_SCORE) --min-handover-coverage $(PHASE12_MIN_HANDOVER_COVERAGE) --max-open-p1-failures $(PHASE12_MAX_OPEN_P1_FAILURES) --output $(PHASE12_DEFENSE_REPORT_PATH)
+
+phase12-defense-package-strict:
+	PHASE12_REQUIRE_REHEARSAL_NOT_DUE=$(PHASE12_REQUIRE_REHEARSAL_NOT_DUE) $(PYTHON) scripts/ops/run_defense_package.py --strict-validation --validation-report $(PHASE12_VALIDATION_REPORT_PATH) --incident-operations-report $(PHASE12_INCIDENT_OPERATIONS_REPORT_PATH) --runbook-report $(PHASE12_RUNBOOK_REPORT_PATH) --release-evidence-bundle $(PHASE12_RELEASE_BUNDLE_PATH) --policy "$(PHASE12_POLICY_PATH)" --correlation-id "$(PHASE12_CORRELATION_ID)" --min-defense-readiness-score $(PHASE12_MIN_DEFENSE_READINESS_SCORE) --min-handover-coverage $(PHASE12_MIN_HANDOVER_COVERAGE) --max-open-p1-failures $(PHASE12_MAX_OPEN_P1_FAILURES) --output $(PHASE12_DEFENSE_REPORT_PATH)
 
 production-stop-gate:
 	$(MAKE) quality-gate

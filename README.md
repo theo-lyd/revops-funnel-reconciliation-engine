@@ -184,6 +184,14 @@ Phase 11 consolidates the operational artifacts into a single validation and mea
 2. **Batch 11.1**: [Validation, backtesting, and impact measurement](docs/reports/phase-11/batch-11.1-validation-backtesting-and-impact-measurement.md)
 3. **End Report**: [Phase 11 end report](docs/reports/phase-11/phase-11-end-report.md)
 
+### Phase 12: Defense Package, Rehearsal, and Handover
+
+Phase 12 packages validation, rehearsal posture, and handover completeness into a single release-defense artifact for final go or no-go decisions:
+
+1. **Plan**: [Phase 12 implementation plan](docs/reports/phase-12/PHASE-12-PLAN.md)
+2. **Batch 12.1**: [Defense package, rehearsal, and handover](docs/reports/phase-12/batch-12.1-defense-package-rehearsal-handover.md)
+3. **End Report**: [Phase 12 end report](docs/reports/phase-12/phase-12-end-report.md)
+
 ### Project Governance
 - [Standing instructions and process documentation](docs/project-governance/standing-instructions.md)
 - [Phase completion checklist and stop-gate workflow](docs/project-governance/phase-completion-checklist.md)

@@ -60,6 +60,10 @@ jobs:
       PHASE11_STRICT_VALIDATION: ${{ vars.PHASE11_STRICT_VALIDATION || 'true' }}
       PHASE11_POLICY_PATH: ${{ vars.PHASE11_POLICY_PATH || '' }}
       PHASE11_CORRELATION_ID: ${{ vars.PHASE11_CORRELATION_ID || '' }}
+      PHASE12_DEFENSE_REPORT_PATH: artifacts/release-evidence/phase12_defense_package_report.json
+      PHASE12_STRICT_VALIDATION: ${{ vars.PHASE12_STRICT_VALIDATION || 'true' }}
+      PHASE12_POLICY_PATH: ${{ vars.PHASE12_POLICY_PATH || '' }}
+      PHASE12_CORRELATION_ID: ${{ vars.PHASE12_CORRELATION_ID || '' }}
 
     permissions:
       contents: read
@@ -501,6 +505,73 @@ jobs:
           print(f"- blocking_issue_count={eligibility.get('blocking_issue_count', 'unknown')}")
           PY
 
+      - name: Generate release evidence bundle
+        if: always()
+        env:
+          RELEASE_ID: ${{ inputs.release_id }}
+        run: |
+          EFFECTIVE_RELEASE_ID="$RELEASE_ID"
+          if [[ -z "$EFFECTIVE_RELEASE_ID" ]]; then
+            EFFECTIVE_RELEASE_ID="manual-release"
+          fi
+
+          python scripts/governance/generate_release_evidence_bundle.py \
+            --release-id "$EFFECTIVE_RELEASE_ID" \
+            --scope "phase-12-defense-package" \
+            --owner "$GITHUB_ACTOR" \
+            --output artifacts/release-evidence/release-evidence-bundle.md
+
+      - name: Run Phase 12 defense package
+        if: always()
+        run: |
+          STRICT_PHASE12_FLAG=""
+          if [[ "$PHASE12_STRICT_VALIDATION" == "true" ]]; then
+            STRICT_PHASE12_FLAG="--strict-validation"
+          fi
+
+          PHASE12_POLICY_FLAG=""
+          if [[ -n "$PHASE12_POLICY_PATH" ]]; then
+            PHASE12_POLICY_FLAG="--policy $PHASE12_POLICY_PATH"
+          fi
+
+          python scripts/ops/run_defense_package.py \
+            $STRICT_PHASE12_FLAG \
+            --validation-report "$PHASE11_VALIDATION_REPORT_PATH" \
+            --incident-operations-report "$INCIDENT_OPERATIONS_REPORT_PATH" \
+            --runbook-report "$ONCALL_RUNBOOK_REPORT_PATH" \
+            --release-evidence-bundle artifacts/release-evidence/release-evidence-bundle.md \
+            --correlation-id "$PHASE12_CORRELATION_ID" \
+            $PHASE12_POLICY_FLAG \
+            --output "$PHASE12_DEFENSE_REPORT_PATH"
+
+      - name: Summarize Phase 12 release KPIs
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          path = Path(os.getenv("PHASE12_DEFENSE_REPORT_PATH", "artifacts/release-evidence/phase12_defense_package_report.json"))
+          if not path.exists():
+              print("Phase 12 release summary: defense package report missing")
+              raise SystemExit(0)
+
+          payload = json.loads(path.read_text(encoding="utf-8"))
+          defense = payload.get("defense_summary", {})
+          rehearsal = payload.get("rehearsal_summary", {})
+          handover = payload.get("handover_summary", {})
+          eligibility = payload.get("gate_eligibility", {})
+
+          print("Phase 12 Release KPI Summary")
+          print(f"- status={payload.get('status', 'unknown')}")
+          print(f"- defense_readiness_score={defense.get('defense_readiness_score', 'unknown')}")
+          print(f"- game_day_due={rehearsal.get('game_day_due', 'unknown')}")
+          print(f"- handover_coverage={handover.get('handover_coverage', 'unknown')}")
+          print(f"- strict_mode_eligible={eligibility.get('strict_mode_eligible', 'unknown')}")
+          print(f"- blocking_issue_count={eligibility.get('blocking_issue_count', 'unknown')}")
+          PY
+
       - name: Upload release gate artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -519,6 +590,8 @@ jobs:
             artifacts/runbooks/incident_timeline.json
             artifacts/runbooks/incident_operations_report.json
             artifacts/validation/validation_backtesting_report.json
+            artifacts/release-evidence/release-evidence-bundle.md
+            artifacts/release-evidence/phase12_defense_package_report.json
             artifacts/promotions/deployment_promotion.json
             artifacts/promotions/deployment_rollback.json
             artifacts/promotions/deployment_rollback_execution.json

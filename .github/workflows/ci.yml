@@ -94,6 +94,8 @@ jobs:
       PHASE11_STRICT_SIGNAL: ${{ vars.PHASE11_STRICT_SIGNAL || 'false' }}
       PHASE11_POLICY_PATH: ${{ vars.PHASE11_POLICY_PATH || '' }}
       PHASE11_HISTORY_REPORT_PATHS: ${{ vars.PHASE11_HISTORY_REPORT_PATHS || '' }}
+      PHASE12_STRICT_SIGNAL: ${{ vars.PHASE12_STRICT_SIGNAL || 'false' }}
+      PHASE12_POLICY_PATH: ${{ vars.PHASE12_POLICY_PATH || '' }}
 
     steps:
       - name: Checkout
@@ -302,6 +304,43 @@ jobs:
             $HISTORY_FLAGS \
             --output artifacts/validation/validation_backtesting_strict_report.json
 
+      - name: Create synthetic release evidence bundle (safe mode)
+        run: |
+          mkdir -p artifacts/release-evidence
+          cat <<'MD' > artifacts/release-evidence/release-evidence-bundle.md
+          # Release Evidence Bundle
+
+          - Release ID: ci-integration
+          - Scope: phase-12-safe-mode
+          - Owner: github-actions
+          MD
+
+      - name: Run Phase 12 defense package (safe mode)
+        run: |
+          python scripts/ops/run_defense_package.py \
+            --validation-report artifacts/validation/validation_backtesting_report.json \
+            --incident-operations-report artifacts/runbooks/incident_operations_report.json \
+            --runbook-report artifacts/runbooks/oncall_runbook_report.json \
+            --release-evidence-bundle artifacts/release-evidence/release-evidence-bundle.md \
+            --output artifacts/release-evidence/phase12_defense_package_report.json
+
+      - name: Run Phase 12 strict signal (opt-in)
+        if: env.PHASE12_STRICT_SIGNAL == 'true'
+        run: |
+          PHASE12_POLICY_FLAG=""
+          if [[ -n "$PHASE12_POLICY_PATH" ]]; then
+            PHASE12_POLICY_FLAG="--policy $PHASE12_POLICY_PATH"
+          fi
+
+          python scripts/ops/run_defense_package.py \
+            --strict-validation \
+            --validation-report artifacts/validation/validation_backtesting_report.json \
+            --incident-operations-report artifacts/runbooks/incident_operations_report.json \
+            --runbook-report artifacts/runbooks/oncall_runbook_report.json \
+            --release-evidence-bundle artifacts/release-evidence/release-evidence-bundle.md \
+            $PHASE12_POLICY_FLAG \
+            --output artifacts/release-evidence/phase12_defense_package_strict_report.json
+
       - name: Summarize Phase 11 KPIs
         if: always()
         run: |
@@ -352,6 +391,33 @@ jobs:
           print(f"- oncall_runbook: {status('artifacts/runbooks/oncall_runbook_report.json', 'overall_status')}")
           PY
 
+      - name: Summarize Phase 12 KPIs
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("artifacts/release-evidence/phase12_defense_package_report.json")
+          if not path.exists():
+              print("Phase 12 KPI Summary: report missing")
+              raise SystemExit(0)
+
+          payload = json.loads(path.read_text(encoding="utf-8"))
+          defense = payload.get("defense_summary", {})
+          rehearsal = payload.get("rehearsal_summary", {})
+          handover = payload.get("handover_summary", {})
+          eligibility = payload.get("gate_eligibility", {})
+
+          print("Phase 12 KPI Summary")
+          print(f"- status: {payload.get('status', 'unknown')}")
+          print(f"- defense_readiness_score: {defense.get('defense_readiness_score', 'unknown')}")
+          print(f"- game_day_due: {rehearsal.get('game_day_due', 'unknown')}")
+          print(f"- handover_coverage: {handover.get('handover_coverage', 'unknown')}")
+          print(f"- strict_mode_eligible: {eligibility.get('strict_mode_eligible', 'unknown')}")
+          print(f"- blockers: {len(payload.get('strict_blockers', []))}")
+          PY
+
       - name: Upload deployment integration artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -381,6 +447,9 @@ jobs:
             artifacts/runbooks/incident_operations_report.json
             artifacts/validation/validation_backtesting_report.json
             artifacts/validation/validation_backtesting_strict_report.json
+            artifacts/release-evidence/release-evidence-bundle.md
+            artifacts/release-evidence/phase12_defense_package_report.json
+            artifacts/release-evidence/phase12_defense_package_strict_report.json
           if-no-files-found: ignore
 
   production-parity-check:
