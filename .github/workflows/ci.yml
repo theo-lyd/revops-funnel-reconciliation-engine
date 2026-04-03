@@ -240,6 +240,16 @@ jobs:
             --dead-letter-escalation-report artifacts/promotions/rollback_dead_letter_escalation.json \
             --output artifacts/runbooks/oncall_runbook_report.json
 
+      - name: Generate incident operations report (safe mode)
+        run: |
+          python scripts/ops/run_incident_operations.py \
+            --health-report artifacts/monitoring/health_report.json \
+            --dashboard-report artifacts/monitoring/operational_dashboard.json \
+            --runbook-report artifacts/runbooks/oncall_runbook_report.json \
+            --dispatch-report artifacts/promotions/rollback_incident_dispatch.json \
+            --escalation-report artifacts/promotions/rollback_dead_letter_escalation.json \
+            --output artifacts/runbooks/incident_operations_report.json
+
       - name: Summarize failure-path observability (safe skip)
         if: always()
         run: |
@@ -290,6 +300,7 @@ jobs:
             artifacts/monitoring/health_report.json
             artifacts/monitoring/operational_dashboard.json
             artifacts/runbooks/oncall_runbook_report.json
+            artifacts/runbooks/incident_operations_report.json
           if-no-files-found: ignore
 
   production-parity-check:

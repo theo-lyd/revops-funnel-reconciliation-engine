@@ -50,6 +50,9 @@ jobs:
       ONCALL_FLAP_THRESHOLD: ${{ vars.ONCALL_FLAP_THRESHOLD || '3' }}
       ONCALL_GAME_DAY_CADENCE_DAYS: ${{ vars.ONCALL_GAME_DAY_CADENCE_DAYS || '30' }}
       ONCALL_LAST_GAME_DAY_UTC: ${{ vars.ONCALL_LAST_GAME_DAY_UTC || '' }}
+      INCIDENT_OPERATIONS_REPORT_PATH: artifacts/runbooks/incident_operations_report.json
+      INCIDENT_OPS_STRICT: ${{ vars.INCIDENT_OPS_STRICT || 'true' }}
+      INCIDENT_OPS_FATIGUE_REPEAT_THRESHOLD: ${{ vars.INCIDENT_OPS_FATIGUE_REPEAT_THRESHOLD || '3' }}
 
     permissions:
       contents: read
@@ -407,6 +410,24 @@ jobs:
           print(f"- oncall_runbook: {status('artifacts/runbooks/oncall_runbook_report.json', 'overall_status')}")
           PY
 
+      - name: Generate incident operations report
+        if: always()
+        run: |
+          STRICT_OPS_FLAG=""
+          if [[ "$INCIDENT_OPS_STRICT" == "true" ]]; then
+            STRICT_OPS_FLAG="--strict-operations --require-dispatch-sent --require-escalation-sent"
+          fi
+
+          python scripts/ops/run_incident_operations.py \
+            --health-report "$HEALTH_REPORT_PATH" \
+            --dashboard-report "$DASHBOARD_OUTPUT_PATH" \
+            --runbook-report "$ONCALL_RUNBOOK_REPORT_PATH" \
+            --dispatch-report "$DEPLOYMENT_ROLLBACK_INCIDENT_DISPATCH_REPORT_PATH" \
+            --escalation-report "$DEPLOYMENT_ROLLBACK_ESCALATION_REPORT_PATH" \
+            --fatigue-repeat-threshold "$INCIDENT_OPS_FATIGUE_REPEAT_THRESHOLD" \
+            --output "$INCIDENT_OPERATIONS_REPORT_PATH" \
+            $STRICT_OPS_FLAG
+
       - name: Upload release gate artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -423,6 +444,7 @@ jobs:
             artifacts/monitoring/operational_dashboard.json
             artifacts/runbooks/oncall_runbook_report.json
             artifacts/runbooks/incident_timeline.json
+            artifacts/runbooks/incident_operations_report.json
             artifacts/promotions/deployment_promotion.json
             artifacts/promotions/deployment_rollback.json
             artifacts/promotions/deployment_rollback_execution.json
