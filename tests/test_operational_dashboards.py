@@ -320,10 +320,12 @@ def test_generate_dashboard_includes_contract_fields() -> None:
         dependency_graph={"latency": ["warehouse"]},
         error_budget={"status": "healthy"},
         cost_of_reliability={"cost_per_latency_minute": 0.001},
+        remediation_latency_kpis={"detection_to_ack_minutes": 5.0},
     )
     payload = dashboard.to_dict()
     assert payload["contract_version"] == "2.0"
     assert payload["dependency_impact"]["impacted_services"] == 1
+    assert payload["remediation_latency_kpis"]["detection_to_ack_minutes"] == 5.0
 
     def test_dashboard_with_unhealthy(self) -> None:
         """Test dashboard status with unhealthy metrics."""

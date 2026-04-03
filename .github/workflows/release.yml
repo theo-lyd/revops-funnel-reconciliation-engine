@@ -53,6 +53,9 @@ jobs:
       INCIDENT_OPERATIONS_REPORT_PATH: artifacts/runbooks/incident_operations_report.json
       INCIDENT_OPS_STRICT: ${{ vars.INCIDENT_OPS_STRICT || 'true' }}
       INCIDENT_OPS_FATIGUE_REPEAT_THRESHOLD: ${{ vars.INCIDENT_OPS_FATIGUE_REPEAT_THRESHOLD || '3' }}
+      INCIDENT_OPS_FATIGUE_DECAY_HALF_LIFE_HOURS: ${{ vars.INCIDENT_OPS_FATIGUE_DECAY_HALF_LIFE_HOURS || '24' }}
+      INCIDENT_OPS_STRICT_MIN_EVIDENCE_COMPLETENESS: ${{ vars.INCIDENT_OPS_STRICT_MIN_EVIDENCE_COMPLETENESS || '0.8' }}
+      INCIDENT_OPS_POLICY_PATH: ${{ vars.INCIDENT_OPS_POLICY_PATH || '' }}
 
     permissions:
       contents: read
@@ -418,6 +421,11 @@ jobs:
             STRICT_OPS_FLAG="--strict-operations --require-dispatch-sent --require-escalation-sent"
           fi
 
+          POLICY_FLAG=""
+          if [[ -n "$INCIDENT_OPS_POLICY_PATH" ]]; then
+            POLICY_FLAG="--policy $INCIDENT_OPS_POLICY_PATH"
+          fi
+
           python scripts/ops/run_incident_operations.py \
             --health-report "$HEALTH_REPORT_PATH" \
             --dashboard-report "$DASHBOARD_OUTPUT_PATH" \
@@ -425,7 +433,10 @@ jobs:
             --dispatch-report "$DEPLOYMENT_ROLLBACK_INCIDENT_DISPATCH_REPORT_PATH" \
             --escalation-report "$DEPLOYMENT_ROLLBACK_ESCALATION_REPORT_PATH" \
             --fatigue-repeat-threshold "$INCIDENT_OPS_FATIGUE_REPEAT_THRESHOLD" \
+            --fatigue-decay-half-life-hours "$INCIDENT_OPS_FATIGUE_DECAY_HALF_LIFE_HOURS" \
+            --strict-min-evidence-completeness "$INCIDENT_OPS_STRICT_MIN_EVIDENCE_COMPLETENESS" \
             --output "$INCIDENT_OPERATIONS_REPORT_PATH" \
+            $POLICY_FLAG \
             $STRICT_OPS_FLAG
 
       - name: Upload release gate artifacts

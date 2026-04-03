@@ -170,8 +170,25 @@ def test_report_serialization_converts_enum_values() -> None:
 
     payload = report.to_dict()
     assert payload["contract_version"] == "2.0"
+    assert payload.get("correlation_id")
     assert payload["highest_severity"] == "p1"
     assert payload["failure_patterns"][0]["severity"] == "p1"
+
+
+def test_generate_oncall_runbook_report_accepts_explicit_correlation_id() -> None:
+    report = generate_oncall_runbook_report(
+        health_report={"overall_status": "unhealthy"},
+        dashboard_report=None,
+        rollback_execution_report=None,
+        incident_dispatch_report=None,
+        dead_letter_escalation_report=None,
+        primary_endpoint="oncall-primary",
+        secondary_endpoint="oncall-secondary",
+        ticket_queue="revops-queue",
+        correlation_id="corr-test-123",
+    )
+    payload = report.to_dict()
+    assert payload["correlation_id"] == "corr-test-123"
 
 
 def test_dedupe_failure_patterns() -> None:

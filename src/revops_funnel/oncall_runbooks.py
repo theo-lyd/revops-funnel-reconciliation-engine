@@ -6,6 +6,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
+from uuid import NAMESPACE_DNS, uuid5
 
 OBSERVABILITY_CONTRACT_VERSION = "2.0"
 
@@ -75,6 +76,7 @@ class OnCallRunbookReport:
     quality_gate_passed: bool
     incident_timeline: list[dict[str, str]]
     game_day_due: bool
+    correlation_id: str
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -92,11 +94,27 @@ class OnCallRunbookReport:
             "quality_gate_passed": self.quality_gate_passed,
             "incident_timeline": self.incident_timeline,
             "game_day_due": self.game_day_due,
+            "correlation_id": self.correlation_id,
         }
 
 
 def _timestamp_utc() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _derive_correlation_id(
+    health_report: dict[str, Any] | None,
+    dashboard_report: dict[str, Any] | None,
+    incident_dispatch_report: dict[str, Any] | None,
+    dead_letter_escalation_report: dict[str, Any] | None,
+) -> str:
+    fingerprint = (
+        f"{_safe_str(health_report or {}, 'overall_status', 'unknown')}:"
+        f"{_safe_str(dashboard_report or {}, 'operational_status', 'unknown')}:"
+        f"{_safe_str(incident_dispatch_report or {}, 'dispatch_status', 'unknown')}:"
+        f"{_safe_str(dead_letter_escalation_report or {}, 'escalation_status', 'unknown')}"
+    )
+    return str(uuid5(NAMESPACE_DNS, fingerprint))
 
 
 def _safe_str(payload: dict[str, Any], key: str, default: str = "") -> str:
@@ -577,6 +595,7 @@ def generate_oncall_runbook_report(
     dependency_impact: dict[str, Any] | None = None,
     last_game_day_utc: str | None = None,
     game_day_cadence_days: int = 30,
+    correlation_id: str | None = None,
 ) -> OnCallRunbookReport:
     """Generate full runbook report from available telemetry artifacts."""
     patterns = detect_failure_patterns(
@@ -604,6 +623,12 @@ def generate_oncall_runbook_report(
     now = _timestamp_utc()
     timeline = build_incident_timeline(now, patterns, actions)
     game_day_due = is_game_day_due(last_game_day_utc, game_day_cadence_days)
+    resolved_correlation_id = correlation_id or _derive_correlation_id(
+        health_report,
+        dashboard_report,
+        incident_dispatch_report,
+        dead_letter_escalation_report,
+    )
 
     status = "healthy" if not patterns else "incident"
     return OnCallRunbookReport(
@@ -618,4 +643,5 @@ def generate_oncall_runbook_report(
         quality_gate_passed=quality_gate_passed,
         incident_timeline=timeline,
         game_day_due=game_day_due,
+        correlation_id=resolved_correlation_id,
     )

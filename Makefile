@@ -50,6 +50,10 @@ INCIDENT_OPS_DISPATCH_REPORT ?= artifacts/promotions/rollback_incident_dispatch.
 INCIDENT_OPS_ESCALATION_REPORT ?= artifacts/promotions/rollback_dead_letter_escalation.json
 INCIDENT_OPS_RECENT_PATTERNS ?= artifacts/runbooks/recent_patterns.json
 INCIDENT_OPS_FATIGUE_REPEAT_THRESHOLD ?= 3
+INCIDENT_OPS_FATIGUE_DECAY_HALF_LIFE_HOURS ?= 24
+INCIDENT_OPS_POLICY_PATH ?=
+INCIDENT_OPS_STRICT_MIN_EVIDENCE_COMPLETENESS ?= 0.8
+INCIDENT_OPS_CORRELATION_ID ?=
 
 .PHONY: setup lint test format airflow-init airflow-start init-warehouse dbt-deps dbt-build dbt-build-prod dbt-build-changed dbt-source-freshness dbt-snapshot dbt-snapshot-prod dbt-test dbt-test-prod dbt-test-changed dbt-deploy-prod metric-parity-check metric-parity-check-strict metric-parity-check-report release-readiness-gate release-readiness-gate-strict release-evidence-bundle refresh-caches promote-deployment rollback-deployment production-stop-gate production-stop-gate-strict query-cost-attribution query-cost-attribution-strict query-cost-regression query-cost-regression-strict phase82-cost-forecast phase82-pattern-analysis phase82-phase-attribution phase82-cross-env-impact phase82-pr-impact phase82-warehouse-preflight phase82-runbook-gen phase82-suite health-checks health-checks-strict dashboards dashboards-strict oncall-runbooks oncall-runbooks-strict incident-ops incident-ops-strict query-pack-validate ge-validate quality-checks quality-gate preflight ingest-crm poll-leads ingest-leads export-bronze check-freshness metabase-setup streamlit-dev anomaly-check insights-generate reporting-pack
 
@@ -217,10 +221,10 @@ oncall-runbooks-strict:
 	$(PYTHON) scripts/ops/run_oncall_runbooks.py --strict-artifacts --health-report $(ONCALL_HEALTH_REPORT) --dashboard-report $(ONCALL_DASHBOARD_REPORT) --rollback-report $(ONCALL_ROLLBACK_REPORT) --incident-dispatch-report $(ONCALL_INCIDENT_DISPATCH_REPORT) --dead-letter-escalation-report $(ONCALL_DEAD_LETTER_ESCALATION_REPORT) --primary-endpoint "$(ONCALL_PRIMARY_ENDPOINT)" --secondary-endpoint "$(ONCALL_SECONDARY_ENDPOINT)" --ticket-queue "$(ONCALL_TICKET_QUEUE)" --output $(ONCALL_RUNBOOK_REPORT_PATH)
 
 incident-ops:
-	$(PYTHON) scripts/ops/run_incident_operations.py --health-report $(INCIDENT_OPS_HEALTH_REPORT) --dashboard-report $(INCIDENT_OPS_DASHBOARD_REPORT) --runbook-report $(INCIDENT_OPS_RUNBOOK_REPORT) --dispatch-report $(INCIDENT_OPS_DISPATCH_REPORT) --escalation-report $(INCIDENT_OPS_ESCALATION_REPORT) --recent-patterns $(INCIDENT_OPS_RECENT_PATTERNS) --fatigue-repeat-threshold $(INCIDENT_OPS_FATIGUE_REPEAT_THRESHOLD) --output $(INCIDENT_OPERATIONS_REPORT_PATH)
+	$(PYTHON) scripts/ops/run_incident_operations.py --health-report $(INCIDENT_OPS_HEALTH_REPORT) --dashboard-report $(INCIDENT_OPS_DASHBOARD_REPORT) --runbook-report $(INCIDENT_OPS_RUNBOOK_REPORT) --dispatch-report $(INCIDENT_OPS_DISPATCH_REPORT) --escalation-report $(INCIDENT_OPS_ESCALATION_REPORT) --recent-patterns $(INCIDENT_OPS_RECENT_PATTERNS) --fatigue-repeat-threshold $(INCIDENT_OPS_FATIGUE_REPEAT_THRESHOLD) --fatigue-decay-half-life-hours $(INCIDENT_OPS_FATIGUE_DECAY_HALF_LIFE_HOURS) --policy "$(INCIDENT_OPS_POLICY_PATH)" --correlation-id "$(INCIDENT_OPS_CORRELATION_ID)" --output $(INCIDENT_OPERATIONS_REPORT_PATH)
 
 incident-ops-strict:
-	$(PYTHON) scripts/ops/run_incident_operations.py --strict-operations --require-dispatch-sent --require-escalation-sent --health-report $(INCIDENT_OPS_HEALTH_REPORT) --dashboard-report $(INCIDENT_OPS_DASHBOARD_REPORT) --runbook-report $(INCIDENT_OPS_RUNBOOK_REPORT) --dispatch-report $(INCIDENT_OPS_DISPATCH_REPORT) --escalation-report $(INCIDENT_OPS_ESCALATION_REPORT) --recent-patterns $(INCIDENT_OPS_RECENT_PATTERNS) --fatigue-repeat-threshold $(INCIDENT_OPS_FATIGUE_REPEAT_THRESHOLD) --output $(INCIDENT_OPERATIONS_REPORT_PATH)
+	$(PYTHON) scripts/ops/run_incident_operations.py --strict-operations --require-dispatch-sent --require-escalation-sent --strict-min-evidence-completeness $(INCIDENT_OPS_STRICT_MIN_EVIDENCE_COMPLETENESS) --health-report $(INCIDENT_OPS_HEALTH_REPORT) --dashboard-report $(INCIDENT_OPS_DASHBOARD_REPORT) --runbook-report $(INCIDENT_OPS_RUNBOOK_REPORT) --dispatch-report $(INCIDENT_OPS_DISPATCH_REPORT) --escalation-report $(INCIDENT_OPS_ESCALATION_REPORT) --recent-patterns $(INCIDENT_OPS_RECENT_PATTERNS) --fatigue-repeat-threshold $(INCIDENT_OPS_FATIGUE_REPEAT_THRESHOLD) --fatigue-decay-half-life-hours $(INCIDENT_OPS_FATIGUE_DECAY_HALF_LIFE_HOURS) --policy "$(INCIDENT_OPS_POLICY_PATH)" --correlation-id "$(INCIDENT_OPS_CORRELATION_ID)" --output $(INCIDENT_OPERATIONS_REPORT_PATH)
 
 production-stop-gate:
 	$(MAKE) quality-gate

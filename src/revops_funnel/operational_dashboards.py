@@ -102,6 +102,7 @@ class OperationalDashboard:
     dependency_impact: dict[str, Any] | None = None
     error_budget: dict[str, Any] | None = None
     cost_of_reliability: dict[str, float] | None = None
+    remediation_latency_kpis: dict[str, float | None] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to machine-readable dictionary."""
@@ -130,6 +131,7 @@ class OperationalDashboard:
             "dependency_impact": self.dependency_impact,
             "error_budget": self.error_budget,
             "cost_of_reliability": self.cost_of_reliability,
+            "remediation_latency_kpis": self.remediation_latency_kpis,
         }
 
 
@@ -365,6 +367,7 @@ def generate_operational_dashboard(
     dependency_graph: dict[str, list[str]] | None = None,
     error_budget: dict[str, Any] | None = None,
     cost_of_reliability: dict[str, float] | None = None,
+    remediation_latency_kpis: dict[str, float | None] | None = None,
 ) -> OperationalDashboard:
     """Generate complete operational dashboard."""
     # Calculate correlation if data available
@@ -395,4 +398,5 @@ def generate_operational_dashboard(
         dependency_impact=dependency_impact,
         error_budget=error_budget,
         cost_of_reliability=cost_of_reliability,
+        remediation_latency_kpis=remediation_latency_kpis,
     )

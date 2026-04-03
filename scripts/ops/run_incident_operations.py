@@ -11,6 +11,7 @@ from typing import Any
 
 from revops_funnel.artifacts import write_json_artifact
 from revops_funnel.incident_operations import (
+    POLICY_CONTRACT_VERSION,
     IncidentOperationsPolicy,
     generate_incident_operations_report,
 )
@@ -71,6 +72,28 @@ def parse_args() -> argparse.Namespace:
         help="Repeat threshold for counting alert fatigue.",
     )
     parser.add_argument(
+        "--fatigue-decay-half-life-hours",
+        type=float,
+        default=float(os.getenv("INCIDENT_OPS_FATIGUE_DECAY_HALF_LIFE_HOURS", "24")),
+        help="Half-life in hours for fatigue v2 time-decay weighting.",
+    )
+    parser.add_argument(
+        "--policy",
+        default=os.getenv("INCIDENT_OPS_POLICY_PATH", ""),
+        help="Optional path to policy JSON artifact (opt-in).",
+    )
+    parser.add_argument(
+        "--strict-min-evidence-completeness",
+        type=float,
+        default=float(os.getenv("INCIDENT_OPS_STRICT_MIN_EVIDENCE_COMPLETENESS", "0.8")),
+        help="Minimum evidence completeness required before strict blockers can fail execution.",
+    )
+    parser.add_argument(
+        "--correlation-id",
+        default=os.getenv("INCIDENT_OPS_CORRELATION_ID", ""),
+        help="Optional correlation ID override for idempotent joins across artifacts.",
+    )
+    parser.add_argument(
         "--require-dispatch-sent",
         action="store_true",
         help="Require dispatch status to be sent in strict mode.",
@@ -94,6 +117,9 @@ def parse_args() -> argparse.Namespace:
 
 
 def _read_json(path: str) -> dict[str, Any] | None:
+    if not path:
+        return None
+
     artifact_path = Path(path)
     if not artifact_path.exists():
         return None
@@ -119,6 +145,37 @@ def _read_recent_pattern_ids(path: str) -> list[str]:
     return [str(value) for value in values if value]
 
 
+def _read_recent_pattern_events(path: str) -> list[dict[str, Any]]:
+    payload = _read_json(path)
+    if not payload:
+        return []
+
+    values = payload.get("events")
+    if not isinstance(values, list):
+        return []
+
+    events: list[dict[str, Any]] = []
+    for value in values:
+        if isinstance(value, dict):
+            events.append(value)
+    return events
+
+
+def _load_policy(path: str) -> dict[str, Any]:
+    payload = _read_json(path)
+    if not payload:
+        return {}
+
+    contract_version = str(payload.get("contract_version", ""))
+    if contract_version and contract_version != POLICY_CONTRACT_VERSION:
+        print(
+            "Warning: unsupported policy contract_version="
+            f"{contract_version}; expected {POLICY_CONTRACT_VERSION}. Ignoring policy."
+        )
+        return {}
+    return payload
+
+
 def main() -> int:
     args = parse_args()
 
@@ -128,11 +185,40 @@ def main() -> int:
     dispatch_report = _read_json(args.dispatch_report)
     escalation_report = _read_json(args.escalation_report)
     recent_pattern_ids = _read_recent_pattern_ids(args.recent_patterns)
+    recent_pattern_events = _read_recent_pattern_events(args.recent_patterns)
+    policy_payload = _load_policy(args.policy)
+
+    require_dispatch_sent = bool(policy_payload.get("require_dispatch_sent", False)) or bool(
+        args.require_dispatch_sent
+    )
+    require_escalation_sent = bool(policy_payload.get("require_escalation_sent", False)) or bool(
+        args.require_escalation_sent
+    )
+    fatigue_repeat_threshold = int(
+        policy_payload.get("fatigue_pattern_repeat_threshold", args.fatigue_repeat_threshold)
+    )
+    fatigue_decay_half_life_hours = float(
+        policy_payload.get(
+            "fatigue_decay_half_life_hours",
+            args.fatigue_decay_half_life_hours,
+        )
+    )
+    min_evidence_completeness = float(
+        policy_payload.get(
+            "min_evidence_completeness",
+            args.strict_min_evidence_completeness,
+        )
+    )
 
     policy = IncidentOperationsPolicy(
-        require_dispatch_sent=bool(args.require_dispatch_sent),
-        require_escalation_sent=bool(args.require_escalation_sent),
-        fatigue_pattern_repeat_threshold=max(1, args.fatigue_repeat_threshold),
+        require_dispatch_sent=require_dispatch_sent,
+        require_escalation_sent=require_escalation_sent,
+        fatigue_pattern_repeat_threshold=max(1, fatigue_repeat_threshold),
+        fatigue_decay_half_life_hours=max(1.0, fatigue_decay_half_life_hours),
+        min_evidence_completeness=max(0.0, min(1.0, min_evidence_completeness)),
+        policy_contract_version=str(
+            policy_payload.get("contract_version", POLICY_CONTRACT_VERSION)
+        ),
     )
 
     report = generate_incident_operations_report(
@@ -142,16 +228,39 @@ def main() -> int:
         dispatch_report=dispatch_report,
         escalation_report=escalation_report,
         recent_pattern_ids=recent_pattern_ids,
+        recent_pattern_events=recent_pattern_events,
         policy=policy,
+        explicit_correlation_id=args.correlation_id or None,
     )
     payload = report.to_dict()
+    payload["policy_contract_version"] = policy.policy_contract_version
+    payload["policy_source"] = "file" if policy_payload else "defaults+args"
+
+    strict_blockers = bool(payload["incident_open"] and payload["strict_blockers"])
+    evidence_score = float(payload.get("evidence_completeness_score", 0.0))
+    strict_enforcement_suppressed = False
+
+    if (
+        args.strict_operations
+        and strict_blockers
+        and evidence_score < policy.min_evidence_completeness
+    ):
+        strict_enforcement_suppressed = True
+        payload["strict_enforcement_suppressed"] = True
+
     write_json_artifact(args.output, payload)
 
     print(json.dumps(payload, indent=2, sort_keys=True))
 
-    if args.strict_operations and payload["incident_open"] and payload["strict_blockers"]:
+    if args.strict_operations and strict_blockers and not strict_enforcement_suppressed:
         print("Error: strict incident operations blockers detected")
         return 1
+
+    if args.strict_operations and strict_enforcement_suppressed:
+        print(
+            "Warning: strict blockers detected but enforcement suppressed due to low evidence "
+            f"completeness ({evidence_score:.3f} < {policy.min_evidence_completeness:.3f})"
+        )
     return 0
 
 
