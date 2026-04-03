@@ -1,6 +1,6 @@
 # Bash and Shell Command Log (5Ws and H)
 
-This file records shell commands used outside of Make shortcuts.
+This file records shell commands used directly in the terminal.
 
 ## Entry format
 - What
@@ -9,71 +9,118 @@ This file records shell commands used outside of Make shortcuts.
 - When
 - Where
 - How
+- Line-numbered example
 
 ## Entries
 
 ### SH-001
-- What: find docs -maxdepth 4 -type f | sort
-- Why: inventory documentation artifacts by path
+- What: `find docs -maxdepth 4 -type f | sort`
+- Why: inventory documentation files quickly
 - Who: project maintainer
-- When: phase discovery and reporting
-- Where: repository root in dev container
+- When: documentation audits and discovery
+- Where: repository root
 - How:
-  - Preconditions: GNU find available
-  - Expected output: sorted list of documentation files
-  - Safety: read-only command
+  - Preconditions: `find` is available
+  - Alternatives: `ls -R docs`; `tree docs`
+  - Expected output: sorted file-path listing
+  - Recovery: narrow the path if output is too large
+- Line-numbered example:
+  1. `find docs -maxdepth 4 -type f | sort`
 
 ### SH-002
-- What: sed -n '1,220p' README.md
-- Why: inspect project quick-start and repository contract
+- What: `sed -n '1,220p' README.md`
+- Why: preview a section of a file without editing
 - Who: project maintainer
-- When: project-state reviews
+- When: quick document inspection
 - Where: repository root
 - How:
-  - Preconditions: file exists
-  - Expected output: selected line range printed to terminal
-  - Safety: read-only command
+  - Preconditions: target file exists
+  - Alternatives: `head -n 220 README.md`
+  - Expected output: selected line range in terminal
+  - Recovery: adjust the line range and rerun
+- Line-numbered example:
+  1. `sed -n '1,220p' README.md`
 
 ### SH-003
-- What: pip install -r requirements/dev.txt
-- Why: install developer dependencies required for linting and typing
+- What: `grep -RIn "<pattern>" <path>`
+- Why: locate references in the workspace when needed
 - Who: project maintainer
-- When: setup and dependency updates
-- Where: repository root, Python environment active
+- When: refactoring and debugging
+- Where: repository root or scoped folder
 - How:
-  - Preconditions: network access and pip availability
-  - Expected output: installed or already satisfied packages
-  - Recovery: if permission errors occur, use virtual environment or user install
+  - Preconditions: the path exists
+  - Alternatives: `rg` (if installed); `grep -RIn --include='*.py'`
+  - Expected output: file, line number, and matching text
+  - Recovery: refine the pattern to reduce noise
+- Line-numbered example:
+  1. `grep -RIn "phase12" docs`
 
 ### SH-004
-- What: pip install -e .
-- Why: install local package in editable mode so scripts can import project module
+- What: `python -m pip install -r requirements/dev.txt`
+- Why: install development dependencies
 - Who: project maintainer
-- When: after module import failures during script execution
+- When: setup or environment refresh
 - Where: repository root
 - How:
-  - Preconditions: pyproject metadata is valid
-  - Expected output: editable wheel installed
-  - Recovery: reinstall after dependency or metadata changes
+  - Preconditions: active Python environment and network access
+  - Alternatives: `pip install -r requirements/dev.txt`
+  - Expected output: installed or already satisfied packages
+  - Recovery: use a virtual environment if permissions fail
+- Line-numbered example:
+  1. `python -m pip install -r requirements/dev.txt`
 
 ### SH-005
-- What: pre-commit run --all-files
-- Why: run repository guardrails and auto-fix trivial formatting issues
+- What: `python -m pip install -e .`
+- Why: install project package in editable mode
 - Who: project maintainer
-- When: before commits and after pre-commit config changes
+- When: after import issues or package updates
 - Where: repository root
 - How:
-  - Preconditions: pre-commit installed, config file valid
-  - Expected output: pass/fail per hook with possible auto-fix output
-  - Recovery: rerun after applying suggested fixes
+  - Preconditions: project metadata is valid
+  - Alternatives: `pip install -e .`
+  - Expected output: editable install confirmation
+  - Recovery: rerun after fixing packaging metadata
+- Line-numbered example:
+  1. `python -m pip install -e .`
 
 ### SH-006
-- What: pytest -q tests/test_notifications.py tests/test_analytics_monitoring.py
-- Why: run focused validation for the new monitoring email path before full repo checks
+- What: `pre-commit run --all-files`
+- Why: run repository guardrails before commit
 - Who: project maintainer
-- When: 2026-04-02, Phase 6 Batch 6.1 validation
+- When: pre-commit validation
 - Where: repository root
 - How:
-  - Preconditions: project package importable and test dependencies available
-  - Expected output: focused pytest summary for notification and monitoring helpers
-  - Recovery: inspect failing assertions, fix code, and rerun the targeted tests
+  - Preconditions: pre-commit installed
+  - Alternatives: `pre-commit run <hook-id> --all-files`
+  - Expected output: pass/fail per hook
+  - Recovery: apply fixes and rerun hooks
+- Line-numbered example:
+  1. `pre-commit run --all-files`
+
+### SH-007
+- What: `pytest -q <test paths>`
+- Why: execute focused tests during development
+- Who: project maintainer
+- When: iterative debugging
+- Where: repository root
+- How:
+  - Preconditions: dependencies installed
+  - Alternatives: `pytest -q`; `pytest -q -k <expr>`
+  - Expected output: concise test result summary
+  - Recovery: inspect failing assertions and rerun
+- Line-numbered example:
+  1. `pytest -q tests/test_defense_package.py`
+
+### SH-008
+- What: `python scripts/<task>.py`
+- Why: run a project script directly
+- Who: project maintainer
+- When: ad hoc checks and artifact generation
+- Where: repository root
+- How:
+  - Preconditions: required input files/env vars exist
+  - Alternatives: `python3 scripts/<task>.py`; `make <target>`
+  - Expected output: script-specific status and output artifact
+  - Recovery: fix path/env issues and rerun
+- Line-numbered example:
+  1. `python scripts/ops/run_defense_package.py --help`

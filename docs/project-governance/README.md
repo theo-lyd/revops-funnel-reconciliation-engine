@@ -21,8 +21,11 @@ See [../reports/phase-4/](../reports/phase-4/) for post-phase-4-block-X-*.md doc
 - Issue and resolution register: see [issues-log.md](issues-log.md).
 - Git command log: see [commands/git-commands.md](commands/git-commands.md).
 - Bash and shell command log: see [commands/bash-shell-commands.md](commands/bash-shell-commands.md).
+- Python and pytest command log: see [commands/python-pytest-commands.md](commands/python-pytest-commands.md).
+- dbt and DuckDB command log: see [commands/dbt-duckdb-commands.md](commands/dbt-duckdb-commands.md).
+- Ruff command log: see [commands/ruff-commands.md](commands/ruff-commands.md).
+- Mypy command log: see [commands/mypy-commands.md](commands/mypy-commands.md).
 - Make command log: see [commands/make-commands.md](commands/make-commands.md).
-- Python, dbt, and DuckDB command log: see [commands/python-dbt-duckdb-commands.md](commands/python-dbt-duckdb-commands.md).
 - Other command log: see [commands/other-commands.md](commands/other-commands.md).
 
 ## Usage notes
