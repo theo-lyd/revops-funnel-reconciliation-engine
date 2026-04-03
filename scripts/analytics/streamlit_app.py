@@ -35,6 +35,10 @@ from revops_funnel.analytics_queries import (
     resolve_prompt_to_template,
     validate_columns,
 )
+from revops_funnel.snowflake_auth import (
+    build_snowflake_connector_auth_kwargs,
+    snowflake_auth_from_env,
+)
 
 load_dotenv()
 
@@ -113,7 +117,8 @@ def _append_audit_log(
 
 
 def _snowflake_available() -> bool:
-    return bool(SNOWFLAKE_ACCOUNT and SNOWFLAKE_USER and SNOWFLAKE_PASSWORD)
+    config = snowflake_auth_from_env()
+    return bool(config.account and config.user and config.is_auth_configured)
 
 
 @st.cache_resource
@@ -122,8 +127,9 @@ def _duckdb_conn() -> duckdb.DuckDBPyConnection:
 
 
 @st.cache_resource
-def _snowflake_conn() -> Any | None:
-    if not _snowflake_available():
+def _snowflake_conn(cache_key: str) -> Any | None:
+    config = snowflake_auth_from_env()
+    if not (config.account and config.user and config.is_auth_configured):
         return None
 
     try:
@@ -131,15 +137,40 @@ def _snowflake_conn() -> Any | None:
     except Exception:
         return None
 
+    connector_kwargs = build_snowflake_connector_auth_kwargs(config)
     return snowflake.connector.connect(
-        account=SNOWFLAKE_ACCOUNT,
-        user=SNOWFLAKE_USER,
-        password=SNOWFLAKE_PASSWORD,
+        account=config.account,
+        user=config.user,
         database=SNOWFLAKE_DATABASE,
         schema=SNOWFLAKE_SCHEMA,
         warehouse=SNOWFLAKE_WAREHOUSE,
         role=SNOWFLAKE_ROLE,
+        **connector_kwargs,
     )
+
+
+def _snowflake_cache_key() -> str:
+    config = snowflake_auth_from_env()
+    key_material = [
+        config.account,
+        config.user,
+        config.password,
+        config.private_key_path,
+        config.private_key_passphrase,
+        SNOWFLAKE_DATABASE,
+        SNOWFLAKE_SCHEMA,
+        SNOWFLAKE_WAREHOUSE,
+        SNOWFLAKE_ROLE,
+    ]
+
+    if config.private_key_path:
+        try:
+            stat = Path(config.private_key_path).stat()
+            key_material.extend([str(stat.st_mtime_ns), str(stat.st_size)])
+        except FileNotFoundError:
+            key_material.append("missing-key-file")
+
+    return "|".join(key_material)
 
 
 @st.cache_data(ttl=DASHBOARD_CACHE_SECONDS)
@@ -150,7 +181,7 @@ def _run_duckdb_query(sql: str) -> pd.DataFrame:
 
 @st.cache_data(ttl=DASHBOARD_CACHE_SECONDS)
 def _run_snowflake_query(sql: str) -> pd.DataFrame:
-    conn = _snowflake_conn()
+    conn = _snowflake_conn(_snowflake_cache_key())
     if conn is None:
         raise RuntimeError(
             "Snowflake connector unavailable. Install "

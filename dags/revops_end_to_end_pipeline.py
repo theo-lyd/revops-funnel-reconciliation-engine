@@ -37,82 +37,92 @@ with DAG(
 ) as dag:
     preflight = BashOperator(
         task_id="preflight",
-        bash_command=f"cd {PROJECT_ROOT} && make preflight",
+        bash_command="make preflight",
+        cwd=PROJECT_ROOT,
         execution_timeout=TASK_TIMEOUT,
     )
 
     init_warehouse = BashOperator(
         task_id="init_warehouse",
-        bash_command=f"cd {PROJECT_ROOT} && make init-warehouse",
+        bash_command="make init-warehouse",
+        cwd=PROJECT_ROOT,
         execution_timeout=TASK_TIMEOUT,
     )
 
     ingest_crm = BashOperator(
         task_id="ingest_crm",
-        bash_command=f"cd {PROJECT_ROOT} && make ingest-crm",
+        bash_command="make ingest-crm",
+        cwd=PROJECT_ROOT,
         execution_timeout=TASK_TIMEOUT,
     )
 
     ingest_leads = BashOperator(
         task_id="ingest_leads",
-        bash_command=f"cd {PROJECT_ROOT} && make ingest-leads",
+        bash_command="make ingest-leads",
+        cwd=PROJECT_ROOT,
         execution_timeout=TASK_TIMEOUT,
     )
 
     export_bronze = BashOperator(
         task_id="export_bronze",
-        bash_command=f"cd {PROJECT_ROOT} && make export-bronze",
+        bash_command="make export-bronze",
+        cwd=PROJECT_ROOT,
         execution_timeout=TASK_TIMEOUT,
     )
 
     check_freshness = BashOperator(
         task_id="check_freshness",
-        bash_command=f"cd {PROJECT_ROOT} && make check-freshness",
+        bash_command="make check-freshness",
+        cwd=PROJECT_ROOT,
         execution_timeout=TASK_TIMEOUT,
     )
 
     dbt_build_full = BashOperator(
         task_id="dbt_build_full",
-        bash_command=f"cd {PROJECT_ROOT} && make dbt-build",
+        bash_command="make dbt-build",
+        cwd=PROJECT_ROOT,
         execution_timeout=TASK_TIMEOUT,
     )
 
     dbt_test_full = BashOperator(
         task_id="dbt_test_full",
-        bash_command=f"cd {PROJECT_ROOT} && make dbt-test",
+        bash_command="make dbt-test",
+        cwd=PROJECT_ROOT,
         execution_timeout=TASK_TIMEOUT,
     )
 
     post_transform_checks = BashOperator(
         task_id="post_transform_checks",
-        bash_command=(
-            f"cd {PROJECT_ROOT} && "
-            "make query-pack-validate && make quality-checks && make ge-validate"
-        ),
+        bash_command="make query-pack-validate && make quality-checks && make ge-validate",
+        cwd=PROJECT_ROOT,
         execution_timeout=TASK_TIMEOUT,
     )
 
     parity_report = BashOperator(
         task_id="parity_report",
-        bash_command=f"cd {PROJECT_ROOT} && make metric-parity-check-report",
+        bash_command="make metric-parity-check-report",
+        cwd=PROJECT_ROOT,
         execution_timeout=TASK_TIMEOUT,
     )
 
     refresh_caches = BashOperator(
         task_id="refresh_caches",
-        bash_command=f"cd {PROJECT_ROOT} && make refresh-caches",
+        bash_command="make refresh-caches",
+        cwd=PROJECT_ROOT,
         execution_timeout=TASK_TIMEOUT,
     )
 
     release_readiness = BashOperator(
         task_id="release_readiness",
-        bash_command=f"cd {PROJECT_ROOT} && make release-readiness-gate",
+        bash_command="make release-readiness-gate",
+        cwd=PROJECT_ROOT,
         execution_timeout=TASK_TIMEOUT,
     )
 
     promote_deployment = BashOperator(
         task_id="promote_deployment",
-        bash_command=f"cd {PROJECT_ROOT} && make promote-deployment",
+        bash_command="make promote-deployment",
+        cwd=PROJECT_ROOT,
         execution_timeout=TASK_TIMEOUT,
     )
 

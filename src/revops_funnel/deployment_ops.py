@@ -24,7 +24,6 @@ from revops_funnel.artifacts import write_json_artifact
 DEFAULT_DBT_SELECTOR = "path:models/staging path:models/intermediate path:models/marts"
 DEFAULT_CACHE_PATHS = (
     Path(".streamlit/cache"),
-    Path(".streamlit/state"),
     Path("artifacts/cache"),
 )
 DEFAULT_CACHE_REFRESH_OUTPUT = Path("artifacts/cache/cache_refresh.json")
