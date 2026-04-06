@@ -207,3 +207,9 @@ Phase 12 packages validation, rehearsal posture, and handover completeness into 
 - [Phase completion checklist and stop-gate workflow](docs/project-governance/phase-completion-checklist.md)
 - [Issues and resolution log](docs/project-governance/issues-log.md)
 - [Command ledgers (git, make, python, dbt, etc.)](docs/project-governance/commands/)
+
+### Learning, Defense, and Presentation Guides
+- [Beginner masterclass tutorial](docs/guides/beginner-masterclass-tutorial.md)
+- [Project aims, objectives, and impact report](docs/reports/project-aims-objectives-impact-report.md)
+- [Interview defense playbook](docs/reports/interview-defense-playbook.md)
+- [Conference brief for technical and business audiences](docs/reports/conference-brief-technical-and-business-audience.md)
