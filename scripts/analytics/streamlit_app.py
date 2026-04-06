@@ -274,6 +274,15 @@ def _safe_sum(frame: pd.DataFrame, column: str) -> int:
     return int(series.sum()) if not series.isna().all() else 0
 
 
+def _safe_mean_optional(frame: pd.DataFrame, column: str) -> float | None:
+    if column not in frame.columns or frame.empty:
+        return None
+    series = pd.to_numeric(frame[column], errors="coerce")
+    if series.isna().all():
+        return None
+    return float(series.mean())
+
+
 def _render_executive_brief(source: str) -> None:
     st.subheader("Executive Brief")
     st.caption(
@@ -290,6 +299,13 @@ def _render_executive_brief(source: str) -> None:
     if frame.empty:
         st.warning("No executive funnel data is available.")
         return
+
+    month_count = int(frame["metric_month"].nunique())
+    if month_count < 2:
+        st.warning(
+            "Limited trend history: only one metric month is available. "
+            "KPI snapshots are shown, but month-over-month trend interpretation is limited."
+        )
 
     latest_month = cast(pd.Timestamp, frame["metric_month"].max())
     previous_candidates = frame.loc[frame["metric_month"] < latest_month, "metric_month"]
@@ -311,8 +327,8 @@ def _render_executive_brief(source: str) -> None:
     previous_win = _safe_mean(previous, "win_rate")
     current_leak = _safe_mean(latest, "leakage_ratio")
     previous_leak = _safe_mean(previous, "leakage_ratio")
-    current_cycle = _safe_mean(latest, "avg_cycle_days")
-    previous_cycle = _safe_mean(previous, "avg_cycle_days")
+    current_cycle = _safe_mean_optional(latest, "avg_cycle_days")
+    previous_cycle = _safe_mean_optional(previous, "avg_cycle_days")
 
     col1, col2, col3, col4 = st.columns(4)
     col1.metric(
@@ -339,17 +355,36 @@ def _render_executive_brief(source: str) -> None:
     )
     col4.metric(
         "Avg Cycle Days",
-        f"{current_cycle:.1f}",
+        f"{current_cycle:.1f}" if current_cycle is not None else "N/A",
         delta=(
-            f"{current_cycle - previous_cycle:+.1f} days" if previous_month is not None else None
+            (
+                f"{current_cycle - previous_cycle:+.1f} days"
+                if current_cycle is not None and previous_cycle is not None
+                else None
+            )
+            if previous_month is not None
+            else None
         ),
         delta_color="inverse",
     )
+
+    insight_lines = [
+        f"Latest month: {latest_month.date()}",
+        f"Pipeline volume is {current_total:,} opportunities.",
+        f"Win rate is {current_win:.1%} and leakage is {current_leak:.1%}.",
+    ]
+    if month_count < 2:
+        insight_lines.append(
+            "Action: load at least 3 months of funnel history for directional trend insights."
+        )
+    st.info("\n".join(insight_lines))
 
     monthly_office = (
         frame.groupby(["metric_month", "regional_office"], as_index=False)
         .agg(
             total_opportunities=("total_opportunities", "sum"),
+            won_opportunities=("won_opportunities", "sum"),
+            lost_opportunities=("lost_opportunities", "sum"),
             win_rate=("win_rate", "mean"),
             leakage_ratio=("leakage_ratio", "mean"),
             avg_cycle_days=("avg_cycle_days", "mean"),
@@ -364,13 +399,26 @@ def _render_executive_brief(source: str) -> None:
     ) * 100
 
     latest_office = monthly_office[monthly_office["metric_month"] == latest_month].copy()
+    latest_office["closed_outcomes"] = latest_office["won_opportunities"].fillna(0) + latest_office[
+        "lost_opportunities"
+    ].fillna(0)
     latest_office["action_status"] = "Monitor"
     latest_office.loc[
+        (latest_office["closed_outcomes"] < 3),
+        "action_status",
+    ] = "Insufficient Data"
+    intervention_condition = (latest_office["closed_outcomes"] >= 3) & (
         (latest_office["leakage_ratio"] >= 0.5)
         | (latest_office["win_rate"] <= 0.25)
-        | (latest_office["avg_cycle_days"] >= 60),
-        "action_status",
-    ] = "Intervene"
+        | (latest_office["avg_cycle_days"] >= 60)
+    )
+    latest_office.loc[intervention_condition, "action_status"] = "Intervene"
+
+    if (latest_office["closed_outcomes"] < 3).all():
+        st.info(
+            "Intervention scoring is limited because there are not enough closed outcomes "
+            "in the latest month. Load more historical wins/losses for reliable action flags."
+        )
 
     q1, q2 = st.columns(2)
     with q1:
@@ -425,29 +473,36 @@ def _render_executive_brief(source: str) -> None:
         .sort_values("metric_month")
     )
 
-    trend_fig = px.line(
-        trend,
-        x="metric_month",
-        y=["win_rate", "leakage_ratio"],
-        markers=True,
-        title="Conversion vs Leakage Trend",
-    )
-    trend_fig.update_layout(
-        height=360,
-        margin=dict(l=20, r=20, t=45, b=20),
-        legend_title_text="Metric",
-    )
-    trend_fig.update_yaxes(tickformat=".0%")
-    st.plotly_chart(trend_fig, use_container_width=True)
+    if month_count >= 2:
+        trend_fig = px.line(
+            trend,
+            x="metric_month",
+            y=["win_rate", "leakage_ratio"],
+            markers=True,
+            title="Conversion vs Leakage Trend",
+        )
+        trend_fig.update_layout(
+            height=360,
+            margin=dict(l=20, r=20, t=45, b=20),
+            legend_title_text="Metric",
+        )
+        trend_fig.update_yaxes(tickformat=".0%")
+        st.plotly_chart(trend_fig, use_container_width=True)
 
-    cycle_fig = px.bar(
-        trend,
-        x="metric_month",
-        y="avg_cycle_days",
-        title="Sales Cycle Duration Trend",
-    )
-    cycle_fig.update_layout(height=320, margin=dict(l=20, r=20, t=45, b=20))
-    st.plotly_chart(cycle_fig, use_container_width=True)
+        cycle_fig = px.bar(
+            trend,
+            x="metric_month",
+            y="avg_cycle_days",
+            title="Sales Cycle Duration Trend",
+        )
+        cycle_fig.update_layout(height=320, margin=dict(l=20, r=20, t=45, b=20))
+        st.plotly_chart(cycle_fig, use_container_width=True)
+    else:
+        st.dataframe(
+            trend,
+            use_container_width=True,
+            hide_index=True,
+        )
 
 
 def _render_chart(df: pd.DataFrame, template: QueryTemplate) -> None:

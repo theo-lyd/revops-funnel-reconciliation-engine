@@ -225,3 +225,9 @@ dbt/profiles/.user.yml
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Local Metabase runtime artifacts
+.tools/
+tools/
+plugins/
+data/metabase/
